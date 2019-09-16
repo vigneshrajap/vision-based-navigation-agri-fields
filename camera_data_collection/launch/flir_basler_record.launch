@@ -1,0 +1,39 @@
+<launch>
+
+    <!-- Arguments set for each cameras cases (Note: ALL three cases cannot be TRUE!)-->
+    <arg name="record_only_basler" default="false" />
+    <arg name="record_flir" default="false" />
+    <arg name="record_flir_stereo" default="false" />
+
+    <!-- create TF static links between camera and base_link-->
+    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find camera_data_collection)/urdf/flir_basler_camera.xacro'" />
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+
+    <!-- Starts the Basler Camera Node-->
+    <include file="$(find basler_camera)/launch/basler_camera.launch" if="$(arg record_only_basler)"/>
+
+    <!-- Starts the FLIR Camera Node-->
+    <include file="$(find spinnaker_camera_driver)/launch/camera.launch" if="$(arg record_flir)"/>
+
+    <!-- Starts the FLIR Stereo Camera Node-->
+    <include file="$(find spinnaker_camera_driver)/launch/stereo.launch" if="$(arg record_flir_stereo)"/>
+
+    <!-- RviZ Visualization-->
+    <arg name="gui" default="True" />
+    <param name="use_gui" value="$(arg gui)" />
+    <!--node name="rviz" pkg="rviz" type="rviz" args="-d $(find spinnaker_camera_driver)/rviz/urdf.rviz" required="true" /-->
+
+    <!-- Record-->
+    <node pkg="rosbag" type="record" name="rosbag_record_basler"
+          args="record -O frogn_basler_001.bag --split --size 1024 --chunksize=100000 /camera/basler_camera/image_raw /camera/basler_camera/camera_info"
+          if="$(arg record_only_basler)" />
+
+    <node pkg="rosbag" type="record" name="rosbag_record_flir"
+          args="record -O frogn_flir_001.bag --split --size 1024 --chunksize=100000 /camera/image_raw /camera/camera_info"
+          if="$(arg rosbag_record_flir)" />
+
+    <node pkg="rosbag" type="record" name="record_flir_stereo"
+          args="record -O frogn_flir_stereo_001.bag --split --size 1024 --chunksize=100000 /sidecam/left/image_raw /sidecam/right/image_raw /camera/basler_camera/image_raw"
+          if="$(arg record_flir_stereo)" />
+
+</launch>

@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="camera_frames">
+
+  <xacro:arg name="robot_name" default=""/>
+  <xacro:arg name="tf_prefix" default=""/>
+
+  <link name="$(arg tf_prefix)/base_link" />
+
+  <!--GNSS-->
+  <link name="$(arg tf_prefix)/camera">
+  <visual>
+      <geometry>
+        <box size="0.05 0.05 0.02"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+  </link>
+
+  <joint name="center_to_gps" type="fixed">
+    <parent link="$(arg tf_prefix)/base_link"/>
+    <child link="$(arg tf_prefix)/camera"/>
+    <origin xyz="0.425 -0.62 1.05"/>
+  </joint>
+
+</robot>
