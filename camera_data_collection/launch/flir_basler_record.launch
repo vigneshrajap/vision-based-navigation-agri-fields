@@ -25,15 +25,15 @@
 
     <!-- Record-->
     <node pkg="rosbag" type="record" name="rosbag_record_basler"
-          args="record -O frogn_basler_001.bag --split --size 1024 --chunksize=100000 /camera/basler_camera/image_raw /camera/basler_camera/camera_info"
+          args="record -O frogn_basler_001.bag --split --size 1024 --chunksize=100000 /camera/basler_camera/image_raw /camera/basler_camera/camera_info /tf_static"
           if="$(arg record_only_basler)" />
 
     <node pkg="rosbag" type="record" name="rosbag_record_flir"
-          args="record -O frogn_flir_001.bag --split --size 1024 --chunksize=100000 /camera/image_raw /camera/camera_info"
+          args="record -O frogn_flir_001.bag --split --size 1024 --chunksize=100000 /camera/image_raw /camera/camera_info /tf_static"
           if="$(arg rosbag_record_flir)" />
 
     <node pkg="rosbag" type="record" name="record_flir_stereo"
-          args="record -O frogn_flir_stereo_001.bag --split --size 1024 --chunksize=100000 /sidecam/left/image_raw /sidecam/right/image_raw /camera/basler_camera/image_raw"
+          args="record -O frogn_flir_stereo_001.bag --split --size 1024 --chunksize=100000 /sidecam/left/image_raw /sidecam/right/image_raw /camera/basler_camera/image_raw /tf_static"
           if="$(arg record_flir_stereo)" />
 
 </launch>
