@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <arg name="publish_tf" default="false"/>
+
+  <!-- load parameters for both eKFs (odom and map) -->
+  <rosparam command="load" file="$(find camera_data_collection)/config/dual_ekf_navsat.yaml" />
+
+  <!-- First instance of robot_localization, GPS integrated localization -->
+  <!--node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_odom" clear_params="true" respawn="true" output="screen">
+      <remap from="/odometry/filtered" to="/odometry/local" />
+      <param name="publish_tf" value="$(arg publish_tf)"/>
+  </node-->
+
+  <!--GNSS Fix message-->
+  <node pkg="nmea_navsat_driver" type="nmea_serial_driver" name="nmea_serial_driver" respawn="false">
+    <param name="port" type="string" value="/dev/ttyACM0"/>
+    <param name="baud" type="string" value="115200"/>
+    <remap from="/fix" to="/gps/fix" />
+  </node>
+
+  <!-- Second instance of robot_localization, GPS integrated localization -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map" clear_params="true" output="screen" respawn="true">
+     <remap from="/odometry/filtered" to="/odometry/global" />
+     <param name="publish_tf" value="$(arg publish_tf)"/>
+  </node>
+
+  <!--UTM frame to Robot Frame conversion-->
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" respawn="true" output="screen">
+    <remap from="/imu/data" to="/imu/data" />
+    <remap from="/gps/fix" to="/gps/fix" />
+    <remap from="/odometry/filtered" to="/odometry/global" />
+  </node>
+
+</launch>

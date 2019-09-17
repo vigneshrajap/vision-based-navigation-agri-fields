@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <arg name="record_GNSS" default="false" />
+  <arg name="map_file" default="$(find GNSS_waypoint_navigation)/maps/white_image.yaml"/>
+
+  <!-- Run the map server -->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
+
+  <!-- Start Xsens IMU -->
+  <include file="$(find GNSS_waypoint_navigation)/launch/xsens_driver.launch" />
+
+  <!-- Start GNSS -->
+  <include file="$(find GNSS_waypoint_navigation)/launch/RTK_setup.launch" />
+
+  <!-- Record-->
+  <node pkg="rosbag" type="record" name="rosbag_record_GNSS"
+        args="record -O $(env HOME)/frogn_GNSS_001.bag --split --size 1024 --chunksize=100000 /gps/fix /odometry/gps /odometry/base_raw /odometry/global /imu/data /tf_static"
+        if="$(arg record_GNSS)" />
+
+</launch>

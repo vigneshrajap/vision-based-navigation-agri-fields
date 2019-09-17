@@ -3,10 +3,11 @@
     <!-- Arguments set for each cameras cases (Note: ALL three cases cannot be TRUE!)-->
     <arg name="record_only_basler" default="false" />
     <arg name="record_flir" default="false" />
+    <arg name="record_basler_flir" default="true" />
     <arg name="record_flir_stereo" default="false" />
 
     <!-- create TF static links between camera and base_link-->
-    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find camera_data_collection)/urdf/flir_basler_camera.xacro'" />
+    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find camera_data_collection)/urdf/flir_camera.xacro'" />
     <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
 
     <!-- Starts the Basler Camera Node-->
@@ -14,6 +15,9 @@
 
     <!-- Starts the FLIR Camera Node-->
     <include file="$(find spinnaker_camera_driver)/launch/camera.launch" if="$(arg record_flir)"/>
+
+    <!-- Starts the Basler and FLIR Camera Node-->
+    <include file="$(find spinnaker_camera_driver)/launch/basler_flir.launch" if="$(arg record_basler_flir)"/>
 
     <!-- Starts the FLIR Stereo Camera Node-->
     <include file="$(find spinnaker_camera_driver)/launch/stereo.launch" if="$(arg record_flir_stereo)"/>
@@ -25,15 +29,19 @@
 
     <!-- Record-->
     <node pkg="rosbag" type="record" name="rosbag_record_basler"
-          args="record -O frogn_basler_001.bag --split --size 1024 --chunksize=100000 /camera/basler_camera/image_raw /camera/basler_camera/camera_info /tf_static"
+          args="record -O $(env HOME)/frogn_basler_001.bag --split --size 1024 --chunksize=100000 /camera/basler_camera/image_raw /camera/basler_camera/camera_info /tf_static"
           if="$(arg record_only_basler)" />
 
     <node pkg="rosbag" type="record" name="rosbag_record_flir"
-          args="record -O frogn_flir_001.bag --split --size 1024 --chunksize=100000 /camera/image_raw /camera/camera_info /tf_static"
-          if="$(arg rosbag_record_flir)" />
+          args="record -O $(env HOME)/frogn_flir_001.bag --split --size 1024 --chunksize=100000 /camera/image_raw /camera/camera_info /tf_static"
+          if="$(arg record_flir)" />
+
+    <node pkg="rosbag" type="record" name="rosbag_record_basler_flir" output="screen"
+          args="record -O $(env HOME)/frogn_basler_flir_001.bag --split --size 1024 --chunksize=100000 /camera/basler_camera/image_raw /camera/basler_camera/camera_info /sidecam/image_raw /sidecam/camera_info /tf_static"
+          if="$(arg record_basler_flir)" />
 
     <node pkg="rosbag" type="record" name="record_flir_stereo"
-          args="record -O frogn_flir_stereo_001.bag --split --size 1024 --chunksize=100000 /sidecam/left/image_raw /sidecam/right/image_raw /camera/basler_camera/image_raw /tf_static"
+          args="record -O $(env HOME)/frogn_flir_stereo_001.bag --split --size 1024 --chunksize=100000 /sidecam/left/image_raw /sidecam/right/image_raw /camera/basler_camera/image_raw /tf_static"
           if="$(arg record_flir_stereo)" />
 
 </launch>
