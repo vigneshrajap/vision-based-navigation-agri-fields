@@ -7,8 +7,7 @@
     <arg name="record_flir_stereo" default="false" />
 
     <!-- create TF static links between camera and base_link-->
-    <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find camera_data_collection)/urdf/flir_camera.xacro'" />
-    <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+    <!--node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" /-->
 
     <!-- Starts the Basler Camera Node-->
     <include file="$(find basler_camera)/launch/basler_camera.launch" if="$(arg record_only_basler)"/>
