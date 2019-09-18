@@ -1,5 +1,15 @@
 # Vision-based-navigation-agri-fields
 
+Frogn_Dataset - Annotated Images from Frogn Fields
+
+		Similar to training the dataset in https://github.com/divamgupta/image-segmentation-keras. You need to make two folders
+
+    		Images Folder - For all the training images
+    		Annotations Folder - For the corresponding ground truth segmentation images
+
+		The filenames of the annotation images should be same as the filenames of the RGB images.
+		The size of the annotation image for the corresponding RGB image should be same.
+
 
 camera_data_collection - Package for collecting camera data from the real fields.
 
