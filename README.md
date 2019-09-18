@@ -1,5 +1,13 @@
 # Vision-based-navigation-agri-fields
 
+### Prerequisites
+
+* Keras 2.0
+* opencv for python
+* Theano / Tensorflow / CNTK 
+
+lane_detection_segnet.py - Script for training and prediction. Some improvements like adding arguments for input, output images and folder to save the weights need to be done.
+
 Frogn_Dataset - Annotated Images from Frogn Fields
 
 		Similar to training the dataset in https://github.com/divamgupta/image-segmentation-keras. You need to make two folders
