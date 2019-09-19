@@ -1,0 +1,44 @@
+# To make an agriNet environment:
+#
+#   $ conda env create -f segNet_GPU.yml
+#
+# To update an agriNet environment:
+#
+#   $ conda activate segnet
+#   $ conda env update -f segNet_GPU.yml
+#
+# To add packages to agriNet, add packages here and then update.
+
+name: segNet_GPU
+
+channels:
+  - defaults
+  - anaconda
+  - intel
+
+dependencies:
+    # Basic Python packages
+  - python=2.7
+  - numpy
+  - scipy
+  - matplotlib
+  - ipython
+  - pillow
+  - pytest
+  - pytest-cov
+
+    # Keras segNet dependencies
+  - pip
+  - pip:
+    - keras-segmentation
+  - tqdm
+    # Machine Learning packages
+  - scikit-learn
+  - tensorflow-gpu # FIXME: Does not support SSE, AVX and FMA. Need newer version to support this.
+  - keras-gpu=2.2.0
+
+    # Dependencies of VirtualCam
+  - make
+  - pkg-config
+  - conda-forge::compilers
+  - conda-forge::opencv=3
