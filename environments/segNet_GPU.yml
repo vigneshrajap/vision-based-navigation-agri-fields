@@ -18,7 +18,7 @@ channels:
 
 dependencies:
     # Basic Python packages
-  - python=2.7
+  - python=3
   - numpy
   - scipy
   - matplotlib
@@ -30,7 +30,7 @@ dependencies:
     # Keras segNet dependencies
   - pip
   - pip:
-    - keras-segmentation
+    - keras-segmentation --trusted-host pypi.org --trusted-host files.pythonhosted.org
   - tqdm
     # Machine Learning packages
   - scikit-learn

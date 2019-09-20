@@ -30,5 +30,5 @@ RUN conda update -n root conda #need newest conda to specify channel per package
 #Create and start agriNet environment
 ADD segNet_GPU.yml /tmp/segNet_GPU.yml
 RUN conda env create -f /tmp/segNet_GPU.yml
-RUN echo "source activate agriNet_GPU" > ~/.bashrc
+RUN echo "source activate segNet_GPU" > ~/.bashrc
 ENV PATH /opt/conda/envs/segNet_GPU/bin:$PATH
