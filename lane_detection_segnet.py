@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import keras_segmentation
 
+
 model = keras_segmentation.models.segnet.segnet(n_classes=3,  input_height=360, input_width=640)
 
 model.train(
@@ -13,6 +14,7 @@ model.train(
 
 out = model.predict_segmentation(
     inp="~/Frogn_Dataset/images_prepped_test/frogn_10008.png",
+    #checkpoints_path = "~/segnet_weights/segnet",
     out_fname="out.png"
 )
 
