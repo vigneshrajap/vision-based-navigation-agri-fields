@@ -1,0 +1,46 @@
+version: '2.3'
+services:
+ segnet-gpu0:
+    build:
+      context: .
+      dockerfile: Dockerfile-gpu-conda-segNet
+    container_name: segNet-gpu0 
+    command: bash
+    volumes:
+     - /data/mba:/data
+     - /home/marianneb/code/:/code
+    expose:
+     - "6006"
+    ports:
+     - "6006:6006"
+    environment:
+     - COLUMNS=80
+     - LINES=24
+     - LC_ALL=C.UTF-8
+     - LANG=C.UTF-8 
+     - NVIDIA_VISIBLE_DEVICES=1
+    runtime: nvidia
+    stdin_open: true
+    tty: true 
+ segnet-gpu1:
+    build:
+      context: .
+      dockerfile: Dockerfile-gpu-conda-segNet
+    command: bash
+    container_name: segNet-gpu1 
+    volumes:
+     - /data/mba:/data
+     - /home/marianneb/code/:/code
+    expose:
+     - "6006"
+    ports:
+     - "6007:6006"
+    environment:
+     - COLUMNS=80
+     - LINES=24
+     - LC_ALL=C.UTF-8
+     - LANG=C.UTF-8 
+     - NVIDIA_VISIBLE_DEVICES=0
+    runtime: nvidia
+    stdin_open: true
+    tty: true 
