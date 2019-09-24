@@ -1,16 +1,24 @@
 #!/usr/bin/env python
 import keras_segmentation
 import os
+import glob
 import matplotlib.pyplot as plt
 from keras_segmentation.data_utils.data_loader import get_image_arr , get_segmentation_arr
-from keras_segmentation.predict import predict
+from keras_segmentation.predict import predict, model_from_checkpoint_path
 from keras_segmentation import metrics
+#from keras_segmentation.train import find_latest_checkpoint
 import numpy as np
-import tqdm
+from tqdm import tqdm 
+import argparse
 
 def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path=None ):
+    #Finished implementation of the evaluate function in keras_segmentation.predict
+    #Input: array of paths or nd arrays
+    if model is None and ( not checkpoints_path is None ):
+        model = model_from_checkpoint_path(checkpoints_path)
+        
     ious = []
-    for inp , ann   in zip( inp_images , annotations ):
+    for inp , ann   in tqdm(zip( inp_images , annotations )):
         pr = predict(model , inp )
         gt = get_segmentation_arr( ann , model.n_classes ,  model.output_width , model.output_height, no_reshape=True)
         gt = gt.argmax(-1)
@@ -20,46 +28,22 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
     print("Class wise IoU "  ,  np.mean(ious , axis=0 ))
     print("Total  IoU "  ,  np.mean(ious ))
 
+def main():
+    parser = argparse.ArgumentParser(description="Run evaluation of model on a set of images and annotations.")
+    parser.add_argument("--model_prefix", default = '', help = "Prefix of model filename")
+    parser.add_argument("--data_folder", default = 'Frogn_Dataset', help = "Relative path of data folder")
+    parser.add_argument("--model_folder", default = 'models', help = "Relative path of model folder")
+    parser.add_argument("--images_folder",default = 'images_prepped_test', help = "Name of image folder")
+    parser.add_argument("--annotations_folder",default = 'annotations_prepped_test', help = "Name of annotations folder")
+    args = parser.parse_args()
+    
+    model_path = os.path.join(args.model_folder,args.model_prefix)
+    im_files = glob.glob(os.path.join(args.data_folder,args.images_folder, '*.png'))
+    ann_files = glob.glob(os.path.join(args.data_folder,args.annotations_folder , '*.png'))
+    
+    print('Running evaluation on ',len(im_files),'images, and',len(ann_files),'annotations:')
+    print('Images: ', im_files, 'Annotations:', ann_files) 
+    evaluate(model=None , inp_images= im_files , annotations= ann_files, checkpoints_path=model_path)
 
-data_folder = 'Frogn_Dataset'
-model_folder = 'models'
-pred_folder = 'predictions'
-
-model_path = os.path.join(model_folder,'segnet_from_scratch_v1.4')
-
-model = keras_segmentation.models.segnet.segnet(n_classes=3, input_height=360, input_width=640  )
-model.load_weights(model_path) # load json and create model
-
-im_file = os.path.join(data_folder,'images_prepped_test/frogn_10008.png')
-im = plt.imread(im_file)
-
-gt_file =os.path.join(data_folder,'annotations_prepped_test/frogn_10008.png')
-gt = plt.imread(gt_file)
-
-#try built-in function
-evaluate(model=model , inp_images=[im_file] , annotations=[gt_file] , checkpoints_path=None )
-
-'''
-output_width = model.output_width
-output_height  = model.output_height
-
-gt_file =os.path.join(data_folder,'annotations_prepped_test/frogn_10008.png')
-gt = plt.imread(gt_file)
-
-im_file = os.path.join(data_folder,'images_prepped_test/frogn_10008.png')
-im = plt.imread(im_file)
-pr = keras_segmentation.predict.predict(model = model,inp=im_file,out_fname = 'tmp_out.png')
-gt = cv2.resize(cv2.transpose(gt)  , (output_width , output_height))
-
-n_classes  = 3
-iou = keras_segmentation.metrics.get_iou( gt , pr , n_classes)
-print(iou)
-'''
-
-'''
-#Run from command line:
-python -m keras_segmentation predict \
- --checkpoints_path="/home/marianne/Code/vision-based-navigation-agri-fields/models/segnet_from_scatch.0" \
- --input_path="/home/marianne/Code/vision-based-navigation-agri-fields/Frogn_Dataset/images_prepped_test" \
- --output_path="."
- '''
+if __name__ == "__main__":
+    main()
