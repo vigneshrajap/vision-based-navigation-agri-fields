@@ -18,16 +18,16 @@ lane_detection_segnet.py - Script for training and prediction. Some improvements
 
 	4) Once the cropping is done, the images are ready for annotations. Here annotations are done using "labelme" which is attached here. The different objects in the input image will be assigned an unique class by creating a polygon (or other given basic shapes) around the object area. In this case, we have background, Crops and Lanes as classes. More can be added in the future. Once annotating is done, it will be saved as json file format. (Note: Manual annotations for large set of images are very cumbersome and time taking process which will be replaced by automatic annotations soon)
 
-	5) Next step would be utilizing the JSON files and convert them into semantic annotated images has a set of steps. "labelme" has a provision to convert the JSON into VOC format which further gives more details about annotations as given by this link https://github.com/wkentaro/labelme/tree/master/examples/semantic_segmentation.
+	5) Next step would be utilizing the JSON files and convert them into semantic annotated images has a set of steps. "labelme" has a provision to convert the JSON into VOC format which further gives more details about annotations as given by this link. (https://github.com/wkentaro/labelme/tree/master/examples/semantic_segmentation)	
 	# It generates:
 	#   - data_dataset_voc/JPEGImages
 	#   - data_dataset_voc/SegmentationClass
 	#   - data_dataset_voc/SegmentationClassVisualization
-	./labelme2voc.py data_annotated data_dataset_voc --labels labels.tx
+	./labelme2voc.py data_annotated data_dataset_voc --labels labels.txt
 
-  6) The SegmentationClass folder contains .npy files which has the information in the form of array that we want for the keras segmentation as annotated images. The script "annotated_images_from_npy.py" is added which gives the final annotated images and it has to be stored in annotations dataset folder. Now the dataset is ready for the training with different segmentation and base models.
+        6) The SegmentationClass folder contains .npy files which has the information in the form of array that we want for the keras segmentation as annotated images. The script "annotated_images_from_npy.py" is added which gives the final annotated images and it has to be stored in annotations dataset folder. Now the dataset is ready for the training with different segmentation and base models.
 
-  7) In order to visualize the ground truth, use "visualize_dataset.py" that takes in final annotated images and stores the images in same color pattern as training images. Therefore it is useful for better understanding.
+        7) In order to visualize the ground truth, use "visualize_dataset.py" that takes in final annotated images and stores the images in same color pattern as training images. Therefore it is useful for better understanding.
 
 Frogn_Dataset - Annotated Images from Frogn Fields
 
