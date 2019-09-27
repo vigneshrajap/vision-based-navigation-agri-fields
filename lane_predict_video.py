@@ -56,9 +56,17 @@ def main():
            #Run prediction on video frame
            pr = predict.predict_fast(model,rgb_img)
            seg_img = predict.segmented_image_from_prediction(pr, n_classes = model.n_classes, output_width = model.output_width, output_height = model.output_height,input_shape = rgb_img.shape)
+           overlay_img = cv2.addWeighted(rgb_img,0.7,seg_img,0.3,0)
            # Stack input and segmentation in one video
-           
-           vis_img = np.hstack((rgb_img, seg_img))
+
+           vis_img = np.vstack((
+                   np.hstack((rgb_img, 
+                              seg_img)),
+                   np.hstack((overlay_img,
+                              np.ones(overlay_img.shape,dtype=np.uint8)*128))
+           ))
+
+           #vis_img = np.vstack((np.hstack((rgb_img, seg_img)),np.hstack((overlay_img,np.zeros(overlay_img.shape)))))
                    
            #Write video
            if args.output_video_file: 
@@ -86,7 +94,7 @@ def main():
     # cleanup
     cv2.destroyAllWindows()
     cap.release()
-    wr.release()
+    if args.output_video_file: wr.release()
     
 if __name__ == "__main__":
     main()
