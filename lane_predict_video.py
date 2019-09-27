@@ -48,7 +48,7 @@ def main():
     
     #Initialize video writer
     if args.output_video_file:
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v') # ('I','Y','U','V') #tried('M','J','P','G')
+        fourcc = cv2.VideoWriter_fourcc(*"MJPG") # ('I','Y','U','V') #tried('M','J','P','G')
         wr = None
         (out_h, out_w) = (None, None)
         isColor = True
@@ -71,14 +71,22 @@ def main():
            #print(seg_img)
            #print(seg_img.shape)
            # Stack input and segmentation in one video
-           vis_img = np.hstack((rgb_img, seg_img))
            
+           vis_img = np.hstack((rgb_img, seg_img))
+                   
            #Write video
            if args.output_video_file: 
                if wr is None: #if writer is not set up yet
                    (out_h,out_w) = vis_img.shape[:2]
-                   wr = cv2.VideoWriter(args.output_video_file,fourcc,fps,(out_h,out_w),isColor)     
+                   wr = cv2.VideoWriter(args.output_video_file,fourcc,fps,(out_w,out_h),isColor)     
                wr.write(vis_img)
+              
+               '''
+                   (h,w) = vis_img.shape[:2]
+            	   wr = cv2.VideoWriter(args.output_video_file, fourcc, 30,(w, h), True)
+               output = vis_img
+               wr.write(output)
+               '''
            #Display on screen
            if args.display:
                cv2.startWindowThread()
