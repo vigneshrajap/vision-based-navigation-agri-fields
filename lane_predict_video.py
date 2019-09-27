@@ -23,19 +23,8 @@ def main():
     parser.add_argument("--output_video_file", default = '', help = "(Relative) path to output video file. If empty, video is not written.")
     parser.add_argument("--display",default = False, help = "Whether to display video on screen (can be slow)")
     parser.add_argument("--frame_step",default = 1, help = "Input video frame step")
-    
-    # parser.add_argument("--model_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/pre-trained_weights/segnet_weights/segnet", help = "Prefix of model filename")
-    # parser.add_argument("--train_images_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/Frogn_Dataset/images_prepped_train/")
-    # parser.add_argument("--train_annotations_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/Frogn_Dataset/annotations_prepped_train/")
-    # parser.add_argument("--inp_dir_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/Frogn_Dataset/images_prepped_test/")
-    # parser.add_argument("--out_dir_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/predicted_outputs_segnet/")
-    # parser.add_argument("--inp_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/Frogn_Dataset/images_prepped_test/frogn_10000.png")
-    # parser.add_argument("--pre_trained", default = "True", type=bool)
-    # parser.add_argument("--predict_multiple_images", default = "False", type=bool)
-    args = parser.parse_args()
 
-    
-    #home = expanduser("~/Code/vision-based-navigation-agri-fields/videos/frogn_003.avi") #fixme
+    args = parser.parse_args()
     
     #Load model
     model = predict.model_from_checkpoint_path(args.model_prefix, args.epoch)
@@ -65,14 +54,19 @@ def main():
         if ret == True: 
            print('Frame ',frame_count)
            #Run prediction on video frame
-           #print(rgb_img)
            pr = predict.predict_fast(model,rgb_img)
            seg_img = predict.segmented_image_from_prediction(pr, n_classes = model.n_classes, output_width = model.output_width, output_height = model.output_height,input_shape = rgb_img.shape)
-           #print(seg_img)
-           #print(seg_img.shape)
+           overlay_img = cv2.addWeighted(rgb_img,0.7,seg_img,0.3,0)
            # Stack input and segmentation in one video
-           
-           vis_img = np.hstack((rgb_img, seg_img))
+
+           vis_img = np.vstack((
+                   np.hstack((rgb_img, 
+                              seg_img)),
+                   np.hstack((overlay_img,
+                              np.ones(overlay_img.shape,dtype=np.uint8)*128))
+           ))
+
+           #vis_img = np.vstack((np.hstack((rgb_img, seg_img)),np.hstack((overlay_img,np.zeros(overlay_img.shape)))))
                    
            #Write video
            if args.output_video_file: 
@@ -80,13 +74,6 @@ def main():
                    (out_h,out_w) = vis_img.shape[:2]
                    wr = cv2.VideoWriter(args.output_video_file,fourcc,fps,(out_w,out_h),isColor)     
                wr.write(vis_img)
-              
-               '''
-                   (h,w) = vis_img.shape[:2]
-            	   wr = cv2.VideoWriter(args.output_video_file, fourcc, 30,(w, h), True)
-               output = vis_img
-               wr.write(output)
-               '''
            #Display on screen
            if args.display:
                cv2.startWindowThread()
@@ -107,7 +94,7 @@ def main():
     # cleanup
     cv2.destroyAllWindows()
     cap.release()
-    wr.release()
+    if args.output_video_file: wr.release()
     
 if __name__ == "__main__":
     main()
