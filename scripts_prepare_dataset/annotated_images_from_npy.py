@@ -7,8 +7,8 @@ from os.path import expanduser
 import os.path as osp
 import glob
 
-input_dir = expanduser("~/Third_Paper/Datasets/data_dataset_voc_1/SegmentationClass/")
-output_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset/annotations_prepped_test/")
+input_dir = expanduser("~/Third_Paper/Datasets/data_dataset_voc/SegmentationClass/")
+output_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset/annotations_prepped_train/")
 
 for label_file in glob.glob(osp.join(input_dir, '*.npy')):
     print('Generating dataset from:', label_file)
