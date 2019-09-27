@@ -51,7 +51,7 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
             #plt.show()
             #print(checkpoints_path, inp)
             if not output_folder:
-                plt.savefig(checkpoints_path+'_IOU_'+os.path.basename(inp))
+                plt.savefig(checkpoints_path+epoch+'_IOU_'+os.path.basename(inp))
             else: 
                 plt.savefig(os.path.join(output_folder,os.path.basename(checkpoints_path)+'_IOU_'+os.path.basename(inp)))
     ious = np.array( ious )
