@@ -10,8 +10,8 @@ import os.path as osp
 roi_x = 208 #120
 roi_y = 120 #208
 
-input_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset/annotations_prepped_test/") #/frogn_2%04d.jpg"%d
-output_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset_32x_352/annotations_prepped_test/")
+input_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset/annotations_prepped_train/") #/frogn_2%04d.jpg"%d
+output_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset_32x_352/annotations_prepped_train/")
 
 for label_file in glob.glob(osp.join(input_dir, '*.png')):
         print(label_file)
