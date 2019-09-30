@@ -15,7 +15,7 @@ from keras_segmentation import predict
 
 
 def main():
-    
+
     parser = argparse.ArgumentParser(description="Run prediction on a video.")
     parser.add_argument("--model_prefix", default = '', help = "Prefix of model filename")
     parser.add_argument("--epoch", default = None, help = "Checkpoint epoch number")
@@ -25,16 +25,16 @@ def main():
     parser.add_argument("--frame_step",default = 1, help = "Input video frame step")
 
     args = parser.parse_args()
-    
+
     #Load model
-    model = predict.model_from_checkpoint_path(args.model_prefix, args.epoch)
-    
+    model = predict.model_from_checkpoint_path(args.model_prefix) #, args.epoch
+
     #Initialize video capture
     cap = cv2.VideoCapture(args.input_video_file)
     # Check if video opened successfully
     if (cap.isOpened()== False):
         print("Error opening video stream or file")
-    
+
     #Initialize video writer
     if args.output_video_file:
         fourcc = cv2.VideoWriter_fourcc(*"MJPG") # ('I','Y','U','V') #tried('M','J','P','G')
@@ -48,10 +48,10 @@ def main():
     frame_step = int(args.frame_step)
     # Read until video is completed
     while(cap.isOpened()):
-    
+
       # Capture frame-by-frame
         ret, rgb_img = cap.read()
-        if ret == True: 
+        if ret == True:
            print('Frame ',frame_count)
            #Run prediction on video frame
            seg_arr = predict.predict_fast(model,rgb_img)
@@ -60,19 +60,19 @@ def main():
            # Stack input and segmentation in one video
 
            vis_img = np.vstack((
-                   np.hstack((rgb_img, 
+                   np.hstack((rgb_img,
                               seg_img)),
                    np.hstack((overlay_img,
                               np.ones(overlay_img.shape,dtype=np.uint8)*128))
            ))
 
            #vis_img = np.vstack((np.hstack((rgb_img, seg_img)),np.hstack((overlay_img,np.zeros(overlay_img.shape)))))
-                   
+
            #Write video
-           if args.output_video_file: 
+           if args.output_video_file:
                if wr is None: #if writer is not set up yet
                    (out_h,out_w) = vis_img.shape[:2]
-                   wr = cv2.VideoWriter(args.output_video_file,fourcc,fps,(out_w,out_h),isColor)     
+                   wr = cv2.VideoWriter(args.output_video_file,fourcc,fps,(out_w,out_h),isColor)
                wr.write(vis_img)
            #Display on screen
            if args.display:
@@ -80,7 +80,7 @@ def main():
                cv2.namedWindow('preview', cv2.WINDOW_NORMAL)
                cv2.resizeWindow('preview', 800,800)
                cv2.imshow('preview', vis_img)
-           
+
            # Press Q on keyboard to  exit
            if cv2.waitKey(25) & 0xFF == ord('q'):
                print('Q pressed, breaking')
@@ -89,13 +89,13 @@ def main():
            frame_count +=frame_step
            cap.set(1, frame_count)
         else:
-           break     
-    
+           break
+
     # cleanup
     cv2.destroyAllWindows()
     cap.release()
     if args.output_video_file: wr.release()
-    
+
 if __name__ == "__main__":
     main()
 
