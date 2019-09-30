@@ -9,7 +9,7 @@ from keras_segmentation.predict import predict, model_from_checkpoint_path
 from keras_segmentation import metrics
 #from keras_segmentation.train import find_latest_checkpoint
 import numpy as np
-from tqdm import tqdm 
+from tqdm import tqdm
 import argparse
 
 def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path=None, epoch = None, visualize = False, output_folder = ''):
@@ -17,7 +17,7 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
     #Input: array of paths or nd arrays
     if model is None and ( not checkpoints_path is None ):
         model = model_from_checkpoint_path(checkpoints_path,epoch)
-        
+
     ious = []
     for inp , ann   in tqdm(zip( inp_images , annotations )):
         pr = predict(model , inp )
@@ -25,7 +25,7 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
         gt = gt.argmax(-1)
         iou = metrics.get_iou( gt , pr , model.n_classes )
         ious.append( iou )
-        
+
         if visualize:
             print(iou)
             print('gt',np.min(gt),np.max(gt))
@@ -36,15 +36,15 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
             ax1.imshow(gt-pr)
             #ax1.colorbar()
             ax1.title.set_text("Difference GT-pred")
-            
+
             ax2 = fig.add_subplot(2,2,2)
             ax2.imshow(gt)
             ax2.title.set_text('GT')
-            
+
             ax3 = fig.add_subplot(2,2,3)
             ax3.imshow(pr)
             ax3.title.set_text('pred')
-            
+
             ax4 = fig.add_subplot(2,2,4)
             ax4.imshow(plt.imread(inp))
             ax4.title.set_text('Input image')
@@ -52,8 +52,9 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
             #print(checkpoints_path, inp)
             if not output_folder:
                 plt.savefig(checkpoints_path+epoch+'_IOU_'+os.path.basename(inp))
-            else: 
+            else:
                 plt.savefig(os.path.join(output_folder,os.path.basename(checkpoints_path)+'_IOU_'+os.path.basename(inp)))
+    print ious
     ious = np.array( ious )
     print("Class wise IoU "  ,  np.mean(ious , axis=0 ))
     print("Total  IoU "  ,  np.mean(ious ))
@@ -69,11 +70,11 @@ def main():
     parser.add_argument("--visualize",default = False, help = "Turn visualization on/off")
     parser.add_argument("--output_folder",default = '', help = "Ouput folder for figures.")
     args = parser.parse_args()
-    
+
     model_path = os.path.join(args.model_folder,args.model_prefix)
     im_files = glob.glob(os.path.join(args.data_folder,args.images_folder, '*.png'))
     ann_files = glob.glob(os.path.join(args.data_folder,args.annotations_folder , '*.png'))
-    
+
     print('Running evaluation on ',len(im_files),'images, and',len(ann_files),'annotations:')
     evaluate(model=None , inp_images= im_files , annotations= ann_files, checkpoints_path=model_path,epoch = args.epoch, visualize = args.visualize, output_folder = args.output_folder)
 
