@@ -54,8 +54,8 @@ def main():
         if ret == True: 
            print('Frame ',frame_count)
            #Run prediction on video frame
-           pr = predict.predict_fast(model,rgb_img)
-           seg_img = predict.segmented_image_from_prediction(pr, n_classes = model.n_classes, output_width = model.output_width, output_height = model.output_height,input_shape = rgb_img.shape)
+           seg_arr = predict.predict_fast(model,rgb_img)
+           seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = model.n_classes, output_width = model.output_width, output_height = model.output_height,input_shape = rgb_img.shape)
            overlay_img = cv2.addWeighted(rgb_img,0.7,seg_img,0.3,0)
            # Stack input and segmentation in one video
 
