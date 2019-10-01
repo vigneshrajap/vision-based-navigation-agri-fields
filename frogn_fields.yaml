@@ -1,0 +1,88 @@
+---
+init_cmd: |
+  #exec /bin/bash
+  set -o pipefail
+  function export_default () {
+    var_name="$1"
+    var_default="$2"
+    eval $var_name="${!var_name:-$var_default}"
+    export $var_name
+    echo "  $0 -> $var_name=${!var_name}"
+  }
+
+  # source ROS
+  source "/opt/ros/kinetic/setup.bash"
+  # search for VPN tun device:
+  #default_iface=`route -n | grep "^10.8.0.0" | tr -s " " |  cut -f8 -d" " || echo lo`
+  #default_ip=`ip addr show dev "$default_iface" | grep "inet " | sed 's@ *inet \([0-9\.]*\).*@\1@' || echo 127.0.0.1`
+  
+  # load robot-specific config file
+  if [ -r "$HOME/.rasberryrc" ]; then echo "*** loading $HOME/.rasberryrc" ; source "$HOME/.rasberryrc"; fi
+  
+  export_default BASE_CONFIG_DIR `readlink -f . || echo .`
+  export_default ROBOT_NAME `hostname | tr "-" "_" | tr "." "_"`
+  export_default SCENARIO_NAME "default"
+  # load robot-specific config file
+  if [ -r "$BASE_CONFIG_DIR/robots/$ROBOT_NAME.sh" ]; then echo "*** loading $BASE_CONFIG_DIR/robots/$ROBOT_NAME.sh" ; source "$BASE_CONFIG_DIR/robots/$ROBOT_NAME.sh"; fi
+  # load scenario-specific config file
+  if [ -r "$BASE_CONFIG_DIR/scenarios/$SCENARIO_NAME.sh" ]; then echo "*** loading $BASE_CONFIG_DIR/scenarios/$SCENARIO_NAME.sh" ; source "$BASE_CONFIG_DIR/scenarios/$SCENARIO_NAME.sh"; fi  # configure the development workspace (assuming we are in rasberry_bringup/tmule)
+  #export_default CATKIN_WORKSPACE "`readlink -f ../../../.. || echo $HOME/rasberry_ws`"
+  export_default CATKIN_WORKSPACE "`echo $HOME/planner_ws`"
+  source "$CATKIN_WORKSPACE/devel/setup.bash"
+  # set ROS_MASTER to the correct IP
+  #export_default ROS_MASTER $default_ip
+  export_default ROS_MASTER "10.248.0.76"
+  # set ROS_IP not to the IP that we will connect to remotely
+  export_default ROS_IP `ip route get $ROS_MASTER | grep "src" | sed 's/.*src \([0-9\.]*\).*/\1/' || echo $ROS_MASTER`
+  # set ROS_HOSTNAME to the ROS_IP to avoid configuring /etc/hosts for anyone who connects
+  export_default ROS_HOSTNAME "$ROS_IP"
+  # path where to expect MONGODB
+  export_default MONGO_PATH "$HOME/mongodb"
+  # use IMU?
+  export_default USE_IMU true
+  # the topomap to be used
+  export_default TMAP frogn_fields
+  # the gridmap to be used (key in mongodb)
+  export_default MAP "$(rospack find auto_nav)/maps/white_image.yaml"
+  # figure out the robot number from the hostname, assuming it is like `thorvald-XXX`
+  export_default ROBOT_NO `hostname | cut -f2 -d"-"`
+  # set the robot type
+  export_default ROBOT_TYPE "thorvald_ii_4wd4ws_slim"
+  export ROS_MASTER_URI="http://$ROS_MASTER:11311/"
+  #export_default ROSBRIDGE_IP "10.8.0.18"
+  #export_default ROSBRIDGE_PORT "9090"
+  export_default USE_SIM false
+  export_default GAZEBO_WORLD riseholme
+  export_default EKF_PUBLISH_TF true
+  export_default USE_CARROT false
+  # put this in your local file only:
+  # export_default SLACK_WEBHOOK https://hooks.slack.com/services/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
+  export_default USE_GUI false
+  export_default USE_OMNI false
+  export_default USE_WAYPOINT_NAV false
+  export_default USE_FEATURE_DETECTOR false
+  export_default LOC_EDGE_RECONF "norway"
+  export_default ENVIRONMENT "open_fields"
+  export_default MODEL_EXTRAS "$(rospack find auto_nav)/urdf/sensors_frogn.xacro"
+windows:
+- name: init
+  panes:
+  - roscore
+  #- sleep 1; mkdir -p "$MONGO_PATH" && roslaunch mongodb_store mongodb_store.launch db_path:=$MONGO_PATH
+  #- sleep 1; if [ -r "$BASE_CONFIG_DIR/robots/$ROBOT_NAME.yaml" ]; then rosparam load "$BASE_CONFIG_DIR/robots/$ROBOT_NAME.yaml"; fi
+- name: robot
+  panes:
+  - sleep 1; roslaunch auto_nav robot_bringup.launch model_extras:=$MODEL_EXTRAS simple_sim:=$USE_SIM with_teleoperation:=true use_gui:=$USE_GUI enable_odom_tf:=true
+  #- sleep 1; if ! $USE_SIM; then roslaunch auto_nav xsens_driver.launch; fi
+  #- sleep 1; rosrun map_server map_server $HOME/planner_ws/src/auto_nav/maps/white_image.yaml
+#- name: localisation
+  #panes:
+  #- sleep 2; roslaunch auto_nav RTK_setup.launch publish_tf:="$EKF_PUBLISH_TF"
+  #- sleep 2; rosrun robot_pose_publisher robot_pose_publisher
+#- name: agri_costmaps
+  #panes:
+  #- sleep 3; roslaunch auto_nav waypoint_nav.launch environment:=$ENVIRONMENT use_waypoint_nav:=$USE_WAYPOINT_NAV
+#- name: lane_detection
+  #panes:
+  #- sleep 3; roslaunch auto_nav realsense_camera.launch
+
