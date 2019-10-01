@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<sdf version="1.4">
+  <model name="tracks_textures">
+  <static>true</static>
+    <link name="tracks">
+      <pose frame=''>-1.540 -2.0 0.025 0 -0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>5.076 5.893</size>
+          </plane>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>100</mu>
+              <mu2>50</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <cast_shadows>false</cast_shadows>
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>75.76 65.93</size>
+          </plane>
+        </geometry>
+        <material>
+          <script>
+            <uri>model://tracks_textures/materials/scripts</uri>
+            <uri>model://tracks_textures/materials/textures</uri>
+            <name>tracks_textures/track_image</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

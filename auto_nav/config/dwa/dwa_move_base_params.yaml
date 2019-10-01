@@ -1,0 +1,17 @@
+#base_global_planner: strands_navfn/NavfnROS
+base_local_planner: dwa_local_planner/DWAPlannerROS
+controller_frequency: 2.0 #default: 10.0
+controller_patience: 15.0
+planner_frequency: 5.0 #0.5
+
+recovery_behaviors:
+  - {name: conservative_reset, type: clear_costmap_recovery/ClearCostmapRecovery}
+  - {name: aggressive_reset, type: clear_costmap_recovery/ClearCostmapRecovery}
+
+conservative_reset:
+  layer_names: ["obstacle_layer"]
+  reset_distance: 1.0
+
+aggressive_reset:
+  layer_names: ["obstacle_layer"]
+  reset_distance: 0.38 #distance from rotation centre to tail (0.32m) + 6cm slack

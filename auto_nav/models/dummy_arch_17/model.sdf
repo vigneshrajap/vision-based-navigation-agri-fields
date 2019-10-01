@@ -1,0 +1,37 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+    <model name="dummy_arch_17">
+        <static>1</static>
+        <pose>0.0 0.0 0.0 1.570796 0.0 1.570796</pose>
+        <link name="link">
+                <collision name="collision">
+                        <geometry>
+                            <mesh>
+                                <uri>model://dummy_arch_17/dummy_arch_17.stl</uri>
+                            </mesh>
+                        </geometry>
+                </collision>
+                <visual name="visual">
+                        <geometry>
+                            <mesh>
+                                <uri>model://dummy_arch_17/dummy_arch_17.stl</uri>
+                            </mesh>
+                        </geometry>
+                        <material>
+                                <script>
+                                        <uri>file://media/materials/scripts/gazebo.material</uri>
+                                        <name>Gazebo/Grey</name>
+                                </script>
+                                <shader type='vertex'>
+                                <normal_map>__default__</normal_map>
+                                </shader>
+                                <ambient>0.75 0.75 0.75 1</ambient>
+                                <diffuse>0.07 0.07 0.07 1</diffuse>
+                                <specular>0.01 0.01 0.01 1</specular>
+                                <emissive>0 0 0 1</emissive>
+                        </material>
+                </visual>
+        </link>
+    </model>
+</sdf>
+

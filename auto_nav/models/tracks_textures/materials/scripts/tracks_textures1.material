@@ -1,0 +1,18 @@
+material tracks_textures/track_image
+{
+  technique
+  {
+    pass
+    {
+      scene_blend alpha_blend
+      depth_write off
+
+
+      texture_unit
+      {
+        texture tracks_edited.png
+        filtering trilinear
+      }
+    }
+  }
+}

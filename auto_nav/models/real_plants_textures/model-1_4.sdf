@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<sdf version="1.4">
+  <model name="real_plants_textures">
+  <static>true</static>
+    <link name="real_texture">
+      <pose frame=''>-1.540 -2.0 0.025 0 -0 0</pose>
+      <collision name="collision">
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>5.076 0.893</size>
+          </plane>
+        </geometry>
+        <surface>
+          <friction>
+            <ode>
+              <mu>100</mu>
+              <mu2>50</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <cast_shadows>false</cast_shadows>
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>5.076 0.893</size>
+          </plane>
+        </geometry>
+        <material>
+          <script>
+            <uri>model://real_plants_textures/materials/scripts</uri>
+            <uri>model://real_plants_textures/materials/textures</uri>
+            <name>real_plants_textures/real_texture</name>
+          </script>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

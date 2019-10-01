@@ -1,0 +1,18 @@
+material crop_rows/real_texture
+{
+  technique
+  {
+    pass
+    {
+      scene_blend alpha_blend
+      depth_write off
+
+
+      texture_unit
+      {
+        texture real_texture.jpg
+        filtering trilinear
+      }
+    }
+  }
+}

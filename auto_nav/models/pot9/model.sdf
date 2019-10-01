@@ -1,0 +1,39 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+
+<model name="pot9">
+<static>1</static>
+<pose>0.0 0.0 0.0 1.5707 0.0 1.5707</pose>
+
+  <link name="link">
+
+    <collision name="collision">
+      <geometry>
+        <mesh>
+          <uri>model://pot9/pot9.stl</uri>
+        </mesh>
+      </geometry>
+    </collision>
+
+    <visual name="visual">
+      <geometry>
+        <mesh>
+          <uri>model://pot9/pot9.stl</uri>
+        </mesh>
+      </geometry>
+      <material>
+        <lighting>1</lighting>
+        <shader type='vertex'>
+          <normal_map>__default__</normal_map>
+        </shader>
+        <ambient>0.2 0.2 0.2 1</ambient>
+        <diffuse>0.02 0.02 0.02 1</diffuse>
+        <specular>0 0 0 1</specular>
+        <emissive>0 0 0 1</emissive>
+      </material>
+      <cast_shadows>0</cast_shadows>
+    </visual>
+
+  </link>
+</model>
+</sdf>

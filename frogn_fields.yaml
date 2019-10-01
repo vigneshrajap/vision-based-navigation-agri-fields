@@ -72,13 +72,13 @@ windows:
   #- sleep 1; if [ -r "$BASE_CONFIG_DIR/robots/$ROBOT_NAME.yaml" ]; then rosparam load "$BASE_CONFIG_DIR/robots/$ROBOT_NAME.yaml"; fi
 - name: robot
   panes:
-  - sleep 1; roslaunch auto_nav robot_bringup.launch model_extras:=$MODEL_EXTRAS simple_sim:=$USE_SIM with_teleoperation:=true use_gui:=$USE_GUI enable_odom_tf:=true
-  #- sleep 1; if ! $USE_SIM; then roslaunch auto_nav xsens_driver.launch; fi
-  #- sleep 1; rosrun map_server map_server $HOME/planner_ws/src/auto_nav/maps/white_image.yaml
-#- name: localisation
-  #panes:
-  #- sleep 2; roslaunch auto_nav RTK_setup.launch publish_tf:="$EKF_PUBLISH_TF"
-  #- sleep 2; rosrun robot_pose_publisher robot_pose_publisher
+  - sleep 1; roslaunch auto_nav robot_setup.launch model_extras:=$MODEL_EXTRAS simple_sim:=$USE_SIM with_teleoperation:=true use_gui:=$USE_GUI enable_odom_tf:=true
+  - sleep 1; if ! $USE_SIM; then roslaunch auto_nav xsens_driver.launch; fi
+  - sleep 1; rosrun map_server map_server $MAP
+- name: localisation
+  panes:
+  - sleep 2; roslaunch auto_nav RTK_setup.launch publish_tf:="$EKF_PUBLISH_TF"
+  - sleep 2; rosrun robot_pose_publisher robot_pose_publisher
 #- name: agri_costmaps
   #panes:
   #- sleep 3; roslaunch auto_nav waypoint_nav.launch environment:=$ENVIRONMENT use_waypoint_nav:=$USE_WAYPOINT_NAV

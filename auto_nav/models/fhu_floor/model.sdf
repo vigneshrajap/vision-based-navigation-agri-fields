@@ -1,0 +1,39 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='fhu_floor'>
+    <link name='link_0'>
+      <pose frame=''>0 0 0 0 -0 0</pose>
+      <visual name='visual'>
+        <geometry>
+          <box>
+            <size>9.75 8.2 0.01</size>
+          </box>
+        </geometry>
+        <material>
+          <lighting>1</lighting>
+          <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
+            <name>Gazebo/Grey</name>
+          </script>
+          <shader type='vertex'>
+            <normal_map>__default__</normal_map>
+          </shader>
+          <ambient>0.3 0.3 0.3 1</ambient>
+          <diffuse>0.7 0.7 0.7 1</diffuse>
+          <specular>0.01 0.01 0.01 1</specular>
+          <emissive>0 0 0 1</emissive>
+        </material>
+        <cast_shadows>1</cast_shadows>
+      </visual>
+      <collision name='collision'>
+        <geometry>
+          <box>
+            <size>9.75 8.2 0.001</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    <static>1</static>
+    <allow_auto_disable>1</allow_auto_disable>
+  </model>
+</sdf>

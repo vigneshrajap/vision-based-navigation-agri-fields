@@ -1,0 +1,58 @@
+Open_Fields:
+  EnablePoint1: WayPoint1
+  #EnablePoint2: WayPoint6
+  #EnablePoint3: WayPoint10
+  #EnablePoint4: WayPoint14
+  #EnablePoint5: WayPoint18
+  #EnablePoint6: WayPoint22
+  #EnablePoint7: WayPoint26
+  #EnablePoint8: WayPoint30
+  #EnablePoint9: WayPoint34
+  #EnablePoint10: WayPoint38
+  #EnablePoint11: WayPoint42
+  #EnablePoint12: WayPoint46
+  #EnablePoint13: WayPoint50
+  #EnablePoint14: WayPoint54
+  DisablePoint1: WayPoint2
+  #DisablePoint2: WayPoint8
+  #DisablePoint3: WayPoint12
+  #DisablePoint4: WayPoint16
+  #DisablePoint5: WayPoint20
+  #DisablePoint6: WayPoint24
+  #DisablePoint7: WayPoint28
+  #DisablePoint8: WayPoint32
+  #DisablePoint9: WayPoint36
+  #DisablePoint10: WayPoint40
+  vector_offset: 1.75
+
+Tramways:
+  EnablePoint1: WayPoint1
+  DisablePoint1: WayPoint8
+  vector_offset: 1.5
+
+Polytunnels:
+  EnablePoint1: WayPoint134
+  EnablePoint2: WayPoint133
+  EnablePoint3: WayPoint139
+  EnablePoint4: WayPoint59
+  EnablePoint5: WayPoint60
+  EnablePoint6: WayPoint65
+  EnablePoint7: WayPoint121
+  EnablePoint8: WayPoint118
+  EnablePoint9: WayPoint85
+  EnablePoint10: WayPoint82
+  EnablePoint11: WayPoint47
+  EnablePoint12: WayPoint44
+  EnablePoint13: WayPoint11
+  EnablePoint14: WayPoint8
+  DisablePoint1: WayPoint109
+  DisablePoint2: WayPoint100
+  DisablePoint3: WayPoint35
+  DisablePoint4: WayPoint26
+  DisablePoint5: WayPoint131
+  DisablePoint6: WayPoint132
+  DisablePoint7: WayPoint138
+  DisablePoint8: WayPoint57
+  DisablePoint9: WayPoint58
+  DisablePoint10: WayPoint64
+  vector_offset: 1.5

@@ -1,0 +1,16 @@
+<population name="pot_array">
+  <model name="pot">
+    <include>
+      <static>true</static>
+      <uri>model://pot</uri>
+    </include>
+  </model>
+  <pose>0 0 0 0 0 0</pose>
+  <distribution>
+    <type>grid</type>
+    <rows>5</rows>
+    <cols>48</cols>
+    <step>0.5 1.35 0</step>
+  </distribution>
+</population>
+
