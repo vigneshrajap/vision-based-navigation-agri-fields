@@ -14,6 +14,8 @@ sys.path.insert(1, '../image-segmentation-keras')
 from keras_segmentation import predict
 import sliding_window_approach
 
+
+
 def main():
 
     parser = argparse.ArgumentParser(description="Run prediction on a video.")
