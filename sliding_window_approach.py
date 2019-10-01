@@ -1,29 +1,7 @@
 #!/usr/bin/env python
 # license removed for brevity
-import rospy
-from std_msgs.msg import String
 import numpy as np
-import pandas as pd
 import cv2
-import os
-import sys
-import roslib
-import matplotlib.pyplot as plt
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" # Hides the pygame version, welcome msg
-from moviepy.editor import VideoFileClip
-from os.path import expanduser
-import pickle
-import math
-import tf
-from numpy import linalg as LA
-from os.path import expanduser
-import geometry_msgs.msg
-from geometry_msgs.msg import Pose, PoseArray,Point
-from sensor_msgs.msg import CameraInfo
-from sensor_msgs.msg import Image
-import tf2_ros
-import quaternion
-from cv_bridge import CvBridge, CvBridgeError
 from sklearn.cluster import KMeans
 from itertools import imap
 
@@ -211,3 +189,25 @@ def sliding_window(img, modifiedCenters, nwindows=12, margin=35, minpix=1, draw_
     out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 100, 255]
 
     return out_img, (left_fitx, right_fitx), (left_fit_, right_fit_), ploty
+
+def visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters):
+
+   cv2.circle(out_img, (modifiedCenters[0][1], modifiedCenters[0][0]), 8, (0, 255, 0), -1)
+   cv2.circle(out_img, (modifiedCenters[1][1], modifiedCenters[1][0]), 8, (0, 255, 0), -1)
+
+   # Fitted curves as points
+   leftLane = np.array([np.transpose(np.vstack([curves[0], ploty]))])
+   rightLane = np.array([np.flipud(np.transpose(np.vstack([curves[1], ploty])))])
+   points = np.hstack((leftLane, rightLane))
+   curves_m = (curves[0]+curves[1])/2
+   midLane = np.array([np.transpose(np.vstack([curves_m, ploty]))])
+
+   leftLane_i = leftLane[0].astype(int)
+   rightLane_i = rightLane[0].astype(int)
+   midLane_i = midLane[0].astype(int)
+
+   cv2.polylines(out_img, [leftLane_i], 0, (0,255,255), thickness=5, lineType=8, shift=0)
+   cv2.polylines(out_img, [rightLane_i], 0, (0,255,255), thickness=5, lineType=8, shift=0)
+   cv2.polylines(out_img, [midLane_i], 0, (255,0,255), thickness=5, lineType=8, shift=0)
+
+   return out_img

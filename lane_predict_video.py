@@ -27,7 +27,7 @@ def main():
     args = parser.parse_args()
 
     #Load model
-    model = predict.model_from_checkpoint_path(args.model_prefix) #, args.epoch
+    model = predict.model_from_checkpoint_path(args.model_prefix, args.epoch)
 
     #Initialize video capture
     cap = cv2.VideoCapture(args.input_video_file)
@@ -54,58 +54,41 @@ def main():
         if ret == True:
            print('Frame ',frame_count)
            #Run prediction on video frame
-           seg_arr = predict.predict_fast(model,rgb_img)
-           seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = model.n_classes, output_width = model.output_width, output_height = model.output_height,input_shape = rgb_img.shape)
-           overlay_img = cv2.addWeighted(rgb_img,0.7,seg_img,0.3,0)
+           seg_arr,inp = predict.predict_fast(model,rgb_img)
+           #seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = model.n_classes,input_shape = rgb_img.shape)
+           #overlay_img = cv2.addWeighted(rgb_img,0.7,seg_img,0.3,0)
 
            # Stack input and segmentation in one video
-           grey_img = seg_arr.reshape(( model.output_height ,  model.output_width , model.n_classes ) ).argmax( axis=2 )
-           dummy_img = np.zeros((model.output_height, model.output_width))
-           dummy_img += ((grey_img[:,: ] == 2)*(255)).astype('uint8')
-           original_h, original_w = rgb_img.shape[0:2]
-           dummy_img = cv2.resize(dummy_img  , (original_w,original_h)).astype('uint8')
 
-           # # Perspective warp
+           # Reshaping the Lanes Class into binary array and Upscaling the image as input image
+           grey_img = seg_arr
+           dummy_img = np.zeros((model.output_height, model.output_width))
+           dummy_img += ((grey_img[:,: ] == 2)*(255)).astype('uint8') # Class Number 2 belongs to Lanes
+           original_h, original_w = rgb_img.shape[0:2]
+           dummy_img = cv2.resize(dummy_img, (original_w,original_h)).astype('uint8')
+
+           # Perspective warp
            rheight, rwidth = dummy_img.shape[:2]
            Roi_g = dummy_img[int(0.3*rheight):rheight,0:rwidth]
            roiheight, roiwidth = Roi_g.shape[:2]
-           dst_size =(roiheight,roiwidth)
            src=np.float32([(0.1,0), (0.8,0), (0,1), (1,1)])
            dst=np.float32([(0,0), (1,0), (0,1), (1,1)])
-           warped_img, M  = sliding_window_approach.perspective_warp(Roi_g, dst_size, src, dst)
+           warped_img, M  = sliding_window_approach.perspective_warp(Roi_g, (roiheight, roiwidth), src, dst)
 
-           # # # InitialPoints Estimation using K-Means clustering
+           # InitialPoints Estimation using K-Means clustering
            modifiedCenters = sliding_window_approach.initialPoints(warped_img)
-           #print modifiedCenters
 
-           # # Sliding Window Search
+           # Sliding Window Search
            out_img, curves, lanes, ploty = sliding_window_approach.sliding_window(warped_img, modifiedCenters)
 
-           cv2.circle(out_img, (modifiedCenters[0][1], modifiedCenters[0][0]), 8, (0, 255, 0), -1)
-           cv2.circle(out_img, (modifiedCenters[1][1], modifiedCenters[1][0]), 8, (0, 255, 0), -1)
+           # Visualize the fitted polygonals (One on each lane and on average curve)
+           out_img = sliding_window_approach.visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters)
 
-           # # Fitted curves as points
-           leftLane = np.array([np.transpose(np.vstack([curves[0], ploty]))])
-           rightLane = np.array([np.flipud(np.transpose(np.vstack([curves[1], ploty])))])
-           points = np.hstack((leftLane, rightLane))
-           curves_m = (curves[0]+curves[1])/2
-           midLane = np.array([np.transpose(np.vstack([curves_m, ploty]))])
-
-           leftLane_i = leftLane[0].astype(int)
-           rightLane_i = rightLane[0].astype(int)
-           midLane_i = midLane[0].astype(int)
-
-           cv2.polylines(out_img, [leftLane_i], 0, (0,255,255), thickness=5, lineType=8, shift=0)
-           cv2.polylines(out_img, [rightLane_i], 0, (0,255,255), thickness=5, lineType=8, shift=0)
-           cv2.polylines(out_img, [midLane_i], 0, (255,0,255), thickness=5, lineType=8, shift=0)
-
-           dst_size1 =(roiwidth, roiheight)
-           invwarp, Minv = sliding_window_approach.inv_perspective_warp(out_img, dst_size1, dst, src)
-
-           print rgb_img.shape, dummy_img.shape, warped_img.shape, out_img.shape, invwarp.shape
+           # Inverse Perspective warp
+           invwarp, Minv = sliding_window_approach.inv_perspective_warp(out_img, (roiwidth, roiheight), dst, src)
 
            # Combine the result with the original image
-           rgb_img[int(rheight*0.3):int(rheight),0:rwidth] = cv2.addWeighted(rgb_img[int(rheight*0.3):int(rheight),0:rwidth],
+           rgb_img[int(rheight*0.3):rheight,0:rwidth] = cv2.addWeighted(rgb_img[int(rheight*0.3):int(rheight),0:rwidth],
                                                                            1, invwarp, 0.9, 0)
            result = rgb_img
 
