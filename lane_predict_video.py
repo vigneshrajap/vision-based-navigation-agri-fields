@@ -27,7 +27,7 @@ def main():
     args = parser.parse_args()
 
     #Load model
-    model = predict.model_from_checkpoint_path(args.model_prefix) #, args.epoch
+    model = predict.model_from_checkpoint_path(args.model_prefix, args.epoch)
 
     #Initialize video capture
     cap = cv2.VideoCapture(args.input_video_file)
@@ -54,14 +54,14 @@ def main():
         if ret == True:
            print('Frame ',frame_count)
            #Run prediction on video frame
-           seg_arr = predict.predict_fast(model,rgb_img)
-           seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = model.n_classes, output_width = model.output_width, output_height = model.output_height,input_shape = rgb_img.shape)
-           overlay_img = cv2.addWeighted(rgb_img,0.7,seg_img,0.3,0)
+           seg_arr,inp = predict.predict_fast(model,rgb_img)
+           #seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = model.n_classes,input_shape = rgb_img.shape)
+           #overlay_img = cv2.addWeighted(rgb_img,0.7,seg_img,0.3,0)
 
            # Stack input and segmentation in one video
 
            # Reshaping the Lanes Class into binary array and Upscaling the image as input image
-           grey_img = seg_arr.reshape(( model.output_height, model.output_width , model.n_classes ) ).argmax( axis=2 )
+           grey_img = seg_arr
            dummy_img = np.zeros((model.output_height, model.output_width))
            dummy_img += ((grey_img[:,: ] == 2)*(255)).astype('uint8') # Class Number 2 belongs to Lanes
            original_h, original_w = rgb_img.shape[0:2]

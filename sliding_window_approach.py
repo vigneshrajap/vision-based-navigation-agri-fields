@@ -1,29 +1,7 @@
 #!/usr/bin/env python
 # license removed for brevity
-import rospy
-from std_msgs.msg import String
 import numpy as np
-import pandas as pd
 import cv2
-import os
-import sys
-import roslib
-import matplotlib.pyplot as plt
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" # Hides the pygame version, welcome msg
-from moviepy.editor import VideoFileClip
-from os.path import expanduser
-import pickle
-import math
-import tf
-from numpy import linalg as LA
-from os.path import expanduser
-import geometry_msgs.msg
-from geometry_msgs.msg import Pose, PoseArray,Point
-from sensor_msgs.msg import CameraInfo
-from sensor_msgs.msg import Image
-import tf2_ros
-import quaternion
-from cv_bridge import CvBridge, CvBridgeError
 from sklearn.cluster import KMeans
 from itertools import imap
 
