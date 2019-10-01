@@ -13,9 +13,8 @@ import sys
 sys.path.insert(1, '../image-segmentation-keras')
 from keras_segmentation import predict
 
-
-def visualize_prediction(input_img,seg_img):
-    #with or without gt label and IOU result
+def visualize_segmentation(input_img, seg_arr, n_classes,display = False,output_file = None):
+    seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = n_classes, input_shape = input_img.shape)
     overlay_img = cv2.addWeighted(input_img,0.7,seg_img,0.3,0)
     # Stack input and segmentation in one video
 
@@ -25,26 +24,58 @@ def visualize_prediction(input_img,seg_img):
        np.hstack((overlay_img,
                   np.ones(overlay_img.shape,dtype=np.uint8)*128))
     ))
-    return vis_img
-
-def predict_on_image(model,input_image,visualize = False, output_file = None, display=False):
-    #Run prediction (and optional, visualization)
-    seg_arr = predict.predict_fast(model,input_img)
-    seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = model.n_classes, input_shape = rgb_img.shape)
-    
-    if visualize:
-        vis_img = visualize_prediction(input_img,seg_img)
-    else:
-        vis_img = seg_img #Just plot the segmentation directly
-        
+       
+    print('display',display, 'output_file',output_file)
     if display:
-        cv2.imshow('Prediction', vis_img)    
+        cv2.imshow('Prediction', vis_img)  
     if not output_file is None:
         cv2.imwrite(  output_file , vis_img )
         
-    return seg_arr, vis_img
+    return vis_img
 
+def visualization(input_img,seg_arr=None, lane_fit = None, evaluation = None, n_classes=None, visualize = None, display=False, output_file=None):
+    #
+    #visualize: None, "all" or one of, "segmentation", "lane_fit", "evaluation"
+    #with or without gt label and IOU result
+    if visualize == "all" or visualize == "segmentation":
+        vis_img = visualize_segmentation(input_img, seg_arr, n_classes, display=display, output_file=output_file)
 
+    return vis_img
+
+def predict_on_image(model,inp,lane_fit = False, evaluate = False, visualize = None, output_file = None, display=False):
+    #visualize: None, "all" or one of, "segmentation", "lane_fit"
+    
+    #Run prediction (and optional, visualization)
+    seg_arr, input_image = predict.predict_fast(model,inp)
+    
+    if lane_fit:
+        #fixme: sliding window approach lane_fit = ...
+        fit = None
+    else: 
+        fit = None
+        
+    if evaluate:
+        #fixme iou,gt = evaluate(...)
+        evaluation = None
+    else: 
+        evaluation = None
+      
+    if visualize:
+        vis_img = visualization(input_image,seg_arr=seg_arr,lane_fit=fit,evaluation=evaluation, n_classes = model.n_classes,visualize = visualize,output_file=output_file,display=display)
+
+    return seg_arr, evaluation, vis_img, fit
+
+def predict_on_video():
+    #fixme
+    #video_gen = video_setup()
+    
+    #for frame in video_gen:
+        #predict_on_image(frame)
+        
+    #video_cleanup()
+    return None
+        
+'''
 def predict_on_video(model,input_video_file,visualize = False, output_video_file = None, display = False, frame_step = 1):
     #Run prediction (and optional, visualization) on video input
     
@@ -106,25 +137,25 @@ def predict_on_video(model,input_video_file,visualize = False, output_video_file
     cv2.destroyAllWindows()
     cap.release()
     if output_video_file: wr.release()
-
+'''
 
 def main():
 
-    parser = argparse.ArgumentParser(description="Run prediction on a video.")
+    parser = argparse.ArgumentParser(description="Run prediction on an image.")
     parser.add_argument("--model_prefix", default = '', help = "Prefix of model filename")
     parser.add_argument("--epoch", default = None, help = "Checkpoint epoch number")
-    parser.add_argument("--input_video_file",default = '', help = "(Relative) path to input video file")
-    parser.add_argument("--output_video_file", default = '', help = "(Relative) path to output video file. If empty, video is not written.")
+    parser.add_argument("--input_image_file",default = '', help = "(Relative) path to input image file")
+    parser.add_argument("--output_image_file", default = None, help = "(Relative) path to output image file. If empty, image is not written.")
     parser.add_argument("--display",default = False, help = "Whether to display video on screen (can be slow)")
-    parser.add_argument("--frame_step",default = 1, help = "Input video frame step")
 
     args = parser.parse_args()
 
     #Load model
-    model = predict.model_from_checkpoint_path(args.model_prefix) #, args.epoch
+    model = predict.model_from_checkpoint_path(args.model_prefix, args.epoch)
 
-    predict_on_video(model,args.input_video_file, args.output_video_file)
-
+    predict_on_image(model,inp = args.input_image_file,lane_fit = False, visualize = "all", output_file = args.output_image_file, display=True)
+    
+    cv2.destroyAllWindows()
 if __name__ == "__main__":
     main()
 
