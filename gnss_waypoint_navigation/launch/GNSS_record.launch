@@ -9,10 +9,10 @@
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
 
   <!-- Start Xsens IMU -->
-  <include file="$(find GNSS_waypoint_navigation)/launch/xsens_driver.launch" />
+  <include file="$(find gnss_waypoint_navigation)/launch/xsens_driver.launch" />
 
   <!-- Start GNSS -->
-  <include file="$(find GNSS_waypoint_navigation)/launch/RTK_setup.launch" />
+  <include file="$(find gnss_waypoint_navigation)/launch/RTK_setup.launch" />
 
   <!-- Record-->
   <node pkg="rosbag" type="record" name="rosbag_record_GNSS"

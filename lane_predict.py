@@ -15,50 +15,61 @@ sys.path.insert(1, '../image-segmentation-keras')
 from keras_segmentation import predict
 import sliding_window_approach
 
-''' FIXME Vignesh
-Something like these function calls:
-def lane_fit_on_prediction(seg_arr):
-    ... reshape, perspective warp, sliding window...
-    return out_img, curves,lanes,ploty,modifiedCenters
-def visualize_lane_fit(out_img, curves,lanes,ploty,modifiedCenters)
-    ... visualization polyfit, inverse warp...
-    return rgb_img
-'''
-def visualize_lane_fit(input_image ,seg_arr):
+def upscaling_warping_parameters(rgb_img, seg_arr, class_number, crop_ratio):
    # Reshaping the Lanes Class into binary array and Upscaling the image as input image
-   rgb_img = input_image
-   grey_img = seg_arr
    dummy_img = np.zeros(seg_arr.shape)
-   dummy_img += ((grey_img[:,: ] == 2)*(255)).astype('uint8') # Class Number 2 belongs to Lanes
+   dummy_img += ((seg_arr[:,: ] == class_number)*(255)).astype('uint8') # Class Number 2 belongs to Lanes
    original_h, original_w = rgb_img.shape[0:2]
-   dummy_img = cv2.resize(dummy_img, (original_w,original_h)).astype('uint8')
+   upscaled_img = cv2.resize(dummy_img, (original_w,original_h)).astype('uint8')
 
    # Perspective warp
-   rheight, rwidth = dummy_img.shape[:2]
-   Roi_g = dummy_img[int(0.3*rheight):rheight,0:rwidth]
-   roiheight, roiwidth = Roi_g.shape[:2]
+   rheight, rwidth = upscaled_img.shape[:2]
+   Roi_g = upscaled_img[int(crop_ratio*rheight):rheight,0:rwidth]
+   dst_size = Roi_g.shape[:2]
    src=np.float32([(0.1,0), (0.8,0), (0,1), (1,1)])
    dst=np.float32([(0,0), (1,0), (0,1), (1,1)])
-   warped_img, M  = sliding_window_approach.perspective_warp(Roi_g, (roiheight, roiwidth), src, dst)
+   return Roi_g, src, dst, dst_size
+
+def lane_fit_on_prediction(Roi_img, src, dst, dst_size):
+
+   warped_img, M  = sliding_window_approach.perspective_warp(Roi_img, dst_size, src, dst)
 
    # InitialPoints Estimation using K-Means clustering
    modifiedCenters = sliding_window_approach.initialPoints(warped_img)
 
    # Sliding Window Search
    out_img, curves, lanes, ploty = sliding_window_approach.sliding_window(warped_img, modifiedCenters)
+   return warped_img, out_img, curves, lanes, ploty, modifiedCenters
 
+def visualize_lane_fit(input_image, out_img, curves, lanes, ploty, modifiedCenters, src, dst, dst_size, crop_ratio):
    # Visualize the fitted polygonals (One on each lane and on average curve)
    out_img = sliding_window_approach.visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters)
 
    # Inverse Perspective warp
-   invwarp, Minv = sliding_window_approach.inv_perspective_warp(out_img, (roiwidth, roiheight), dst, src)
+   invwarp, Minv = sliding_window_approach.inv_perspective_warp(out_img, (dst_size[1], dst_size[0]), dst, src)
 
    # Combine the result with the original image
-   rgb_img[int(rheight*0.3):rheight,0:rwidth] = cv2.addWeighted(rgb_img[int(rheight*0.3):int(rheight),0:rwidth],
+   final_img = input_image.copy()
+   rheight, rwidth = final_img.shape[:2]
+   final_img[int(rheight*crop_ratio):rheight,0:rwidth] = cv2.addWeighted(final_img[int(rheight*crop_ratio):int(rheight),0:rwidth],
                                                            1, invwarp, 0.9, 0)
-   return rgb_img
+   return out_img, invwarp, final_img
 
-def visualize_segmentation(input_img, seg_arr, n_classes,display = False,output_file = None):
+def visualize_lane_fit(input_image ,seg_arr):
+
+   class_number = 2 ### Extract Interesting Class (2 - Lanes in this case) from predictions
+   crop_ratio = 0.3 ### Ratio to crop the background parts in the image from top
+
+   # Setting the parameters for upscaling and warping-unwarping
+   Roi_img, src, dst, dst_size = upscaling_warping_parameters(input_image, seg_arr, class_number, crop_ratio)
+
+   # Sliding Window Approach on Lanes Class from segmentation Array and fit the poly curves
+   warp_img, out_img, curves, lanes, ploty, modifiedCenters =  lane_fit_on_prediction(Roi_img, src, dst, dst_size)
+
+   # Overlay the inverse warped image on input image
+   polyfit_img, invwarp, rgb_img = visualize_lane_fit(input_image, out_img, curves, lanes, ploty, modifiedCenters, src, dst, dst_size, crop_ratio)
+
+def visualize_segmentation(input_img, seg_arr, n_classes,display = False, output_file = None):
     seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = n_classes, input_shape = input_img.shape)
     overlay_img = cv2.addWeighted(input_img,0.7,seg_img,0.3,0)
     # Stack input and segmentation in one video
@@ -69,7 +80,7 @@ def visualize_segmentation(input_img, seg_arr, n_classes,display = False,output_
        np.hstack((overlay_img,
                   np.ones(overlay_img.shape,dtype=np.uint8)*128))
     ))
-        
+
     return vis_img
 
 def visualization(input_img,seg_arr=None, lane_fit = None, evaluation = None, n_classes=None, visualize = None, display=False, output_file=None):
@@ -82,29 +93,29 @@ def visualization(input_img,seg_arr=None, lane_fit = None, evaluation = None, n_
         vis_img = visualize_lane_fit(input_img, seg_arr)
 
     if display:
-        cv2.imshow('Prediction', vis_img)  
+        cv2.imshow('Prediction', vis_img)
     if not output_file is None:
         cv2.imwrite(  output_file , vis_img )
     return vis_img
 
 def predict_on_image(model,inp,lane_fit = False, evaluate = False, visualize = None, output_file = None, display=False):
     #visualize: None, "all" or one of, "segmentation", "lane_fit"
-    
+
     #Run prediction (and optional, visualization)
     seg_arr, input_image = predict.predict_fast(model,inp)
-    
+
     if lane_fit:
         #fixme: sliding window approach lane_fit = ...
         fit = None
-    else: 
+    else:
         fit = None
-        
+
     if evaluate:
         #fixme iou,gt = evaluate(...)
         evaluation = None
-    else: 
+    else:
         evaluation = None
-      
+
     if visualize:
         vis_img = visualization(input_image,seg_arr=seg_arr,lane_fit=fit,evaluation=evaluation, n_classes = model.n_classes,visualize = visualize,output_file=output_file,display=display)
 
@@ -113,17 +124,17 @@ def predict_on_image(model,inp,lane_fit = False, evaluate = False, visualize = N
 def predict_on_video():
     #fixme
     #video_gen = video_setup()
-    
+
     #for frame in video_gen:
         #predict_on_image(frame)
-        
+
     #video_cleanup()
     return None
-        
+
 '''
 def predict_on_video(model,input_video_file,visualize = False, output_video_file = None, display = False, frame_step = 1):
     #Run prediction (and optional, visualization) on video input
-    
+
     #Initialize video capture
     cap = cv2.VideoCapture(input_video_file)
     # Check if video opened successfully
@@ -149,12 +160,12 @@ def predict_on_video(model,input_video_file,visualize = False, output_video_file
         if ret == True:
            print('Frame ',frame_count)
            #Run prediction on video frame
-    
-           
+
+
            seg_arr = predict.predict_fast(model,rgb_img)
            seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = model.n_classes, input_shape = rgb_img.shape)
            vis_img = visualize_prediction(rgb_img,seg_img)
-           
+
            #Write video
            if output_video_file:
                if wr is None: #if writer is not set up yet
@@ -197,7 +208,7 @@ def main():
 
     #Load model
     model = predict.model_from_checkpoint_path(args.model_prefix, args.epoch)
-    
+
     print('Output_folder',args.output_folder)
     im_files = glob.glob(os.path.join(args.input_folder,'*.png'))
     print(os.path.join(args.input_folder+'*.png'))
@@ -208,51 +219,7 @@ def main():
         else:
             output_file = None
         predict_on_image(model,inp = im,lane_fit = False, evaluate = False, visualize = "lane_fit", output_file = output_file, display=True)
-    
+
     cv2.destroyAllWindows()
 if __name__ == "__main__":
     main()
-
-
-# parser = argparse.ArgumentParser(description="Run evaluation of model on a set of images and annotations.")
-# parser.add_argument("--model_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/pre-trained_weights/segnet_weights/segnet", help = "Prefix of model filename")
-# parser.add_argument("--train_images_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/Frogn_Dataset/images_prepped_train/")
-# parser.add_argument("--train_annotations_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/Frogn_Dataset/annotations_prepped_train/")
-# parser.add_argument("--inp_dir_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/Frogn_Dataset/images_prepped_test/")
-# parser.add_argument("--out_dir_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/predicted_outputs_segnet/")
-# parser.add_argument("--inp_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/Frogn_Dataset/images_prepped_test/frogn_10000.png")
-# parser.add_argument("--pre_trained", default = "True", type=bool)
-# parser.add_argument("--predict_multiple_images", default = "False", type=bool)
-# args = parser.parse_args()
-#
-# model = keras_segmentation.models.segnet.segnet(n_classes=4,  input_height=320 , input_width=640)
-# #pre_trained = True
-# #predict_multiple_images = False
-#
-# if args.pre_trained:
-#     model = model_from_checkpoint_path(args.model_path)
-#
-# else:
-#     model.train(
-#         train_images =  args.train_images_path,
-#         train_annotations = args.train_annotations_path,
-#         checkpoints_path = args.model_path, epochs=5
-#     )
-#
-# if args.predict_multiple_images:
-#     out = model.predict_multiple(
-#           inp_dir = args.inp_dir_path,
-#           checkpoints_path = args.model_path,
-#           out_dir = args.out_dir_path
-#      )
-#
-# else:
-#     out = model.predict_segmentation(
-#         inp= args.inp_path,
-#         checkpoints_path = args.model_path,
-#         out_fname=os.path.expanduser('~')+"/out.png"
-#     )
-
-# import matplotlib.pyplot as plt
-# plt.imshow(out)
-# plt.show()
