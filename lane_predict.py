@@ -2,6 +2,7 @@
 #import keras_segmentation
 #from keras_segmentation.predict import model_from_checkpoint_path
 import os
+import glob
 #os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" # Hides the pygame version, welcome msg
 from os.path import expanduser
 import argparse
@@ -12,6 +13,41 @@ import numpy as np
 import sys
 sys.path.insert(1, '../image-segmentation-keras')
 from keras_segmentation import predict
+import sliding_window_approach
+
+def visualize_lane_fit(input_image ,seg_arr):
+   # Reshaping the Lanes Class into binary array and Upscaling the image as input image
+   rgb_img = input_image
+   grey_img = seg_arr
+   dummy_img = np.zeros(seg_arr.shape)
+   dummy_img += ((grey_img[:,: ] == 2)*(255)).astype('uint8') # Class Number 2 belongs to Lanes
+   original_h, original_w = rgb_img.shape[0:2]
+   dummy_img = cv2.resize(dummy_img, (original_w,original_h)).astype('uint8')
+
+   # Perspective warp
+   rheight, rwidth = dummy_img.shape[:2]
+   Roi_g = dummy_img[int(0.3*rheight):rheight,0:rwidth]
+   roiheight, roiwidth = Roi_g.shape[:2]
+   src=np.float32([(0.1,0), (0.8,0), (0,1), (1,1)])
+   dst=np.float32([(0,0), (1,0), (0,1), (1,1)])
+   warped_img, M  = sliding_window_approach.perspective_warp(Roi_g, (roiheight, roiwidth), src, dst)
+
+   # InitialPoints Estimation using K-Means clustering
+   modifiedCenters = sliding_window_approach.initialPoints(warped_img)
+
+   # Sliding Window Search
+   out_img, curves, lanes, ploty = sliding_window_approach.sliding_window(warped_img, modifiedCenters)
+
+   # Visualize the fitted polygonals (One on each lane and on average curve)
+   out_img = sliding_window_approach.visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters)
+
+   # Inverse Perspective warp
+   invwarp, Minv = sliding_window_approach.inv_perspective_warp(out_img, (roiwidth, roiheight), dst, src)
+
+   # Combine the result with the original image
+   rgb_img[int(rheight*0.3):rheight,0:rwidth] = cv2.addWeighted(rgb_img[int(rheight*0.3):int(rheight),0:rwidth],
+                                                           1, invwarp, 0.9, 0)
+   return rgb_img
 
 def visualize_segmentation(input_img, seg_arr, n_classes,display = False,output_file = None):
     seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = n_classes, input_shape = input_img.shape)
@@ -24,12 +60,6 @@ def visualize_segmentation(input_img, seg_arr, n_classes,display = False,output_
        np.hstack((overlay_img,
                   np.ones(overlay_img.shape,dtype=np.uint8)*128))
     ))
-       
-    print('display',display, 'output_file',output_file)
-    if display:
-        cv2.imshow('Prediction', vis_img)  
-    if not output_file is None:
-        cv2.imwrite(  output_file , vis_img )
         
     return vis_img
 
@@ -37,9 +67,15 @@ def visualization(input_img,seg_arr=None, lane_fit = None, evaluation = None, n_
     #
     #visualize: None, "all" or one of, "segmentation", "lane_fit", "evaluation"
     #with or without gt label and IOU result
-    if visualize == "all" or visualize == "segmentation":
+    if visualize == "segmentation":
         vis_img = visualize_segmentation(input_img, seg_arr, n_classes, display=display, output_file=output_file)
+    if visualize == "lane_fit":
+        vis_img = visualize_lane_fit(input_img, seg_arr)
 
+    if display:
+        cv2.imshow('Prediction', vis_img)  
+    if not output_file is None:
+        cv2.imwrite(  output_file , vis_img )
     return vis_img
 
 def predict_on_image(model,inp,lane_fit = False, evaluate = False, visualize = None, output_file = None, display=False):
@@ -140,20 +176,26 @@ def predict_on_video(model,input_video_file,visualize = False, output_video_file
 '''
 
 def main():
-
-    parser = argparse.ArgumentParser(description="Run prediction on an image.")
+    parser = argparse.ArgumentParser(description="Example: Run prediction on an image folder.")
     parser.add_argument("--model_prefix", default = '', help = "Prefix of model filename")
     parser.add_argument("--epoch", default = None, help = "Checkpoint epoch number")
-    parser.add_argument("--input_image_file",default = '', help = "(Relative) path to input image file")
-    parser.add_argument("--output_image_file", default = None, help = "(Relative) path to output image file. If empty, image is not written.")
+    parser.add_argument("--input_folder",default = '', help = "(Relative) path to input image file")
+    parser.add_argument("--output_folder", default = '', help = "(Relative) path to output image file. If empty, image is not written.")
     parser.add_argument("--display",default = False, help = "Whether to display video on screen (can be slow)")
 
     args = parser.parse_args()
 
     #Load model
     model = predict.model_from_checkpoint_path(args.model_prefix, args.epoch)
-
-    predict_on_image(model,inp = args.input_image_file,lane_fit = False, visualize = "all", output_file = args.output_image_file, display=True)
+    
+    im_files = glob.glob(os.path.join(args.input_folder+'*.png'))
+    for im in im_files:
+        if args.output_folder:
+            output_file = os.path.join(args.output_folder,os.path.basename(im))+"_lane_pred.png"
+            print(output_file)
+        else:
+            output_file = None
+        predict_on_image(model,inp = im,lane_fit = False, evaluate = False, visualize = "lane_fit", output_file = output_file, display=True)
     
     cv2.destroyAllWindows()
 if __name__ == "__main__":
