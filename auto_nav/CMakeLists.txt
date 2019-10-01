@@ -187,6 +187,7 @@ install(PROGRAMS
   scripts/lane_detector_video.py
   scripts/lane_detector_skp.py
   scripts/test.py
+  scripts/segnet_lane_detection.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
