@@ -15,6 +15,15 @@ sys.path.insert(1, '../image-segmentation-keras')
 from keras_segmentation import predict
 import sliding_window_approach
 
+''' FIXME Vignesh
+Something like these function calls:
+def lane_fit_on_prediction(seg_arr):
+    ... reshape, perspective warp, sliding window...
+    return out_img, curves,lanes,ploty,modifiedCenters
+def visualize_lane_fit(out_img, curves,lanes,ploty,modifiedCenters)
+    ... visualization polyfit, inverse warp...
+    return rgb_img
+'''
 def visualize_lane_fit(input_image ,seg_arr):
    # Reshaping the Lanes Class into binary array and Upscaling the image as input image
    rgb_img = input_image
@@ -176,7 +185,8 @@ def predict_on_video(model,input_video_file,visualize = False, output_video_file
 '''
 
 def main():
-    parser = argparse.ArgumentParser(description="Example: Run prediction on an image folder.")
+    parser = argparse.ArgumentParser(description="Example: Run prediction on an image folder. Example usage: python lane_predict.py --model_prefix=models/resnet_3class --epoch=25 --input_folder=Frogn_Dataset/images_prepped_test --output_folder=.
+")
     parser.add_argument("--model_prefix", default = '', help = "Prefix of model filename")
     parser.add_argument("--epoch", default = None, help = "Checkpoint epoch number")
     parser.add_argument("--input_folder",default = '', help = "(Relative) path to input image file")
@@ -188,7 +198,9 @@ def main():
     #Load model
     model = predict.model_from_checkpoint_path(args.model_prefix, args.epoch)
     
-    im_files = glob.glob(os.path.join(args.input_folder+'*.png'))
+    print('Output_folder',args.output_folder)
+    im_files = glob.glob(os.path.join(args.input_folder,'*.png'))
+    print(os.path.join(args.input_folder+'*.png'))
     for im in im_files:
         if args.output_folder:
             output_file = os.path.join(args.output_folder,os.path.basename(im))+"_lane_pred.png"
