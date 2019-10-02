@@ -36,6 +36,36 @@
     <origin xyz="0.31 0.0 0.8" rpy="0 0 0"/>
   </joint>
 
+  <!--Basler-->
+  <!-- camera body, with origin at bottom screw mount -->
+  <link name="$(arg tf_prefix)/basler_camera"/>
+
+  <joint name="basler_camera_joint" type="fixed">
+    <parent link="$(arg tf_prefix)/base_link"/>
+    <child link="$(arg tf_prefix)/basler_camera" />
+    <origin xyz="0.735 0.0 1.205" rpy="0 0.366519 0" />
+  </joint>
+
+  <!--FLIR Camera 1-->
+  <!-- camera body, with origin at bottom screw mount -->
+  <link name="$(arg tf_prefix)/flir_camera_1"/>
+
+  <joint name="flir_camera_1_joint" type="fixed">
+    <parent link="$(arg tf_prefix)/base_link"/>
+    <child link="$(arg tf_prefix)/flir_camera_1" />
+    <origin xyz="0.735 -0.1 1.205" rpy="0 0.366519 0" />
+  </joint>
+
+  <!--FLIR Camera 2-->
+  <!-- camera body, with origin at bottom screw mount -->
+  <link name="$(arg tf_prefix)/flir_camera_2"/>
+
+  <joint name="flir_camera_2_joint" type="fixed">
+    <parent link="$(arg tf_prefix)/base_link"/>
+    <child link="$(arg tf_prefix)/flir_camera_2" />
+    <origin xyz="0.735 0.1 1.205" rpy="0 0.366519 0" />
+  </joint>
+
   <!--Camera-->
     <xacro:property name="M_PI" value="3.1415926535897931" />
 

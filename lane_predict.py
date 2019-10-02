@@ -41,7 +41,7 @@ def lane_fit_on_prediction(Roi_img, src, dst, dst_size):
    out_img, curves, lanes, ploty = sliding_window_approach.sliding_window(warped_img, modifiedCenters)
    return warped_img, out_img, curves, lanes, ploty, modifiedCenters
 
-def visualize_lane_fit(input_image, out_img, curves, lanes, ploty, modifiedCenters, src, dst, dst_size, crop_ratio):
+def visualize_lane_fit_1(input_image, out_img, curves, lanes, ploty, modifiedCenters, src, dst, dst_size, crop_ratio):
    # Visualize the fitted polygonals (One on each lane and on average curve)
    out_img = sliding_window_approach.visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters)
 
@@ -55,7 +55,7 @@ def visualize_lane_fit(input_image, out_img, curves, lanes, ploty, modifiedCente
                                                            1, invwarp, 0.9, 0)
    return out_img, invwarp, final_img
 
-def visualize_lane_fit(input_image ,seg_arr):
+def visualize_lane_fit(input_image, seg_arr):
 
    class_number = 2 ### Extract Interesting Class (2 - Lanes in this case) from predictions
    crop_ratio = 0.3 ### Ratio to crop the background parts in the image from top
@@ -64,10 +64,11 @@ def visualize_lane_fit(input_image ,seg_arr):
    Roi_img, src, dst, dst_size = upscaling_warping_parameters(input_image, seg_arr, class_number, crop_ratio)
 
    # Sliding Window Approach on Lanes Class from segmentation Array and fit the poly curves
-   warp_img, out_img, curves, lanes, ploty, modifiedCenters =  lane_fit_on_prediction(Roi_img, src, dst, dst_size)
+   warp_img, out_img, curves, lanes, ploty, modifiedCenters = lane_fit_on_prediction(Roi_img, src, dst, dst_size)
 
    # Overlay the inverse warped image on input image
-   polyfit_img, invwarp, rgb_img = visualize_lane_fit(input_image, out_img, curves, lanes, ploty, modifiedCenters, src, dst, dst_size, crop_ratio)
+   polyfit_img, invwarp, final_img = visualize_lane_fit_1(input_image, out_img, curves, lanes, ploty, modifiedCenters, src, dst, dst_size, crop_ratio)
+   return final_img
 
 def visualize_segmentation(input_img, seg_arr, n_classes,display = False, output_file = None):
     seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = n_classes, input_shape = input_img.shape)
@@ -83,7 +84,7 @@ def visualize_segmentation(input_img, seg_arr, n_classes,display = False, output
 
     return vis_img
 
-def visualization(input_img,seg_arr=None, lane_fit = None, evaluation = None, n_classes=None, visualize = None, display=False, output_file=None):
+def visualization(input_img, seg_arr=None, lane_fit = None, evaluation = None, n_classes=None, visualize = None, display=False, output_file=None):
     #
     #visualize: None, "all" or one of, "segmentation", "lane_fit", "evaluation"
     #with or without gt label and IOU result
@@ -98,11 +99,11 @@ def visualization(input_img,seg_arr=None, lane_fit = None, evaluation = None, n_
         cv2.imwrite(  output_file , vis_img )
     return vis_img
 
-def predict_on_image(model,inp,lane_fit = False, evaluate = False, visualize = None, output_file = None, display=False):
+def predict_on_image(model, inp, lane_fit = False, evaluate = False, visualize = None, output_file = None, display=False):
     #visualize: None, "all" or one of, "segmentation", "lane_fit"
 
     #Run prediction (and optional, visualization)
-    seg_arr, input_image = predict.predict_fast(model,inp)
+    seg_arr, input_image = predict.predict_fast(model, inp)
 
     if lane_fit:
         #fixme: sliding window approach lane_fit = ...
@@ -196,8 +197,7 @@ def predict_on_video(model,input_video_file,visualize = False, output_video_file
 '''
 
 def main():
-    parser = argparse.ArgumentParser(description="Example: Run prediction on an image folder. Example usage: python lane_predict.py --model_prefix=models/resnet_3class --epoch=25 --input_folder=Frogn_Dataset/images_prepped_test --output_folder=.
-")
+    parser = argparse.ArgumentParser(description="Example: Run prediction on an image folder. Example usage: python lane_predict.py --model_prefix=models/resnet_3class --epoch=25 --input_folder=Frogn_Dataset/images_prepped_test --output_folder=.")
     parser.add_argument("--model_prefix", default = '', help = "Prefix of model filename")
     parser.add_argument("--epoch", default = None, help = "Checkpoint epoch number")
     parser.add_argument("--input_folder",default = '', help = "(Relative) path to input image file")
@@ -214,12 +214,13 @@ def main():
     print(os.path.join(args.input_folder+'*.png'))
     for im in im_files:
         if args.output_folder:
-            output_file = os.path.join(args.output_folder,os.path.basename(im))+"_lane_pred.png"
+            output_file = os.path.join(args.output_folder,os.path.basename(im)+"_lane_pred.png")
             print(output_file)
         else:
             output_file = None
         predict_on_image(model,inp = im,lane_fit = False, evaluate = False, visualize = "lane_fit", output_file = output_file, display=True)
 
     cv2.destroyAllWindows()
+
 if __name__ == "__main__":
     main()
