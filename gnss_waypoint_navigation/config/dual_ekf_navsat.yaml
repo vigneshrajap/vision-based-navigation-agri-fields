@@ -94,7 +94,8 @@ navsat_transform:
   publish_filtered_gps: true
   use_odometry_yaw: true
   wait_for_datum: true
-  datum: [59.6647165018, 10.6839287517, 0.0]
+  #datum: [59.6647165018, 10.6839287517, 0.0]
+  datum: [59.6588517903, 10.67237459, 0.0]
 
 
 #ekf_se_odom:

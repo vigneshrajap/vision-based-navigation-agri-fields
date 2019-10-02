@@ -18,7 +18,6 @@ from keras_segmentation import predict
 
 from std_msgs.msg import String
 
-
 #--- ROS setup
 image_topic_name = rosparam.get_param('auto_nav/segnet_lane_detection/camera_topic')
 model_config = rosparam.getparam('auto_nav/segnet_lane_detection/model_config')
@@ -28,7 +27,7 @@ rospy.init_node('segnet_lane_detection')
 
 #Set up publisher for prediction messages
 pub = rospy.Publisher('lane_pred', String, queue_size = 1) #fixme other type
-rate = rospy.Rate(10) # 10hz 
+rate = rospy.Rate(10) # 10hz
 
 model = predict.model_from_checkpoint_files(model_config, model_weights)
 
@@ -38,11 +37,10 @@ def recv_image_msg(image_msg,format = "passthrough"):
     image = cv_br.imgmsg_to_cv2(image_msg,format)
     return image
 
-#%%
 def callback(image_msg):
     #Read image
     image = recv_image_msg(image_msg)
-    if(np.ndim(image) !=3 or np.shape(image)[2] !=3): 
+    if(np.ndim(image) !=3 or np.shape(image)[2] !=3):
         rospy.logerr('Input image must have 3 dimensions with 3 color channels')
 
     # Preprocess
@@ -50,14 +48,14 @@ def callback(image_msg):
 
     # Prediction
     predict.predict_on_image(model,inp=image,lane_fit = True, evaluate = False, visualize = "all", output_file = None, display=True)
-    
+
     #Make ros pred message
     #fixme return lane prediction from predict
     lane_msg = "hello world %s" #tmp
     #publish prediction
     rospy.loginfo(lane_msg)
     pub.publish(lane_msg)
-    
+
     rate.sleep()
 
 def predict_lane():
@@ -65,7 +63,7 @@ def predict_lane():
     rospy.Subscriber(image_topic_name, Image, callback, queue_size = 1) #rename topic in launch?
     rospy.spin()
     cv2.destroyAllWindows()
-    
+
 if __name__ == '__main__':
     try:
         predict_lane()

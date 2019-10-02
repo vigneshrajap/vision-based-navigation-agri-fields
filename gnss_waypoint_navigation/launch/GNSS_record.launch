@@ -3,7 +3,7 @@
 <launch>
 
   <arg name="record_GNSS" default="false" />
-  <arg name="map_file" default="$(find GNSS_waypoint_navigation)/maps/white_image.yaml"/>
+  <arg name="map_file" default="$(find gnss_waypoint_navigation)/maps/white_image.yaml"/>
 
   <!-- Run the map server -->
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
