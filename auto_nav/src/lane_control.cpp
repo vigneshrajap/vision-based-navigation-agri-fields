@@ -2,10 +2,10 @@
 
 Lane_control::Lane_control(){
 
-    posearray_local_sub = nh_.subscribe("posearray_local", 100, &Lane_control::posesCallback, this);
+    posearray_local_sub = nh_.subscribe("centerline_local", 100, &Lane_control::posesCallback, this);
 
     cmd_velocities = nh_.advertise<geometry_msgs::Twist>("nav_vel", 100);  // control
-    posearray_world = nh_.advertise<geometry_msgs::PoseArray>("posearray_global", 100);  // control
+    posearray_world = nh_.advertise<geometry_msgs::PoseArray>("centerline_global", 100);  // control
 }
 
 void Lane_control::initialize(){

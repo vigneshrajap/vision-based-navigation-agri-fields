@@ -18,10 +18,11 @@ from keras_segmentation import predict
 
 from std_msgs.msg import String
 
-#--- ROS setup
-image_topic_name = rosparam.get_param('auto_nav/segnet_lane_detection/camera_topic')
-model_config = rosparam.getparam('auto_nav/segnet_lane_detection/model_config')
-model_weights = rosparam.getparam('auto_nav/segnet_lane_detection/model_weights')
+# #--- ROS setup
+# image_topic_name = rosparam.get_param('auto_nav/segnet_lane_detection/camera_topic')
+# model_config = rosparam.getparam('auto_nav/segnet_lane_detection/model_config')
+# model_weights = rosparam.getparam('auto_nav/segnet_lane_detection/model_weights')
+
 #Initialize node
 rospy.init_node('segnet_lane_detection')
 
@@ -47,7 +48,7 @@ def callback(image_msg):
     rospy.loginfo('Received image for prediction')
 
     # Prediction
-    predict.predict_on_image(model,inp=image,lane_fit = True, evaluate = False, visualize = "all", output_file = None, display=True)
+    predict.predict_on_image(model, inp=image, lane_fit = True, evaluate = False, visualize = "all", output_file = None, display=True)
 
     #Make ros pred message
     #fixme return lane prediction from predict
@@ -55,7 +56,6 @@ def callback(image_msg):
     #publish prediction
     rospy.loginfo(lane_msg)
     pub.publish(lane_msg)
-
     rate.sleep()
 
 def predict_lane():
