@@ -43,7 +43,7 @@
   <joint name="basler_camera_joint" type="fixed">
     <parent link="$(arg tf_prefix)/base_link"/>
     <child link="$(arg tf_prefix)/basler_camera" />
-    <origin xyz="0.735 0.0 1.205" rpy="0 0.366519 0" />
+    <origin xyz="0.75 0.0 1.055" rpy="0 0.279253 0" />
   </joint>
 
   <!--FLIR Camera 1-->
@@ -53,7 +53,7 @@
   <joint name="flir_camera_1_joint" type="fixed">
     <parent link="$(arg tf_prefix)/base_link"/>
     <child link="$(arg tf_prefix)/flir_camera_1" />
-    <origin xyz="0.735 -0.1 1.205" rpy="0 0.366519 0" />
+    <origin xyz="0.75 0.22 1.055" rpy="0 0.279253 0" />
   </joint>
 
   <!--FLIR Camera 2-->
@@ -63,7 +63,7 @@
   <joint name="flir_camera_2_joint" type="fixed">
     <parent link="$(arg tf_prefix)/base_link"/>
     <child link="$(arg tf_prefix)/flir_camera_2" />
-    <origin xyz="0.735 0.1 1.205" rpy="0 0.366519 0" />
+    <origin xyz="0.75 -0.21 1.055" rpy="0 0.279253 0" />
   </joint>
 
   <!--Camera-->
