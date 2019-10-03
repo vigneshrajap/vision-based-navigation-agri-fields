@@ -1,0 +1,5 @@
+__ignore__
+Background
+Crops
+Lanes
+Road
