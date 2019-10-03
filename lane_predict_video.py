@@ -14,6 +14,8 @@ sys.path.insert(1, '../image-segmentation-keras')
 from keras_segmentation import predict
 import sliding_window_approach
 
+
+
 def main():
 
     parser = argparse.ArgumentParser(description="Run prediction on a video.")
@@ -82,10 +84,19 @@ def main():
            out_img, curves, lanes, ploty = sliding_window_approach.sliding_window(warped_img, modifiedCenters)
 
            # Visualize the fitted polygonals (One on each lane and on average curve)
-           out_img = sliding_window_approach.visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters)
-
+           out_img, midLane_i = sliding_window_approach.visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters)
            # Inverse Perspective warp
            invwarp, Minv = sliding_window_approach.inv_perspective_warp(out_img, (roiwidth, roiheight), dst, src)
+
+           midPoints = []
+           for i in midLane_i:
+             point_wp = np.array([i[0],i[1],1])
+             midLane_io = np.matmul(Minv, point_wp) # inverse-M*warp_pt
+             midLane_n = np.array([midLane_io[0]/midLane_io[2],midLane_io[1]/midLane_io[2]]) # divide by Z point
+             midLane_n = midLane_n.astype(int)
+             midPoints.append(midLane_n)
+
+           print midPoints.shape
 
            # Combine the result with the original image
            rgb_img[int(rheight*0.3):rheight,0:rwidth] = cv2.addWeighted(rgb_img[int(rheight*0.3):int(rheight),0:rwidth],
@@ -102,11 +113,11 @@ def main():
            #vis_img = np.vstack((np.hstack((rgb_img, seg_img)),np.hstack((overlay_img,np.zeros(overlay_img.shape)))))
 
            #Write video
-           if args.output_video_file:
-               if wr is None: #if writer is not set up yet
-                   (out_h,out_w) = result.shape[:2]
-                   wr = cv2.VideoWriter(args.output_video_file,fourcc,fps,(out_w,out_h),isColor)
-               wr.write(result)
+           # if args.output_video_file:
+           #     if wr is None: #if writer is not set up yet
+           #         (out_h,out_w) = result.shape[:2]
+           #         wr = cv2.VideoWriter(args.output_video_file,fourcc,fps,(out_w,out_h),isColor)
+           #     wr.write(result)
 
            #Display on screen
            if args.display:

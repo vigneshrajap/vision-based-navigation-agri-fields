@@ -210,4 +210,4 @@ def visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters):
    cv2.polylines(out_img, [rightLane_i], 0, (0,255,255), thickness=5, lineType=8, shift=0)
    cv2.polylines(out_img, [midLane_i], 0, (255,0,255), thickness=5, lineType=8, shift=0)
 
-   return out_img
+   return out_img, midLane_i
