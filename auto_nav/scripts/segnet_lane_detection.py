@@ -15,6 +15,8 @@ from cv_bridge import CvBridge
 import sys
 sys.path.insert(1, '../../../image-segmentation-keras/')
 from keras_segmentation import predict
+sys.path.insert(1, '../../')
+import lane_predict
 
 from std_msgs.msg import String
 
@@ -27,10 +29,13 @@ from std_msgs.msg import String
 rospy.init_node('segnet_lane_detection')
 
 #Set up publisher for prediction messages
-pub = rospy.Publisher('lane_pred', String, queue_size = 1) #fixme other type
+#pub = rospy.Publisher('lane_pred', String, queue_size = 1) #fixme other type
 rate = rospy.Rate(10) # 10hz
 
-model = predict.model_from_checkpoint_files(model_config, model_weights)
+model_prefix = "/home/vignesh/Third_Paper/segnet_weights/resnet50_segnet"
+epoch = 21
+#model = predict.model_from_checkpoint_files( model_prefix, epoch)#model_config, model_weights)
+model = predict.model_from_checkpoint_path(model_prefix, epoch)
 
 def recv_image_msg(image_msg,format = "passthrough"):
     cv_br = CvBridge()
@@ -48,19 +53,19 @@ def callback(image_msg):
     rospy.loginfo('Received image for prediction')
 
     # Prediction
-    predict.predict_on_image(model, inp=image, lane_fit = True, evaluate = False, visualize = "all", output_file = None, display=True)
+    lane_predict.predict_on_image(model, inp=image, lane_fit = True, evaluate = False, visualize = "segmentation", output_file = None, display=True)
 
-    #Make ros pred message
-    #fixme return lane prediction from predict
-    lane_msg = "hello world %s" #tmp
-    #publish prediction
-    rospy.loginfo(lane_msg)
-    pub.publish(lane_msg)
-    rate.sleep()
-
+#     #Make ros pred message
+#     #fixme return lane prediction from predict
+#     #lane_msg = "hello world %s" #tmp
+#     #publish prediction
+#     rospy.loginfo(lane_msg)
+#     pub.publish(lane_msg)
+#     rate.sleep()
+#
 def predict_lane():
     #Listen to image messages and publish predictions with callback
-    rospy.Subscriber(image_topic_name, Image, callback, queue_size = 1) #rename topic in launch?
+    rospy.Subscriber("/camera/color/image_raw", Image, callback, queue_size = 1) #rename topic in launch? #image_topic_name
     rospy.spin()
     cv2.destroyAllWindows()
 

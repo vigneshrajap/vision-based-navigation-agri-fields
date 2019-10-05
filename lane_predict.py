@@ -190,13 +190,13 @@ def predict_on_video(model, input_video_file = None, visualize = False, output_v
            break
 
     # cleanup
-    cv2.destroyAllWindows()s<
+    cv2.destroyAllWindows()
     cap.release()
     if output_video_file: wr.release()
     return vis_img
 
 def main():
-    image_fetch = 1 ### (0 for IMAGE, 1 for VIDEO, 2 from live IMAGE TOPIC)
+    image_fetch = 0 ### (0 for IMAGE, 1 for VIDEO, 2 from live IMAGE TOPIC)
 
     parser = argparse.ArgumentParser(description="Example: Run prediction on an image folder. Example usage: python lane_predict.py --model_prefix=models/resnet_3class --epoch=25 --input_folder=Frogn_Dataset/images_prepped_test --output_folder=.")
     parser.add_argument("--model_prefix", default = '', help = "Prefix of model filename")
