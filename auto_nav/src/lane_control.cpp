@@ -3,6 +3,7 @@
 Lane_control::Lane_control(){
 
     posearray_local_sub = nh_.subscribe("centerline_local", 100, &Lane_control::posesCallback, this);
+    CameraInfo_sub = nh_.subscribe("/camera/color/camera_info", 100, &Lane_control::imagecaminfoCallback, this);
 
     cmd_velocities = nh_.advertise<geometry_msgs::Twist>("nav_vel", 100);  // control
     posearray_world = nh_.advertise<geometry_msgs::PoseArray>("centerline_global", 100);  // control
@@ -13,8 +14,8 @@ void Lane_control::initialize(){
   if(!nh_.getParam("/lane_control/world_frame", world_frame_)) ROS_ERROR("Could not read parameters.");
   if(!nh_.getParam("/lane_control/robot_frame", robot_frame_)) ROS_ERROR("Could not read parameters.");
   if(!nh_.getParam("/lane_control/camera_frame", camera_frame_)) ROS_ERROR("Could not read parameters.");
-  cam_listener.waitForTransform(world_frame_, camera_frame_, ros::Time(), ros::Duration(1.0)); // create the listener
   robot_pose_listener.waitForTransform(world_frame_, robot_frame_, ros::Time(), ros::Duration(1.0)); // create the listener
+  cam_listener.waitForTransform(world_frame_, camera_frame_, ros::Time(), ros::Duration(1.0)); // create the listener
 }
 
 // PoseArray data from camera
@@ -22,6 +23,14 @@ void Lane_control::posesCallback (const geometry_msgs::PoseArray::ConstPtr& pose
     poses_cam.header = poses_msg->header;
     if(poses_msg->poses.size() > 0)
        poses_cam.poses = poses_msg->poses;
+}
+
+void Lane_control::imagecaminfoCallback(const sensor_msgs::CameraInfoConstPtr& cam_msg){ // RGB Image
+  K << cam_msg->K[0],cam_msg->K[1],cam_msg->K[2],
+       cam_msg->K[3],cam_msg->K[4],cam_msg->K[5],
+       cam_msg->K[6],cam_msg->K[7],cam_msg->K[8];
+  image_width = cam_msg->width;
+  image_height = cam_msg->height;
 }
 
 // Normalize the bearing
