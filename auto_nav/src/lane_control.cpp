@@ -6,11 +6,15 @@ Lane_control::Lane_control(){
 
     cmd_velocities = nh_.advertise<geometry_msgs::Twist>("nav_vel", 100);  // control
     posearray_world = nh_.advertise<geometry_msgs::PoseArray>("centerline_global", 100);  // control
+    a_err = nh_.advertise<std_msgs::Float64>("ang_err", 100);
 }
 
 void Lane_control::initialize(){
-  cam_listener.waitForTransform("map", "camera_color_optical_frame", ros::Time(), ros::Duration(1.0)); // create the listener
-  robot_pose_listener.waitForTransform("map", "base_link", ros::Time(), ros::Duration(1.0)); // create the listener
+  if(!nh_.getParam("/lane_control/world_frame", world_frame_)) ROS_ERROR("Could not read parameters.");
+  if(!nh_.getParam("/lane_control/robot_frame", robot_frame_)) ROS_ERROR("Could not read parameters.");
+  if(!nh_.getParam("/lane_control/camera_frame", camera_frame_)) ROS_ERROR("Could not read parameters.");
+  cam_listener.waitForTransform(world_frame_, camera_frame_, ros::Time(), ros::Duration(1.0)); // create the listener
+  robot_pose_listener.waitForTransform(world_frame_, robot_frame_, ros::Time(), ros::Duration(1.0)); // create the listener
 }
 
 // PoseArray data from camera
@@ -48,7 +52,7 @@ return x_p;
 double Lane_control::controller(geometry_msgs::PoseArray goal_pts){
   mini_goal_pts = goal_pts.poses[10].position;
 
-  robot_pose_listener.lookupTransform("map", "base_link", ros::Time(0), robot_t);  // Converts to World (Map) Frame
+  robot_pose_listener.lookupTransform(world_frame_, robot_frame_, ros::Time(0), robot_t);  // Converts to World (Map) Frame
   tf::Quaternion quat(robot_t.getRotation().x(),robot_t.getRotation().y(),robot_t.getRotation().z(),robot_t.getRotation().w());
   quat = quat.normalize();
   yaw = tf::getYaw(quat);
@@ -60,6 +64,7 @@ double Lane_control::controller(geometry_msgs::PoseArray goal_pts){
   // range, bearing
   position_error = sqrt(pow(q_x, 2) + pow(q_y, 2));
   angular_error.data = normalizeangle(atan2(q_y, q_x) - yaw);
+  a_err.publish(angular_error); // publish the angular error
 
   angular_velocity = normalizeangle(atan2(2*1.05*sin(angular_error.data),position_error)); // Pure Pursuit Controller
   return angular_velocity;
@@ -75,7 +80,7 @@ void Lane_control::move()
 
   if(row_follow_mode == true){ // row follow mode
 
-    cam_listener.lookupTransform("map", "camera_color_optical_frame", ros::Time(0), cam_t);  // Converts to World (Map) Frame
+    cam_listener.lookupTransform(world_frame_, camera_frame_, ros::Time(0), cam_t);  // Converts to World (Map) Frame
     Eigen::Vector3d t_c(cam_t.getOrigin().x(),cam_t.getOrigin().y(),cam_t.getOrigin().z());
     Eigen::Quaternionf R_c(cam_t.getRotation().w(),cam_t.getRotation().x(),cam_t.getRotation().y(),cam_t.getRotation().z());
 

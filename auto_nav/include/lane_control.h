@@ -22,6 +22,7 @@ public:
   Eigen::MatrixXd K = Eigen::MatrixXd::Zero(3,3); // K matrix for camera intrinsic
   geometry_msgs::PoseArray poses_cam, poses_world;
   bool row_follow_mode = false;
+  std::string filename, world_frame_, robot_frame_, camera_frame_;
 
   ros::NodeHandle nh_;
 
@@ -29,7 +30,7 @@ public:
   ros::Subscriber posearray_local_sub;
 
   // Publishers
-  ros::Publisher cmd_velocities, posearray_world;
+  ros::Publisher cmd_velocities, posearray_world, a_err;
 
   Lane_control();
   void posesCallback (const geometry_msgs::PoseArray::ConstPtr& poses_msg);
