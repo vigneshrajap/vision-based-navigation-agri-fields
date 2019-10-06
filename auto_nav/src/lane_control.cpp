@@ -45,25 +45,24 @@ Eigen::Vector3d x_p = d*x_w+t_c;
 return x_p;
 }
 
-void Lane_control::controller(geometry_msgs::PoseArray goal_pts){
+double Lane_control::controller(geometry_msgs::PoseArray goal_pts){
   mini_goal_pts = goal_pts.poses[10].position;
 
   robot_pose_listener.lookupTransform("map", "base_link", ros::Time(0), robot_t);  // Converts to World (Map) Frame
+  tf::Quaternion quat(robot_t.getRotation().x(),robot_t.getRotation().y(),robot_t.getRotation().z(),robot_t.getRotation().w());
+  quat = quat.normalize();
+  yaw = tf::getYaw(quat);
 
   // calculation of error
-  q_x = mini_goal_pts.x - thorvald_pose.position.x;
-  q_y = mini_goal_pts.y - thorvald_pose.position.y;
+  q_x = mini_goal_pts.x - robot_t.getOrigin().x(); //thorvald_pose.position.x;
+  q_y = mini_goal_pts.y - robot_t.getOrigin().y(); //thorvald_pose.position.y;
 
   // range, bearing
   position_error = sqrt(pow(q_x, 2) + pow(q_y, 2));
   angular_error.data = normalizeangle(atan2(q_y, q_x) - yaw);
 
   angular_velocity = normalizeangle(atan2(2*1.05*sin(angular_error.data),position_error)); // Pure Pursuit Controller
-
-  est_twist_msgs.linear.x = 0.3;  // SET TO ZERO UNTIL THE ABOVE ONES WORK
-  est_twist_msgs.angular.z = angular_velocity;
-
-  cmd_velocities.publish(est_twist_msgs);
+  return angular_velocity;
 }
 
 void Lane_control::move()
@@ -94,9 +93,18 @@ void Lane_control::move()
         poses_world.poses.push_back(pf);
       }
       posearray_world.publish(poses_world);
+
+      angular_velocity = controller(poses_world); // low-level controller
+      est_twist_msgs.linear.x = 0.3; // Sets at constant speed
+      est_twist_msgs.angular.z = angular_velocity;
+      cmd_velocities.publish(est_twist_msgs);
     }
 
-    controller(poses_world); // low-level controller
+    else{
+      est_twist_msgs.linear.x = 0; // Stop when no centerline received
+      est_twist_msgs.angular.z = 0;
+      cmd_velocities.publish(est_twist_msgs);
+    }
 
    } // row follow mode
 

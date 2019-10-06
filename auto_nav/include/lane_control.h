@@ -38,6 +38,6 @@ public:
   void initialize();
   double normalizeangle(double bearing);
   Eigen::Vector3d camera2world(Eigen::Vector3d& x_c, Eigen::Vector3d& t_c, Eigen::Quaternionf& R_c);
-  void controller(geometry_msgs::PoseArray goal_pts);
+  double controller(geometry_msgs::PoseArray goal_pts);
 
 };

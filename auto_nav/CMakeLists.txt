@@ -183,14 +183,14 @@ target_link_libraries(lane_control ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PYTHON_L
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 install(PROGRAMS
-  scripts/lane_detector.py
-  scripts/lane_detector_image.py
-  scripts/lane_detector_video.py
-  scripts/lane_detector_skp.py
-  scripts/test.py
   scripts/segnet_lane_detection.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+#scripts/lane_detector.py
+#scripts/lane_detector_image.py
+#scripts/lane_detector_video.py
+#scripts/lane_detector_skp.py
+#scripts/test.py
 
 ## Mark executables and/or libraries for installation
 # install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
