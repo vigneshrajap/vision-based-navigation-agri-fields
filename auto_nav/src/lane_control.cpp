@@ -59,7 +59,7 @@ return x_p;
 }
 
 double Lane_control::controller(geometry_msgs::PoseArray goal_pts){
-  mini_goal_pts = goal_pts.poses[10].position;
+  mini_goal_pts = goal_pts.poses[40].position;
 
   robot_pose_listener.lookupTransform(world_frame_, robot_frame_, ros::Time(0), robot_t);  // Converts to World (Map) Frame
   tf::Quaternion quat(robot_t.getRotation().x(),robot_t.getRotation().y(),robot_t.getRotation().z(),robot_t.getRotation().w());
@@ -106,10 +106,12 @@ void Lane_control::move()
         pf.position.y = x_p[1];
         poses_world.poses.push_back(pf);
       }
+      poses_world.header.stamp = ros::Time::now();
+      poses_world.header.frame_id = world_frame_;
       posearray_world.publish(poses_world);
 
       angular_velocity = controller(poses_world); // low-level controller
-      est_twist_msgs.linear.x = 0.3; // Sets at constant speed
+      est_twist_msgs.linear.x = 0.1; // Sets at constant speed
       est_twist_msgs.angular.z = angular_velocity;
       cmd_velocities.publish(est_twist_msgs);
     }

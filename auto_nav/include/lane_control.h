@@ -23,7 +23,7 @@ public:
   std_msgs::Float64 angular_error;
   Eigen::MatrixXd K = Eigen::MatrixXd::Zero(3,3); // K matrix for camera intrinsic
   geometry_msgs::PoseArray poses_cam, poses_world;
-  bool row_follow_mode = false;
+  bool row_follow_mode = true;
   std::string filename, world_frame_, robot_frame_, camera_frame_;
 
   ros::NodeHandle nh_;

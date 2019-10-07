@@ -121,31 +121,34 @@ class lane_finder():
 
     def visualize_functions(self):
 
-        # Write video
-        if self.output_video:
-            if self.wr is None: #if writer is not set up yet
-               (self.out_h,self.out_w) = seg_result.shape[:2]
-               self.wr = cv2.VideoWriter(self.output_video_file_s,self.fourcc,self.fps,(self.out_w,self.out_h),self.isColor)
-            if self.wr_1 is None: #if writer is not set up yet
-               (self.out_h_1,self.out_w_1) = lane_fit_result.shape[:2]
-               self.wr_1 = cv2.VideoWriter(self.output_video_file_l,self.fourcc_1,self.fps_1,(self.out_w_1,self.out_h_1),self.isColor_1)
-
         # visualize: None, "all" or one of, "segmentation", "lane_fit"
         if self.visualize == "segmentation":
             seg_result = self.visualize_segmentation()
             if self.output_video:
+                if self.wr is None: #if writer is not set up yet
+                   (self.out_h,self.out_w) = seg_result.shape[:2]
+                   self.wr = cv2.VideoWriter(self.output_video_file_s,self.fourcc,self.fps,(self.out_w,self.out_h),self.isColor)
                 self.wr.write(seg_result)
 
         elif self.visualize == "lane_fit":
             lane_fit_result = self.visualize_lane_fit()
             #Write video
             if self.output_video:
+                if self.wr_1 is None: #if writer is not set up yet
+                   (self.out_h_1,self.out_w_1) = lane_fit_result.shape[:2]
+                   self.wr_1 = cv2.VideoWriter(self.output_video_file_l,self.fourcc_1,self.fps_1,(self.out_w_1,self.out_h_1),self.isColor_1)
                 self.wr_1.write(lane_fit_result)
 
         elif self.visualize == "all":
-            vis_img_1 = self.visualize_segmentation()
-            vis_img_2 = self.visualize_lane_fit()
+            seg_result = self.visualize_segmentation()
+            lane_fit_result = self.visualize_lane_fit()
             if self.output_video:
+                if self.wr is None: #if writer is not set up yet
+                   (self.out_h,self.out_w) = seg_result.shape[:2]
+                   self.wr = cv2.VideoWriter(self.output_video_file_s,self.fourcc,self.fps,(self.out_w,self.out_h),self.isColor)
+                if self.wr_1 is None: #if writer is not set up yet
+                   (self.out_h_1,self.out_w_1) = lane_fit_result.shape[:2]
+                   self.wr_1 = cv2.VideoWriter(self.output_video_file_l,self.fourcc_1,self.fps_1,(self.out_w_1,self.out_h_1),self.isColor_1)
                 self.wr.write(seg_result)
                 self.wr_1.write(lane_fit_result)
 
