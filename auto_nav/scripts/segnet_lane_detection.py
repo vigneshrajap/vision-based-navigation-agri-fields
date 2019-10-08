@@ -15,9 +15,10 @@ from cv_bridge import CvBridge
 import sys
 sys.path.insert(1, '../../../image-segmentation-keras/')
 from keras_segmentation import predict
+sys.path.insert(1, '../../')
+from lane_predict import predict_on_image
 
 from std_msgs.msg import String
-
 
 #--- ROS setup
 image_topic_name = rosparam.get_param('auto_nav/segnet_lane_detection/camera_topic')
@@ -40,6 +41,7 @@ def recv_image_msg(image_msg,format = "passthrough"):
 
 #%%
 def callback(image_msg):
+    
     #Read image
     image = recv_image_msg(image_msg)
     if(np.ndim(image) !=3 or np.shape(image)[2] !=3): 
@@ -49,16 +51,17 @@ def callback(image_msg):
     rospy.loginfo('Received image for prediction')
 
     # Prediction
-    predict.predict_on_image(model,inp=image,lane_fit = True, evaluate = False, visualize = "all", output_file = None, display=True)
+    lane_predict.predict_on_image(model,inp=image,lane_fit = True, evaluate = False, visualize = "all", output_file = None, display=True) #fixme vignesh output variables
     
-    #Make ros pred message
-    #fixme return lane prediction from predict
+    #fixme add ros message
     lane_msg = "hello world %s" #tmp
     #publish prediction
     rospy.loginfo(lane_msg)
     pub.publish(lane_msg)
     
     rate.sleep()
+    
+#fixme visualization function
 
 def predict_lane():
     #Listen to image messages and publish predictions with callback

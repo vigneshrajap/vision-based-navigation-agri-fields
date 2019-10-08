@@ -18,8 +18,8 @@ from sensor_msgs.msg import Image
 from utils import recv_image_msg,disp_img,crop_img
 import VirtualCam
 
-image_topic_name = rosparam.get_param('trail_net/virtualcam/camera_topic')
-output_RPY = rosparam.get_param('trail_net/virtualcam/RPY')
+image_topic_name = rosparam.get_param('auto_nav/segnet_lane_detection/camera_topic')
+output_RPY = rosparam.get_param('autonav/virtualcam/RPY')
 #image_topic_name = "/image_folder_publisher/image" #"/pylon_camera_node/image_raw"
 #Initialize node
 rospy.init_node('virtualcam')

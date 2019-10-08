@@ -9,6 +9,7 @@ import argparse
 #from moviepy.editor import VideoFileClip
 import cv2
 import numpy as np
+from matplotlib import pyplot as plt
 
 import sys
 sys.path.insert(1, '../image-segmentation-keras')
@@ -182,11 +183,11 @@ def predict_on_video(model,input_video_file,visualize = False, output_video_file
     cv2.destroyAllWindows()
     cap.release()
     if output_video_file: wr.release()
-'''
+'''           
 
 def main():
-    parser = argparse.ArgumentParser(description="Example: Run prediction on an image folder. Example usage: python lane_predict.py --model_prefix=models/resnet_3class --epoch=25 --input_folder=Frogn_Dataset/images_prepped_test --output_folder=.
-")
+    
+    parser = argparse.ArgumentParser(description="Example: Run prediction on an image folder. Example usage: python lane_predict.py --model_prefix=models/resnet_3class --epoch=25 --input_folder=Frogn_Dataset/images_prepped_test --output_folder=.")
     parser.add_argument("--model_prefix", default = '', help = "Prefix of model filename")
     parser.add_argument("--epoch", default = None, help = "Checkpoint epoch number")
     parser.add_argument("--input_folder",default = '', help = "(Relative) path to input image file")
@@ -256,3 +257,4 @@ if __name__ == "__main__":
 # import matplotlib.pyplot as plt
 # plt.imshow(out)
 # plt.show()
+    
