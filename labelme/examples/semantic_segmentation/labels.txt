@@ -1,4 +1,0 @@
-__ignore__
-Background
-Crops
-Lanes
