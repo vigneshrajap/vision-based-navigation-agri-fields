@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="virtualcam_output_rpy" default="[0,0,0]"/>
+    <arg name="virtualcam_input_topic" default="/basler_camera/image_raw"/>
+   
+    <rosparam param="auto_nav/virtualcam/camera_topic" subst_value="True">$(arg virtualcam_input_topic)</rosparam>
+    <rosparam param="auto_nav/virtualcam/RPY" subst_value="True">$(arg virtualcam_output_rpy)</rosparam>
+    
+    <arg name="path" default="$(env HOME)/Data/2019-10-04-Frogn/rec5/"/>
+    <arg name="file_1" default="dataset_recording_2019-10-04-15-01-42_0" />
+    <arg name="file_2" default="dataset_recording_2019-10-04-15-01-45_1" />
+
+    <node pkg="rosbag" type="play" name="player" output="screen" args="--clock
+                $(arg path)$(arg file_1).bag $(arg path)$(arg file_2).bag"/>
+
+    <node name="virtualcam" pkg="auto_nav" type="virtualcam.py" output="screen"
+          respawn="false"/>
+
+</launch>

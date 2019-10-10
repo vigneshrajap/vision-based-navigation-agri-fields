@@ -55,7 +55,9 @@ GNSS_waypoint_navigation - Package for initiating GNSS RTK setup along with IMU 
 
 labelme - ROS package for manually annotating the RGB images using different classes, created by https://github.com/wkentaro/labelme.
 
-
-librealsense.2.25 - Intel realsense SDK for running the realsense D435 camera, and realsense2_camera ROS package will be additionally required in the ROS side of things.
+For running the realsense camera D435, we stick to specific librealsense library, realsense-ros package and it's dependency ddynamic_reconfigure (soon it will be removed) are used as stable working versions.
+- librealsense.2.25 - Intel realsense SDK for running the realsense D435 camera, and realsense2_camera ROS package will be additionally required in the ROS side of things.
+- realsense_ros - ROS package containing camera launch file and description package for static tf and xacro file.
+- ddynamic_reconfigure is a dependency by realsense_ros pacakge which will be removed by official Intel ROS maintainer soon. 
 
 lane_detection_segnet.ipynb - file for training the annotated images using keras segmentation made by https://github.com/divamgupta/image-segmentation-keras. Can able to run the file in google colab if the training dataset is available.

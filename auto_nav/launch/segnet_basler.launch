@@ -5,13 +5,13 @@
     <arg name="model_weights" default="~/catkin_ws/src/vision-based-navigation-agri-fields/models/resnet_3class.25"/>
     <arg name="virtualcam_output_rpy" default="[0,0,0]"/>
     <arg name="virtualcam_input_topic" default="/pylon_camera_node/image_raw"/>
-   
+
     <rosparam param="auto_nav/segnet_lane_detection/camera_topic" subst_value="True">$(arg input_topic)</rosparam>
     <rosparam param="auto_nav/segnet_lane_detection/model_config" subst_value="True">$(arg model_config)</rosparam>
     <rosparam param="auto_nav/segnet_lane_detection/model_weights" subst_value="True">$(arg model_weights)</rosparam>
     <rosparam param="auto_nav/virtualcam/camera_topic" subst_value="True">$(arg virtualcam_input_topic)</rosparam>
     <rosparam param="autonav/virtualcam/RPY" subst_value="True">$(arg virtualcam_output_rpy)</rosparam>
-   
+
     <node name="segnet_lane_detection.py" pkg="auto_nav" type="segnet_lane_detection.py" output="screen"
           respawn="false">
     </node>
@@ -20,4 +20,3 @@
     </node>
 
 </launch>
-

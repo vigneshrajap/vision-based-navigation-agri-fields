@@ -15,10 +15,10 @@ init_cmd: |
   # search for VPN tun device:
   #default_iface=`route -n | grep "^10.8.0.0" | tr -s " " |  cut -f8 -d" " || echo lo`
   #default_ip=`ip addr show dev "$default_iface" | grep "inet " | sed 's@ *inet \([0-9\.]*\).*@\1@' || echo 127.0.0.1`
-  
+
   # load robot-specific config file
   if [ -r "$HOME/.rasberryrc" ]; then echo "*** loading $HOME/.rasberryrc" ; source "$HOME/.rasberryrc"; fi
-  
+
   export_default BASE_CONFIG_DIR `readlink -f . || echo .`
   export_default ROBOT_NAME `hostname | tr "-" "_" | tr "." "_"`
   export_default SCENARIO_NAME "default"
@@ -31,7 +31,7 @@ init_cmd: |
   source "$CATKIN_WORKSPACE/devel/setup.bash"
   # set ROS_MASTER to the correct IP
   #export_default ROS_MASTER $default_ip
-  export_default ROS_MASTER "10.248.0.76"
+  export_default ROS_MASTER "192.168.0.52"
   # set ROS_IP not to the IP that we will connect to remotely
   export_default ROS_IP `ip route get $ROS_MASTER | grep "src" | sed 's/.*src \([0-9\.]*\).*/\1/' || echo $ROS_MASTER`
   # set ROS_HOSTNAME to the ROS_IP to avoid configuring /etc/hosts for anyone who connects
@@ -43,7 +43,7 @@ init_cmd: |
   # the topomap to be used
   export_default TMAP frogn_fields
   # the gridmap to be used (key in mongodb)
-  export_default MAP "$(rospack find auto_nav)/maps/white_image.yaml"
+  export_default MAP "$(rospack find gnss_waypoint_navigation)/maps/white_image.yaml"
   # figure out the robot number from the hostname, assuming it is like `thorvald-XXX`
   export_default ROBOT_NO `hostname | cut -f2 -d"-"`
   # set the robot type
@@ -73,11 +73,11 @@ windows:
 - name: robot
   panes:
   - sleep 1; roslaunch auto_nav robot_setup.launch model_extras:=$MODEL_EXTRAS simple_sim:=$USE_SIM with_teleoperation:=true use_gui:=$USE_GUI enable_odom_tf:=true
-  - sleep 1; if ! $USE_SIM; then roslaunch auto_nav xsens_driver.launch; fi
+  - sleep 1; if ! $USE_SIM; then roslaunch gnss_waypoint_navigation xsens_driver.launch; fi
   - sleep 1; rosrun map_server map_server $MAP
 - name: localisation
   panes:
-  - sleep 2; roslaunch auto_nav RTK_setup.launch publish_tf:="$EKF_PUBLISH_TF"
+  - sleep 2; roslaunch gnss_waypoint_navigation RTK_setup.launch publish_tf:="$EKF_PUBLISH_TF"
   - sleep 2; rosrun robot_pose_publisher robot_pose_publisher
 #- name: agri_costmaps
   #panes:
@@ -85,4 +85,3 @@ windows:
 #- name: lane_detection
   #panes:
   #- sleep 3; roslaunch auto_nav realsense_camera.launch
-
