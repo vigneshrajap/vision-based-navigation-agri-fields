@@ -112,6 +112,13 @@ class lane_finder():
                       upscaled_img_rgb)) #np.ones(overlay_img.shape,dtype=np.uint8)*128))
         ))
 
+        cv2.imshow('preview', vis_img)
+        #cv2.waitKey(0)
+
+        # Press Q on keyboard to  exit
+        if cv2.waitKey(25) & 0xFF == ord('q'):
+         print('Q pressed, breaking')
+
         return vis_img
 
     def visualize_lane_fit(self):
@@ -128,6 +135,10 @@ class lane_finder():
                 if self.wr is None: #if writer is not set up yet
                    (self.out_h,self.out_w) = seg_result.shape[:2]
                    self.wr = cv2.VideoWriter(self.output_video_file_s,self.fourcc,self.fps,(self.out_w,self.out_h),self.isColor)
+                   #cv2.startWindowThread()
+                   #cv2.namedWindow('preview', cv2.WINDOW_NORMAL)
+                   #cv2.resizeWindow('preview', 800,800)
+                    #break
                 self.wr.write(seg_result)
 
         elif self.visualize == "lane_fit":
@@ -185,16 +196,6 @@ if __name__ == '__main__':
         while not rospy.is_shutdown():
            if lf.img_receive==True:
                lf.pipeline()
-
-               # cv2.startWindowThread()
-               # #cv2.namedWindow('preview', cv2.WINDOW_NORMAL)
-               # #cv2.resizeWindow('preview', 800,800)
-               # cv2.imshow('preview', lf.output_image)
-               #
-               # # Press Q on keyboard to  exit
-               # if cv2.waitKey(25) & 0xFF == ord('q'):
-               #   print('Q pressed, breaking')
-                 #break
 
                lf.img_receive = False
 
