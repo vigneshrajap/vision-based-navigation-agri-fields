@@ -12,10 +12,11 @@ import cv2
 from cv_bridge import CvBridge
 #Keras and tensorflow
 import sys
-sys.path.insert(1, '../../../image-segmentation-keras/')
-from keras_segmentation import predict
+#sys.path.insert(1, '../../../image-segmentation-keras/')
 from os.path import expanduser
-sys.path.insert(2, expanduser("~")+'/planner_ws/src/vision-based-navigation-agri-fields/')
+sys.path.insert(1, expanduser("~")+'/catkin_ws/src/image-segmentation-keras/')
+from keras_segmentation import predict
+sys.path.insert(2, expanduser("~")+'/catkin_ws/src/vision-based-navigation-agri-fields/')
 import lane_predict
 from geometry_msgs.msg import Pose, PoseArray
 
@@ -53,8 +54,8 @@ class lane_finder():
         self.img_receive = False
         self.epoch = None
         #model = predict.model_from_checkpoint_files( model_prefix, epoch)#model_config, model_weights)
-        self.model, self.loaded_weights = predict.model_from_checkpoint_path(self.model_prefix, self.epoch)
-
+        #self.model, self.loaded_weights = predict.model_from_checkpoint_path(self.model_prefix, self.epoch)
+        self.model = predict.model_from_checkpoint_path(self.model_prefix, self.epoch)
         #Listen to image messages and publish predictions with callback
         self.img_sub = rospy.Subscriber(self.image_topic_name, Image, self.imageCallback)
 
@@ -157,7 +158,7 @@ class lane_finder():
 
     def pipeline(self):
 
-      if self.img_receive and self.loaded_weights:
+      if self.img_receive: #and self.loaded_weights:
         #Run prediction (and optional, visualization)
         self.seg_arr,self.image,self.output_image,self.fit = lane_predict.predict_on_image(self.model,self.image,self.lane_fit,self.evaluate,self.visualize,self.output_file,self.display)
 

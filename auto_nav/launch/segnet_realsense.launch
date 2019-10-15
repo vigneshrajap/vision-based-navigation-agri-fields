@@ -7,9 +7,9 @@
   <arg name="camera_frame" default="camera_color_optical_frame"/>
 
   <!-- Loading the pre-trained base model weights: resnet50_segnet weights-->
-  <arg name="model_config" default="$(env HOME)/Third_Paper/segnet_weights/resnet50_segnet_config.json"/>
-  <arg name="model_weights" default="$(env HOME)/Third_Paper/segnet_weights/resnet50_segnet.21"/>
-  <arg name="model_prefix" default="$(env HOME)/Third_Paper/segnet_weights/resnet50_segnet"/>
+  <arg name="model_config" default="$(env HOME)/catkin_ws/src/vision-based-navigation-agri-fields/models/resnet50_segnet_config.json"/>
+  <arg name="model_weights" default="$(env HOME)/catkin_ws/src/vision-based-navigation-agri-fields/models/resnet50_segnet.21"/>
+  <arg name="model_prefix" default="$(env HOME)/catkin_ws/src/vision-based-navigation-agri-fields/models/resnet50_segnet"/>
 
  <!-- visualize: None, "all" or one of, "segmentation", "lane_fit"-->
   <arg name="visualize" default="all"/>
@@ -43,10 +43,10 @@
   <node name="segnet_lane_detection" pkg="auto_nav" type="segnet_lane_detection.py" output="screen" respawn="false">
   </node>
 
-  <node name="lane_control" pkg="auto_nav" type="lane_control" output="screen" respawn="false" >
+  <!--node name="lane_control" pkg="auto_nav" type="lane_control" output="screen" respawn="false" >
     <param name="world_frame" value="$(arg world_frame)"/>
     <param name="robot_frame" value="$(arg robot_frame)"/>
     <param name="camera_frame" value="$(arg camera_frame)"/>
-  </node>
+  </node-->
 
 </launch>
