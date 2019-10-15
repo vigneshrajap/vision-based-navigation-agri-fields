@@ -19,13 +19,13 @@
   <!-- <arg name="virtualcam_output_rpy" default="[0,0,0]"/>
   <arg name="virtualcam_input_topic" default="/pylon_camera_node/image_raw"/> -->
 
-  <rosparam param="auto_nav/segnet_lane_detection/camera_topic" subst_value="True">$(arg input_topic)</rosparam>
-  <rosparam param="auto_nav/segnet_lane_detection/model_config" subst_value="True">$(arg model_config)</rosparam>
-  <rosparam param="auto_nav/segnet_lane_detection/model_weights" subst_value="True">$(arg model_weights)</rosparam>
-  <rosparam param="auto_nav/segnet_lane_detection/model_prefix" subst_value="True">$(arg model_prefix)</rosparam>
-  <rosparam param="auto_nav/segnet_lane_detection/visualize" subst_value="True">$(arg visualize)</rosparam>
-  <rosparam param="auto_nav/segnet_lane_detection/output_video_file_s" subst_value="True">$(arg output_video_file_s)</rosparam>
-  <rosparam param="auto_nav/segnet_lane_detection/output_video_file_l" subst_value="True">$(arg output_video_file_l)</rosparam>
+  <rosparam param="camera_topic" subst_value="True">$(arg input_topic)</rosparam>
+  <rosparam param="model_config" subst_value="True">$(arg model_config)</rosparam>
+  <rosparam param="model_weights" subst_value="True">$(arg model_weights)</rosparam>
+  <rosparam param="model_prefix" subst_value="True">$(arg model_prefix)</rosparam>
+  <rosparam param="visualize" subst_value="True">$(arg visualize)</rosparam>
+  <rosparam param="output_video_file_s" subst_value="True">$(arg output_video_file_s)</rosparam>
+  <rosparam param="output_video_file_l" subst_value="True">$(arg output_video_file_l)</rosparam>
 
   <!-- <rosparam param="auto_nav/virtualcam/camera_topic" subst_value="True">$(arg virtualcam_input_topic)</rosparam>
   <rosparam param="autonav/virtualcam/RPY" subst_value="True">$(arg virtualcam_output_rpy)</rosparam> -->

@@ -31,15 +31,15 @@ class lane_finder():
         self.bridge = CvBridge()
 
         # ROS setup paramters
-        self.image_topic_name = rosparam.get_param('auto_nav/segnet_lane_detection/camera_topic')
-        self.model_config = rosparam.get_param('auto_nav/segnet_lane_detection/model_config')
-        self.model_weights = rosparam.get_param('auto_nav/segnet_lane_detection/model_weights')
-        self.model_prefix = rosparam.get_param('auto_nav/segnet_lane_detection/model_prefix')
-        self.visualize = rosparam.get_param('auto_nav/segnet_lane_detection/visualize')
+        self.image_topic_name = rosparam.get_param('camera_topic')
+        self.model_config = rosparam.get_param('model_config')
+        self.model_weights = rosparam.get_param('model_weights')
+        self.model_prefix = rosparam.get_param('model_prefix')
+        self.visualize = rosparam.get_param('visualize')
 
         self.output_video = True
-        self.output_video_file_s = rosparam.get_param('auto_nav/segnet_lane_detection/output_video_file_s')
-        self.output_video_file_l = rosparam.get_param('auto_nav/segnet_lane_detection/output_video_file_l')
+        self.output_video_file_s = rosparam.get_param('output_video_file_s')
+        self.output_video_file_l = rosparam.get_param('output_video_file_l')
 
         self.lane_fit = True
         self.evaluate = False
