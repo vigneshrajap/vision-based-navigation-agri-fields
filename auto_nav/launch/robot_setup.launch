@@ -31,7 +31,7 @@
   <rosparam command="load" file="$(find auto_nav)/config/waypoints_topo.yaml" />
 
   <!-- model bringup -->
-  <include file="$(find auto_nav)/launch/gazebo_world.launch">
+  <include file="$(find auto_nav)/launch/world.launch">
 
     <arg name="simple_sim" value="$(arg simple_sim)" />
     <arg name="x" value="$(arg x)" if="$(arg simple_sim)" />
