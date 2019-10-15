@@ -6,6 +6,8 @@ import glob
 import pyexcel as pe
 import tf
 import sys
+import math
+from tf.transformations import euler_from_quaternion
 
 book = pe.get_book(file_name="../config/coordinates_utm.ods")
 gt_lat_utm = []
@@ -25,6 +27,7 @@ if __name__ == '__main__':
         #Initialize node
         rospy.init_node('lateral_heading_offset')
         listener = tf.TransformListener()
+        listener1 = tf.TransformListener()
 
         while not rospy.is_shutdown():
             try:
@@ -32,21 +35,34 @@ if __name__ == '__main__':
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                continue
 
-            robot_lat_utm = trans[1]
-            robot_long_utm = trans[0]
+            try:
+               (trans1,rot1) = listener1.lookupTransform('utm', 'map', rospy.Time(0))
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+               continue
+
+            robot_lat_utm = trans[1] # Latitude
+            robot_long_utm = trans[0] # Longitude
+            (roll_r,pitch_r,yaw_r) = euler_from_quaternion(rot)
+
+            (roll_r1,pitch_r1,yaw_r1) = euler_from_quaternion(rot1)
+
+            yaw_r = yaw_r - yaw_r1
+            #print yaw_r
 
             a = np.array((robot_lat_utm, robot_long_utm))
             b = np.array((gt_lat_utm[1], gt_long_utm[1]))
             dist_0 = np.linalg.norm(a-b)
+            yaw_gt = math.atan2(gt_long_utm[1],gt_lat_utm[1])
 
             for i in range(2, len(gt_lat_utm)):
                 b = np.array((gt_lat_utm[i], gt_long_utm[i]))
                 dist = np.linalg.norm(a-b)
                 if dist<dist_0:
                     dist_0 = dist
+                    yaw_gt = math.atan2(gt_long_utm[i],gt_lat_utm[i])
                     #print robot_lat_utm, gt_lat_utm[i], robot_long_utm, gt_long_utm[i]
 
-            print dist_0
+            #print yaw_r1, yaw_gt
 
     except rospy.ROSInterruptException:
          cv2.destroyAllWindows() # Closes all the frames

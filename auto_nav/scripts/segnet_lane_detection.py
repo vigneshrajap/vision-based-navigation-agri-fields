@@ -14,11 +14,12 @@ from cv_bridge import CvBridge
 import sys
 #sys.path.insert(1, '../../../image-segmentation-keras/')
 from os.path import expanduser
-sys.path.insert(1, expanduser("~")+'/catkin_ws/src/image-segmentation-keras/')
+sys.path.insert(1, expanduser("~")+'/planner_ws/src/image-segmentation-keras/')
 from keras_segmentation import predict
-sys.path.insert(2, expanduser("~")+'/catkin_ws/src/vision-based-navigation-agri-fields/')
+sys.path.insert(2, expanduser("~")+'/planner_ws/src/vision-based-navigation-agri-fields/')
 import lane_predict
 from geometry_msgs.msg import Pose, PoseArray
+import pyexcel as pe
 
 class lane_finder():
     '''
@@ -54,13 +55,8 @@ class lane_finder():
         self.img_receive = False
         self.epoch = None
         #model = predict.model_from_checkpoint_files( model_prefix, epoch)#model_config, model_weights)
-<<<<<<< HEAD
-        #self.model, self.loaded_weights = predict.model_from_checkpoint_path(self.model_prefix, self.epoch)
         self.model = predict.model_from_checkpoint_path(self.model_prefix, self.epoch)
-=======
-        self.model = predict.model_from_checkpoint_path(self.model_prefix, self.epoch) #, self.loaded_weights
 
->>>>>>> a022847990f04318bb0f1c2281b64936344370aa
         #Listen to image messages and publish predictions with callback
         self.img_sub = rospy.Subscriber(self.image_topic_name, Image, self.imageCallback)
 
@@ -80,6 +76,20 @@ class lane_finder():
         (self.out_h_1, self.out_w_1) = (None, None)
         self.isColor_1 = True
         self.fps_1 = 6
+
+        # book = pe.get_book(file_name="../config/coordinates_utm.ods")
+        # self.gt_lat_utm = []
+        # self.gt_long_utm = []
+        # lane_number = str(4)
+        # self.listener = tf.TransformListener()
+        # self.listener.waitForTransform("utm", "base_link", rospy.Time(), rospy.Duration(4.0))
+        #
+        # #lane_number = rospy.set_param('lane_number', 1)
+        #
+        # for row in book["Sheet"+lane_number]:
+        #         self.gt_lat_utm.append(row[1]) # Latitude
+        #         self.gt_long_utm.append(row[2]) # Longitude
+        self.dist_0 = 0
 
     def recv_image_msg(self, ros_data): #"passthrough"):
         try:
@@ -118,7 +128,42 @@ class lane_finder():
                       upscaled_img_rgb)) #np.ones(overlay_img.shape,dtype=np.uint8)*128))
         ))
 
+        # try:
+        #    (trans,rot) = self.listener.lookupTransform('utm', 'base_link', rospy.Time(0))
+        # except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+        #    #continue
+        #
+        # robot_lat_utm = trans[1] # Latitude
+        # robot_long_utm = trans[0] # Longitude
+        #
+        # a = np.array((robot_lat_utm, robot_long_utm))
+        # b = np.array((self.gt_lat_utm[1], self.gt_long_utm[1]))
+        # dist_0 = np.linalg.norm(a-b)
+        # #yaw_gt = math.atan2(gt_long_utm[1],gt_lat_utm[1])
+        #
+        # for i in range(2, len(gt_lat_utm)):
+        #     b = np.array((self.gt_lat_utm[i], self.gt_long_utm[i]))
+        #     dist = np.linalg.norm(a-b)
+        #     if dist<dist_0:
+        #         dist_0 = dist
+
+        self.dist_0 = self.dist_0+1
+
+        font                   = cv2.FONT_HERSHEY_SIMPLEX
+        bottomLeftCornerOfText = (200,50)
+        fontScale              = 2
+        fontColor              = (0,0,255)
+        lineType               = 3
+
+        cv2.putText(vis_img,'Lateral Offset:'+str(self.dist_0),
+            bottomLeftCornerOfText,
+            font,
+            fontScale,
+            fontColor,
+            lineType)
+
         cv2.imshow('preview', vis_img)
+
         #cv2.waitKey(0)
 
         # Press Q on keyboard to  exit
