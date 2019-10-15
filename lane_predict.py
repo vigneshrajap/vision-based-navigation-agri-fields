@@ -9,6 +9,7 @@ import argparse
 #from moviepy.editor import VideoFileClip
 import cv2
 import numpy as np
+from matplotlib import pyplot as plt
 
 import sys
 sys.path.insert(1, '../image-segmentation-keras')
@@ -124,44 +125,45 @@ def predict_on_image(model, inp, lane_fit = False, evaluate = False, visualize =
     else:
         fit = None
         out_img = None
+        
+    return seg_arr, input_image, out_img, fit
 
-    # if evaluate:
-    #     #fixme iou,gt = evaluate(...)
-    #     evaluation = None
-    # else:
-    #     evaluation = None
-    #
-    # if visualize == "segmentation":
-    #     vis_img = visualization(input_image, seg_arr=seg_arr, lane_fit=fit, evaluation=evaluation, n_classes = model.n_classes, visualize = visualize,output_file=output_file, display=display)
-    #
-    return seg_arr, input_image, out_img, fit #evaluation,
+def predict_on_video():
+    #fixme
+    #video_gen = video_setup()
+    
+    #for frame in video_gen:
+        #predict_on_image(frame)
+        
+    #video_cleanup()
+    return None
+        
+        
 
-# def main():
-#
-#     parser = argparse.ArgumentParser(description="Example: Run prediction on an image folder. Example usage: python lane_predict.py --model_prefix=models/resnet_3class --epoch=25 --input_folder=Frogn_Dataset/images_prepped_test --output_folder=.")
-#     parser.add_argument("--model_prefix", default = '', help = "Prefix of model filename")
-#     parser.add_argument("--epoch", default = None, help = "Checkpoint epoch number")
-#     parser.add_argument("--display",default = False, help = "Whether to display video on screen (can be slow)")
-#     parser.add_argument("--input_folder",default = '', help = "(Relative) path to input image file")
-#     parser.add_argument("--output_folder", default = '', help = "(Relative) path to output image file. If empty, image is not written.")
-#
-#     args = parser.parse_args()
-#
-#     #Load model
-#     model = predict.model_from_checkpoint_path(args.model_prefix, args.epoch)
-#
-#     print('Output_folder',args.output_folder)
-#     im_files = glob.glob(os.path.join(args.input_folder,'*.png'))
-#     print(os.path.join(args.input_folder+'*.png'))
-#     for im in im_files:
-#         if args.output_folder:
-#             output_file = os.path.join(args.output_folder,os.path.basename(im)+"_lane_pred.png")
-#             print(output_file)
-#         else:
-#             output_file = None
-#         predict_on_image(model, inp = im, lane_fit = False, evaluate = False, visualize = "segmentation", output_file = output_file, display=True)
-#
-#     cv2.destroyAllWindows()
-#
-# if __name__ == "__main__":
-#     main()
+def main():
+    
+    parser = argparse.ArgumentParser(description="Example: Run prediction on an image folder. Example usage: python lane_predict.py --model_prefix=models/resnet_3class --epoch=25 --input_folder=Frogn_Dataset/images_prepped_test --output_folder=.")
+    parser.add_argument("--model_prefix", default = '', help = "Prefix of model filename")
+    parser.add_argument("--epoch", default = None, help = "Checkpoint epoch number")
+    parser.add_argument("--input_folder",default = '', help = "(Relative) path to input image file")
+    parser.add_argument("--output_folder", default = '', help = "(Relative) path to output image file. If empty, image is not written.")
+    parser.add_argument("--display",default = False, help = "Whether to display video on screen (can be slow)")
+
+    args = parser.parse_args()
+
+    #Load model
+    model = predict.model_from_checkpoint_path(args.model_prefix, args.epoch)
+    
+    print('Output_folder',args.output_folder)
+    im_files = glob.glob(os.path.join(args.input_folder,'*.png'))
+    print(os.path.join(args.input_folder+'*.png'))
+    for im in im_files:
+        if args.output_folder:
+            output_file = os.path.join(args.output_folder,os.path.basename(im))+"_lane_pred.png"
+            print(output_file)
+        else:
+            output_file = None
+        predict_on_image(model,inp = im,lane_fit = False, evaluate = False, visualize = "lane_fit", output_file = output_file, display=True)
+    
+    cv2.destroyAllWindows()
+

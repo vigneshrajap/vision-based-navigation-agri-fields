@@ -1,0 +1,7 @@
+# Virtualcam parameters for ROS, for segNet testing
+
+camera_topic: /basler_camera/image_raw
+input_model: /home/marianne/catkin_ws/src/trailnet_on_thorvald/trail_net/scripts/input_cam_model_campus_2018-09-21.xml
+output_model: /home/marianne/catkin_ws/src/trailnet_on_thorvald/trail_net/scripts/output_cam_model.xml
+RPY: [0,0,0]
+output_image_dims: [480, 640, 3]
