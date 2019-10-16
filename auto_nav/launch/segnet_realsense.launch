@@ -30,14 +30,14 @@
   <!-- <rosparam param="auto_nav/virtualcam/camera_topic" subst_value="True">$(arg virtualcam_input_topic)</rosparam>
   <rosparam param="autonav/virtualcam/RPY" subst_value="True">$(arg virtualcam_output_rpy)</rosparam> -->
 
-  <arg name="path" default="$(env HOME)/Third_Paper/Datasets/october_6_data_collection_bags/data_1/" />
-  <arg name="file_1" default="frogn_008_0" />
-  <arg name="file_2" default="frogn_008_1" />
-  <arg name="file_3" default="frogn_008_2" />
-  <arg name="file_4" default="frogn_008_3" />
-  <arg name="file_5" default="frogn_008_4" />
+  <arg name="path" default="$(env HOME)/Third_Paper/Datasets/october_6_data_collection_bags/data_2/" />
+  <arg name="file_1" default="frogn_009_0" />
+  <arg name="file_2" default="frogn_009_1" />
+  <arg name="file_3" default="frogn_009_2" />
+  <arg name="file_4" default="frogn_009_3" />
+  <arg name="file_5" default="frogn_009_4" />
 
-  <node pkg="rosbag" type="play" name="player" output="screen" args=" --clock
+  <node pkg="rosbag" type="play" name="player" args=" --clock
                 $(arg path)$(arg file_1).bag $(arg path)$(arg file_2).bag $(arg path)$(arg file_3).bag $(arg path)$(arg file_4).bag $(arg path)$(arg file_5).bag"/>
 
   <node name="segnet_lane_detection" pkg="auto_nav" type="segnet_lane_detection.py" output="screen" respawn="false">

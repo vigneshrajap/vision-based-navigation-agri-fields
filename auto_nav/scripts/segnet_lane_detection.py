@@ -20,6 +20,7 @@ sys.path.insert(2, expanduser("~")+'/planner_ws/src/vision-based-navigation-agri
 import lane_predict
 from geometry_msgs.msg import Pose, PoseArray
 import pyexcel as pe
+import tf
 
 class lane_finder():
     '''
@@ -77,31 +78,30 @@ class lane_finder():
         self.isColor_1 = True
         self.fps_1 = 6
 
-        # book = pe.get_book(file_name="../config/coordinates_utm.ods")
-        # self.gt_lat_utm = []
-        # self.gt_long_utm = []
-        # lane_number = str(4)
-        # self.listener = tf.TransformListener()
-        # self.listener.waitForTransform("utm", "base_link", rospy.Time(), rospy.Duration(4.0))
-        #
-        # #lane_number = rospy.set_param('lane_number', 1)
-        #
-        # for row in book["Sheet"+lane_number]:
-        #         self.gt_lat_utm.append(row[1]) # Latitude
-        #         self.gt_long_utm.append(row[2]) # Longitude
+        ## GNSS ground truth
+        self.book = pe.get_book(file_name=expanduser("~")+"/planner_ws/src/vision-based-navigation-agri-fields/auto_nav/config/ground_truth_coordinates_utm.xls")
+        self.gt_lat_utm = []
+        self.gt_long_utm = []
+        self.lane_number = str(2)
+        self.listener = tf.TransformListener()
+        self.listener.waitForTransform("utm", "base_link", rospy.Time(), rospy.Duration(4.0))
+
+        for row in self.book["Sheet"+self.lane_number]:
+                self.gt_lat_utm.append(row[1]) # Latitude
+                self.gt_long_utm.append(row[2]) # Longitude
         self.dist_0 = 0
+        #print self.gt_lat_utm, self.gt_long_utm
 
     def recv_image_msg(self, ros_data): #"passthrough"):
         try:
             self.image = self.bridge.imgmsg_to_cv2(ros_data,"bgr8")
             # print self.img_receive
-            #return image
         except CvBridgeError as e:
           print(e)
 
     def imageCallback(self, ros_data):
         #Read image
-        self.recv_image_msg(ros_data) #self.image =
+        self.recv_image_msg(ros_data)
         if(np.ndim(self.image) !=3 or np.shape(self.image)[2] !=3):
             rospy.logerr('Input image must have 3 dimensions with 3 color channels')
 
@@ -128,32 +128,33 @@ class lane_finder():
                       upscaled_img_rgb)) #np.ones(overlay_img.shape,dtype=np.uint8)*128))
         ))
 
-        # try:
-        #    (trans,rot) = self.listener.lookupTransform('utm', 'base_link', rospy.Time(0))
-        # except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-        #    #continue
-        #
-        # robot_lat_utm = trans[1] # Latitude
-        # robot_long_utm = trans[0] # Longitude
-        #
-        # a = np.array((robot_lat_utm, robot_long_utm))
-        # b = np.array((self.gt_lat_utm[1], self.gt_long_utm[1]))
-        # dist_0 = np.linalg.norm(a-b)
-        # #yaw_gt = math.atan2(gt_long_utm[1],gt_lat_utm[1])
-        #
-        # for i in range(2, len(gt_lat_utm)):
-        #     b = np.array((self.gt_lat_utm[i], self.gt_long_utm[i]))
-        #     dist = np.linalg.norm(a-b)
-        #     if dist<dist_0:
-        #         dist_0 = dist
+        #try:
+        (trans,rot) = self.listener.lookupTransform('utm', 'base_link', rospy.Time(0))
+        #except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+           #continue
 
-        self.dist_0 = self.dist_0+1
+        robot_lat_utm = trans[1] # Latitude
+        robot_long_utm = trans[0] # Longitude
+
+        a = np.array((robot_lat_utm, robot_long_utm))
+        b = np.array((self.gt_lat_utm[1], self.gt_long_utm[1]))
+        self.dist_0 = np.linalg.norm(a-b)
+        #yaw_gt = math.atan2(gt_long_utm[1],gt_lat_utm[1])
+
+        for i in range(2, len(self.gt_lat_utm)):
+            b = np.array((self.gt_lat_utm[i], self.gt_long_utm[i]))
+            dist = np.linalg.norm(a-b)
+            if dist<self.dist_0:
+                self.dist_0 = dist
+
+        # #self.dist_0 = self.dist_0+1
+        print self.dist_0
 
         font                   = cv2.FONT_HERSHEY_SIMPLEX
-        bottomLeftCornerOfText = (200,50)
+        bottomLeftCornerOfText = (100,70)
         fontScale              = 2
-        fontColor              = (0,0,255)
-        lineType               = 3
+        fontColor              = (255,0,0)
+        lineType               = 2
 
         cv2.putText(vis_img,'Lateral Offset:'+str(self.dist_0),
             bottomLeftCornerOfText,
@@ -162,13 +163,11 @@ class lane_finder():
             fontColor,
             lineType)
 
-        cv2.imshow('preview', vis_img)
-
-        #cv2.waitKey(0)
-
-        # Press Q on keyboard to  exit
-        if cv2.waitKey(25) & 0xFF == ord('q'):
-         print('Q pressed, breaking')
+        # cv2.imshow('preview', vis_img)
+        #
+        # # Press Q on keyboard to  exit
+        # if cv2.waitKey(25) & 0xFF == ord('q'):
+        #  print('Q pressed, breaking')
 
         return vis_img
 
