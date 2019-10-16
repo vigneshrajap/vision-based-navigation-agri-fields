@@ -9,7 +9,7 @@ import sys
 import math
 from tf.transformations import euler_from_quaternion
 
-book = pe.get_book(file_name="../config/ground_truth_coordinates_utm.xls")
+book = pe.get_book(file_name="../config/ground_truth_coordinates.xls")
 gt_lat_utm = []
 gt_long_utm = []
 lane_number = str(2)
@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
         while not rospy.is_shutdown():
             try:
-               (trans,rot) = listener.lookupTransform('map', 'base_link', rospy.Time(0))
+               (trans,rot) = listener.lookupTransform('utm', 'base_link', rospy.Time(0))
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                continue
 

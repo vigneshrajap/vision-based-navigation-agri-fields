@@ -79,7 +79,7 @@ class lane_finder():
         self.fps_1 = 6
 
         ## GNSS ground truth
-        self.book = pe.get_book(file_name=expanduser("~")+"/planner_ws/src/vision-based-navigation-agri-fields/auto_nav/config/ground_truth_coordinates_utm.xls")
+        self.book = pe.get_book(file_name=expanduser("~")+"/planner_ws/src/vision-based-navigation-agri-fields/auto_nav/config/ground_truth_coordinates.xls")
         self.gt_lat_utm = []
         self.gt_long_utm = []
         self.lane_number = str(2)
