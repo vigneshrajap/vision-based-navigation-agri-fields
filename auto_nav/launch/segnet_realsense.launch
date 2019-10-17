@@ -19,26 +19,26 @@
   <!-- <arg name="virtualcam_output_rpy" default="[0,0,0]"/>
   <arg name="virtualcam_input_topic" default="/pylon_camera_node/image_raw"/> -->
 
-  <rosparam param="auto_nav/segnet_lane_detection/camera_topic" subst_value="True">$(arg input_topic)</rosparam>
-  <rosparam param="auto_nav/segnet_lane_detection/model_config" subst_value="True">$(arg model_config)</rosparam>
-  <rosparam param="auto_nav/segnet_lane_detection/model_weights" subst_value="True">$(arg model_weights)</rosparam>
-  <rosparam param="auto_nav/segnet_lane_detection/model_prefix" subst_value="True">$(arg model_prefix)</rosparam>
-  <rosparam param="auto_nav/segnet_lane_detection/visualize" subst_value="True">$(arg visualize)</rosparam>
-  <rosparam param="auto_nav/segnet_lane_detection/output_video_file_s" subst_value="True">$(arg output_video_file_s)</rosparam>
-  <rosparam param="auto_nav/segnet_lane_detection/output_video_file_l" subst_value="True">$(arg output_video_file_l)</rosparam>
+  <rosparam param="camera_topic" subst_value="True">$(arg input_topic)</rosparam>
+  <rosparam param="model_config" subst_value="True">$(arg model_config)</rosparam>
+  <rosparam param="model_weights" subst_value="True">$(arg model_weights)</rosparam>
+  <rosparam param="model_prefix" subst_value="True">$(arg model_prefix)</rosparam>
+  <rosparam param="visualize" subst_value="True">$(arg visualize)</rosparam>
+  <rosparam param="output_video_file_s" subst_value="True">$(arg output_video_file_s)</rosparam>
+  <rosparam param="output_video_file_l" subst_value="True">$(arg output_video_file_l)</rosparam>
 
   <!-- <rosparam param="auto_nav/virtualcam/camera_topic" subst_value="True">$(arg virtualcam_input_topic)</rosparam>
   <rosparam param="autonav/virtualcam/RPY" subst_value="True">$(arg virtualcam_output_rpy)</rosparam> -->
 
-  <arg name="path" default="$(env HOME)/Third_Paper/Datasets/Frogn_Fields/061019/Frogn_009_bags/" />
+  <arg name="path" default="$(env HOME)/Third_Paper/Datasets/october_6_data_collection_bags/data_2/" />
   <arg name="file_1" default="frogn_009_0" />
   <arg name="file_2" default="frogn_009_1" />
   <arg name="file_3" default="frogn_009_2" />
   <arg name="file_4" default="frogn_009_3" />
   <arg name="file_5" default="frogn_009_4" />
 
-  <!--node pkg="rosbag" type="play" name="player" output="screen" args=" clock
-                $(arg path)$(arg file_1).bag $(arg path)$(arg file_2).bag $(arg path)$(arg file_3).bag $(arg path)$(arg file_4).bag $(arg path)$(arg file_5).bag"/-->
+  <node pkg="rosbag" type="play" name="player" args=" --clock
+                $(arg path)$(arg file_1).bag $(arg path)$(arg file_2).bag $(arg path)$(arg file_3).bag $(arg path)$(arg file_4).bag $(arg path)$(arg file_5).bag"/>
 
   <node name="segnet_lane_detection" pkg="auto_nav" type="segnet_lane_detection.py" output="screen" respawn="false">
   </node>

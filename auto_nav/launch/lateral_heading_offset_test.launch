@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<launch>
+
+
+  <!-- <arg name="path" default="$(env HOME)/Third_Paper/Datasets/Frogn_Fields/061019/Frogn_009_bags/" />
+  <arg name="file_1" default="frogn_009_0" />
+  <arg name="file_2" default="frogn_009_1" />
+  <arg name="file_3" default="frogn_009_2" />
+  <arg name="file_4" default="frogn_009_3" />
+  <arg name="file_5" default="frogn_009_4" />
+
+  <node pkg="rosbag" type="play" name="player" output="screen" args=" --clock
+                $(arg path)$(arg file_1) $"/> -->
+
+  <!-- <node name="segnet_lane_detection" pkg="auto_nav" type="segnet_lane_detection.py" output="screen" respawn="false">
+  </node> -->
+
+</launch>
