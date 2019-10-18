@@ -8,54 +8,80 @@ Created on Tue Oct 15 10:50:15 2019
 Translated from C++ code by Richard Moore
 
 """
-
+import os
 import numpy as np
+import xmltodict
+        
 
 # Utility functions
 def vec3_normalise(point):
-   return vec    
+    norm = np.linalg.norm(point)
+    if norm == 0: 
+       return point
+    return point / norm
 
-def invert_matrix_2d(matrix):
-   return inv_matrix
-    
+#Evaluation of polynomials
+#cubic
+def eval_poly3(poly,x):
+    return ((poly[0]*x + poly[1])*x + poly[2])*x + poly[3];
+
+#quartic
+def eval_poly4(poly, x):
+    return (((poly[0]*x + poly[1])*x + poly[2])*x + poly[3])*x + poly[4];
+
 class OcamCalibCameraModel:
     '''
     '''
     def __init__(self,calib_file):
-        self.set_params()
+        param_dict = self.read_opencv_storage_from_file(calib_file)
+        self.set_params(param_dict)
         return None
     
-    def set_params(ss0,ss1,ss2,ss3,ss4,c,d,e,xc,yc):
-        self.fx[0] = ss4
-        self.fx[1] = ss3
-        self.fx[2] = ss2
-        self.fx[3] = ss1
-        self.fx[4] = ss0
+    def set_params(self,opencv_storage_dict):
+        #Etract parameters from opencv storage dictionary object
+        d = opencv_storage_dict
+        self.fx = np.zeros(5)
+        self.fx[0] = float(d['ss4'])
+        self.fx[1] = float(d['ss3'])
+        self.fx[2] = float(d['ss2'])
+        self.fx[3] = float(d['ss1'])
+        self.fx[4] = float(d['ss0'])
+        self.M = np.zeros((2,2))
+        self.M[0,0] = float(d['c'])
+        self.M[0,1] = float(d['d'])
+        self.M[1,0] = float(d['e'])
+        self.M[1,1] = 1.0
+        self.xc = float(d['xc'])
+        self.yc = float(d['yc'])
+        self.width = float(d['width'])
+        self.height = float(d['height'])
+        self.image_circle_FOV = float(d['imageCircleFOV'])
+        
+        #Derived parameters
+        self.dfdx = np.zeros(4)
         self.dfdx[0] = 4 * self.fx[0]
         self.dfdx[1] = 3 * self.fx[1]
         self.dfdx[2] = 2 * self.fx[2]
-        self.dfdx[3] = self.fx[3];
-        self.M[0] = c
-        self.M[1] = d
-        self.M[2] = e
-        self.M[3] = 1.0
-        self.invM = invertMatrix2d(self.M)
-        self.xc = xc
-        self.yc = yc
-        return None
+        self.dfdx[3] = self.fx[3]
+        self.inv_M = np.linalg.inv(self.M)
+        self.initial_x = self.width/4 #starting point for polynomial solver
+        
     
-    def read_ocam_calib_from_file(calib_file):
-        #some kind of xml parsing
-        return None
+    def read_opencv_storage_from_file(self,calib_file):
+        print(calib_file)
+        with open(calib_file) as fd:
+            dict_ = xmltodict.parse(fd.read())
+            model_dict = dict_['opencv_storage']['cam_model']
+        return model_dict
             
-    def vector_to_pixel(point):
+    def vector_to_pixel(self,point):
         '''
         Go from vector (in camera coordinates) to pixel (image coordinates)
         '''
         forward = np.array([0,0,1])
-        r = vec3normalise(point)
+        r = vec3_normalise(point)
         alpha = np.arccos(np.dot(r,forward))
-        R = alphaToR(alpha)
+        R = self.alpha_to_R(alpha)
         if R <0 :
             x = -1.0
             y = -1.0
@@ -68,19 +94,40 @@ class OcamCalibCameraModel:
         px = r[1] * mag
         py = r[0] * mag
         # Account for non ideal fisheye effects (shear and translation):
-        y = self.M[0]*px + self.M[1]*py + self.xc
-        x = self.M[2]*px + self.M[3]*py + self.yc
+        y = self.M[0,0]*px + self.M[0,1]*py + self.xc
+        x = self.M[1,0]*px + self.M[1,1]*py + self.yc
     
         return x, y, R**2
     
-     def alpha_to_R(alpha):
+    def alpha_to_R(self,alpha):
         '''
         Solves polynomial to go from alpha (angle between rays) to R (distance from center point on sensor)
         '''
-        #some kind of polynomial solver in python
+        #Newton-Raphson search for the solution
+
+        newFx3 = self.fx[3] - np.tan(alpha - np.pi/2);
+        fx = np.array([self.fx[0], self.fx[1], self.fx[2], newFx3, self.fx[4]])
+        dfdx = np.array([self.dfdx[0], self.dfdx[1], self.dfdx[2], newFx3])
+
+        x = self.initial_x;
+        
+        while True:
+            px = x
+            x -= eval_poly4(fx,x) / eval_poly3(dfdx,x)
+            if (abs(x - px) > 1e-3):
+                break
+        R = x    
         return R
 
 
+if __name__ == "__main__":
+    calib_file = os.path.join('/home/marianne/catkin_ws/src/vision-based-navigation-agri-fields/auto_nav/scripts/input_cam_model_campus_2018-08-31.xml')
+    ocam_obj = OcamCalibCameraModel(calib_file)
+    #vector to point debug
+    point = [0,0,1]
+    pixel = ocam_obj.vector_to_pixel(point)
+    print(pixel)
+    
 #Original c++ code:
 
 '''
