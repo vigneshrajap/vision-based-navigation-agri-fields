@@ -53,8 +53,8 @@ class OcamCalibCameraModel:
         self.M[1,1] = 1.0
         self.xc = float(d['xc'])
         self.yc = float(d['yc'])
-        self.width = float(d['width'])
-        self.height = float(d['height'])
+        self.width = int(d['width'])
+        self.height = int(d['height'])
         self.image_circle_FOV = float(d['imageCircleFOV'])
         
         #Derived parameters
@@ -77,6 +77,7 @@ class OcamCalibCameraModel:
     def vector_to_pixel(self,point):
         '''
         Go from vector (in camera coordinates) to pixel (image coordinates)
+        input: point - x,y,z in camera frame
         '''
         forward = np.array([0,0,1])
         r = vec3_normalise(point)
@@ -96,8 +97,25 @@ class OcamCalibCameraModel:
         # Account for non ideal fisheye effects (shear and translation):
         y = self.M[0,0]*px + self.M[0,1]*py + self.xc
         x = self.M[1,0]*px + self.M[1,1]*py + self.yc
-    
+        
+        x = np.round(x).astype(int)
+        y = np.round(y).astype(int)
         return x, y, R**2
+    
+    def pixel_to_vector(self,x,y):
+        #NOTE: model (x,y) is (height,width) so we swap
+        dx = y - self.xc
+        dy = x - self.yc;
+        px = self.invM[0]*dx +self.invM[1]*dy;
+        py = self.invM[2]*dx + self.invM[3]*dy;
+        R2 = px*px + py*py;
+
+        direction = [0,0,0]
+        direction[0] = py;
+        direction[1] = px;
+        direction[2] = -eval_poly4(self.fx, sqrt(R2));
+
+        return direction
     
     def alpha_to_R(self,alpha):
         '''
@@ -110,7 +128,6 @@ class OcamCalibCameraModel:
         dfdx = np.array([self.dfdx[0], self.dfdx[1], self.dfdx[2], newFx3])
 
         x = self.initial_x;
-        
         while True:
             px = x
             x -= eval_poly4(fx,x) / eval_poly3(dfdx,x)
