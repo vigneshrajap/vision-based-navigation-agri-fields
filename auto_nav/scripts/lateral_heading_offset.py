@@ -77,6 +77,11 @@ if __name__ == '__main__':
         # Function to obtain the ground truth values in Map frame
         oe.ground_truth_utm2map()
 
+        coefficients = np.polyfit(oe.gt_map[0], oe.gt_map[1], 1)
+        a = coefficients[0];
+        c = coefficients[1];
+        b = -1;
+
         while not rospy.is_shutdown():
            if oe.receive_gps_fix== True:
                gps_fix_utm = geo2UTM.geo2UTM(oe.gps_fix.latitude, oe.gps_fix.longitude)
@@ -88,18 +93,14 @@ if __name__ == '__main__':
                gps_pose_transformed.header.stamp = rospy.Time.now()
                gps_pose_transformed = tf2_geometry_msgs.do_transform_pose(gps_pose_stamped, oe.map_transform) # Transform RTK values w.r.t to "Map" frame
 
-               print gps_pose_stamped.pose.position.y+oe.datum[1] #gps_pose_transformed
+               #print oe.gt_map[0], gps_pose_transformed.pose.position.x, gps_pose_transformed.pose.position.y #+oe.datum[1] #gps_pose_transformed
 
                 # try:
                 #    (trans,rot) = listener.lookupTransform(map_frame, utm_frame, rospy.Time(0))
                 # except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 #    continue
                 #
-                # # try:
-                # #    (trans1,rot1) = listener1.lookupTransform('utm', 'map', rospy.Time(0))
-                # # except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                # #    continue
-                #
+
                 # robot_lat_utm = trans[1] # Latitude
                 # robot_long_utm = trans[0] # Longitude
                 # (roll_r,pitch_r,yaw_r) = euler_from_quaternion(rot)
@@ -126,6 +127,7 @@ if __name__ == '__main__':
                 # print yaw_r1, yaw_gt
                 # print dist_0
            r.sleep()
+
     except rospy.ROSInterruptException:
          cv2.destroyAllWindows() # Closes all the frames
          pass
