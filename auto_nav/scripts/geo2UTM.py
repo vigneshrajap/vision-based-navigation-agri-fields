@@ -11,15 +11,15 @@ def Nrad(a,b,lat):
 
 def Marc(a,b,lat):
     f=(a-b)/a
-    b0=a*(1-0.5*f+pow(0.0625*f,2)+pow(0.03125*f,3))
+    b0=a*(1-0.5*f+0.0625*pow(f,2)+0.03125*pow(f,3))
     B=b0*(lat-(0.75*f+0.375*pow(f,2)+0.1171875*pow(f,3))*math.sin(2*lat)+(0.234375*pow(f,2)+0.234375*pow(f,3))*math.sin(4*lat)-0.09114583333*pow(f,3)*math.sin(6*lat))
+    # print np.float16(1-0.5*f+pow(0.0625*f,2)+pow(0.03125*f,3)), b0, (type(b0)) #a*(1-(1/2)*f+(1/16)*f^2+(1/32)*f^3)
     return B
 
 def geod2TMgrid(a, b, lat, lon, lat0, lon0, scale, fnorth, feast):
     B=Marc(a,b,lat)-Marc(a,b,lat0)
     N=Nrad(a,b,lat)
     e2=(pow(a,2)-pow(b,2))/pow(a,2)
-
     eps2=e2/(1-e2)*pow(math.cos(lat),2)
     l=lon-lon0
     x=B+0.5*pow(l,2)*N*math.sin(lat)*math.cos(lat)+0.0417*pow(l,4)*N*math.sin(lat)*pow(math.cos(lat),3)*(5-pow(math.tan(lat),2)+9*eps2+4*pow(eps2,2))
@@ -30,11 +30,7 @@ def geod2TMgrid(a, b, lat, lon, lat0, lon0, scale, fnorth, feast):
 
     north=north+fnorth
     east=east+feast
-
     return north, east
-
-# lat = 59.658935726
-# long = 10.672432959
 
 def geo2UTM(lat, long):
     # Ellipsoid (GRS80) % Ellipsoid estimated specific to GPS Lat and Long
@@ -52,5 +48,4 @@ def geo2UTM(lat, long):
     fix_deg = ([math.radians(lat),math.radians(long)]) # Lat, Long
     north, east = geod2TMgrid(a,b,fix_deg[0],fix_deg[1],lat0,lon0,scale,fnorth,feast)
     gps_fix_utm = ([north,east])
-    #print gps_fix_utm
     return gps_fix_utm

@@ -21,7 +21,6 @@ class offset_estimation():
     def __init__(self):
         self.datum = [-6614855.745, -594362.895, 0.0] # Manual Datum (NEGATE if UTM is the child frame)
         self.gt_utm = []
-        self.gt_map = []
         self.book = pe.get_book(file_name="/home/vignesh/planner_ws/src/vision-based-navigation-agri-fields/auto_nav/config/ground_truth_coordinates.xls")
         self.lane_number = str(1) #rospy.set_param('lane_number', 1)
 
@@ -34,6 +33,10 @@ class offset_estimation():
         self.gps_fix = NavSatFix()
         self.north = []
         self.east = []
+        self.gt_map_x = []
+        self.gt_map_y = []
+        self.coefficients = []
+        self.gt_line = []
 
         for row in self.book["Sheet"+self.lane_number]:
                 self.gt_utm.append([row[1],row[2]]) # Latitude, Longitude
@@ -65,7 +68,13 @@ class offset_estimation():
           pose_transformed = PoseStamped()
           pose_transformed.header.stamp = rospy.Time.now()
           pose_transformed = tf2_geometry_msgs.do_transform_pose(pose_stamped, self.map_transform) # Transform RTK values w.r.t to "Map" frame
-          self.gt_map.append([pose_transformed.pose.position.x, pose_transformed.pose.position.y])
+
+          self.gt_map_x.append(pose_transformed.pose.position.x)
+          self.gt_map_y.append(pose_transformed.pose.position.y)
+
+        # Fitting the straight line and obtain a, b, c co-ordinates
+        self.coefficients = np.polyfit(self.gt_map_x, self.gt_map_y, 1)
+        self.gt_line = [oe.coefficients[0],-1, oe.coefficients[1]] # a, b, c
 
 if __name__ == '__main__':
     try:
@@ -77,23 +86,25 @@ if __name__ == '__main__':
         # Function to obtain the ground truth values in Map frame
         oe.ground_truth_utm2map()
 
-        coefficients = np.polyfit(oe.gt_map[0], oe.gt_map[1], 1)
-        a = coefficients[0];
-        c = coefficients[1];
-        b = -1;
-
         while not rospy.is_shutdown():
            if oe.receive_gps_fix== True:
-               gps_fix_utm = geo2UTM.geo2UTM(oe.gps_fix.latitude, oe.gps_fix.longitude)
-               gps_pose_stamped = PoseStamped()
-               gps_pose_stamped.pose.position = Point(gps_fix_utm[0], gps_fix_utm[1], 0)
-               gps_pose_stamped.pose.orientation = Quaternion(0,0,0,1) # GPS orientation is meaningless, set to identity
 
-               gps_pose_transformed = PoseStamped()
-               gps_pose_transformed.header.stamp = rospy.Time.now()
-               gps_pose_transformed = tf2_geometry_msgs.do_transform_pose(gps_pose_stamped, oe.map_transform) # Transform RTK values w.r.t to "Map" frame
+               gps_fix_utm = geo2UTM.geo2UTM(oe.gps_fix.latitude, oe.gps_fix.longitude) # Custom Library to convert geo to UTM co-ordinates
 
-               #print oe.gt_map[0], gps_pose_transformed.pose.position.x, gps_pose_transformed.pose.position.y #+oe.datum[1] #gps_pose_transformed
+               gps_pose_utm = PoseStamped()
+               gps_pose_utm.pose.position = Point(gps_fix_utm[0], gps_fix_utm[1], 0)
+               gps_pose_utm.pose.orientation = Quaternion(0,0,0,1) # GPS orientation is meaningless, set to identity
+
+               gps_pose_map = PoseStamped()
+               gps_pose_map.header.stamp = rospy.Time.now()
+               gps_pose_map = tf2_geometry_msgs.do_transform_pose(gps_pose_utm, oe.map_transform) # Transform RTK values w.r.t to "Map" frame
+
+               dist_n = abs(oe.gt_line[0]*gps_pose_map.pose.position.x+oe.gt_line[1]*gps_pose_map.pose.position.y+ oe.gt_line[2])
+               dist_d = math.sqrt(pow(oe.gt_line[0],2)+pow(oe.gt_line[1],2))
+               dist_0 = dist_n/dist_d
+               print gps_pose_map.pose.position.x, gps_pose_map.pose.position.y, dist_0
+
+               #print oe.gt_map[0], gps_pose_map.pose.position.x, gps_pose_map.pose.position.y #+oe.datum[1] #gps_pose_map
 
                 # try:
                 #    (trans,rot) = listener.lookupTransform(map_frame, utm_frame, rospy.Time(0))
