@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 from sklearn.cluster import KMeans
 from itertools import imap
-
+import matplotlib.pyplot as plt
 prev_modifiedCenters = []
 base_size = 0.2
 clusters = 2
@@ -50,13 +50,22 @@ def initialPoints(warped_img):
      # Attempt to run kmeans (the kmeans parameters were not chosen with any sort of hard/soft optimization)
      try:
          kmeans = KMeans(n_clusters=clusters, random_state=0, n_init=3, max_iter=150).fit(whitePixels)
+         cluster_index_ = kmeans.fit_predict(whitePixels)
+
+         plt.scatter(whitePixels[:, 1], whitePixels[:, 0], c=cluster_index_)
+         centers1 = [list(imap(int, center)) for center in kmeans.cluster_centers_]
+
+         plt.scatter(kmeans.cluster_centers_[1][:], kmeans.cluster_centers_[0][:], marker='x', s=169, linewidths=4,
+            color='w', zorder=10)
+         plt.title("K-Means Clustering")
+
+         plt.show()
+
+         # for i in len(cluster_index_):
+             #whitePixels[0][i] =
+         # print base.shape, centroids #, cluster_index_[0], whitePixels[0][1]
          # define criteria and apply kmeans()
-         # criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-         # ret1,label1,center1=cv2.kmeans(whitePixels,2,None,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
-         # print center1
-         # Now separate the data, Note the flatten()
-         #A = whitePixels[label.ravel()==0]
-         #B = whitePixels[label.ravel()==1]
+
      except:
           # If kmeans fails increase the search space unless it is the whole image, then it fails
           if base_size  > 1:
