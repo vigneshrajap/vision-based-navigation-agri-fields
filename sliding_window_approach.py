@@ -36,7 +36,7 @@ def inv_perspective_warp(img, dst_size, src, dst):
     warped = cv2.warpPerspective(img, M, dst_size)
     return warped, M
 
-def initialPoints(warped_img):
+def initialPoints(warped_img, margin):
 
      global prev_modifiedCenters, base_size, clusters
 
@@ -51,15 +51,18 @@ def initialPoints(warped_img):
      try:
          kmeans = KMeans(n_clusters=clusters, random_state=0, n_init=3, max_iter=150).fit(whitePixels)
          cluster_index_ = kmeans.fit_predict(whitePixels)
+         [margin_r, margin_c] = np.std(whitePixels, axis=0)
+         margin = margin_r.astype(int)
+         #print margin_c, margin_r
 
-         plt.scatter(whitePixels[:, 1], whitePixels[:, 0], c=cluster_index_)
-         centers1 = [list(imap(int, center)) for center in kmeans.cluster_centers_]
-
-         plt.scatter(kmeans.cluster_centers_[1][:], kmeans.cluster_centers_[0][:], marker='x', s=169, linewidths=4,
-            color='w', zorder=10)
-         plt.title("K-Means Clustering")
-
-         plt.show()
+         # plt.scatter(whitePixels[:, 1], whitePixels[:, 0], c=cluster_index_)
+         # centers1 = [list(imap(int, center)) for center in kmeans.cluster_centers_]
+         #
+         # plt.scatter(kmeans.cluster_centers_[1][:], kmeans.cluster_centers_[0][:], marker='x', s=169, linewidths=4,
+         #    color='w', zorder=10)
+         # plt.title("K-Means Clustering")
+         #
+         # plt.show()
 
          # for i in len(cluster_index_):
              #whitePixels[0][i] =
@@ -72,7 +75,7 @@ def initialPoints(warped_img):
               return None
           else:
               base_size  = base_size  * 1.5
-              return initialPoints(warped_img)
+              return initialPoints(warped_img, margin)
 
      # conver centers to integer values so can be used as pixel coords
      centers = [list(imap(int, center)) for center in kmeans.cluster_centers_]
@@ -85,12 +88,12 @@ def initialPoints(warped_img):
      if abs(modifiedCenters[0][1]-modifiedCenters[1][1])<50:
          #print modifiedCenters, prev_modifiedCenters
          modifiedCenters = prev_modifiedCenters
-         return modifiedCenters
+         return margin, modifiedCenters
 
      prev_modifiedCenters = modifiedCenters
 
      # return a list of tuples for centers
-     return modifiedCenters
+     return margin, modifiedCenters
 
 def sliding_window(img, modifiedCenters, nwindows=12, margin=35, minpix=1, draw_windows=True):
     global prev_modifiedCenters, base_size, clusters
@@ -133,7 +136,7 @@ def sliding_window(img, modifiedCenters, nwindows=12, margin=35, minpix=1, draw_
     # Create empty lists to receive left and right lane pixel indices
     left_lane_inds = []
     right_lane_inds = []
-
+    print margin
     for window in range(nwindows):
       # Identify window boundaries in x and y (and right and left)
       win_y_low = img.shape[0] - (window+1)*window_height

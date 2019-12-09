@@ -3,7 +3,6 @@
 #from keras_segmentation.predict import model_from_checkpoint_path
 import os
 import glob
-#os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" # Hides the pygame version, welcome msg
 from os.path import expanduser
 import argparse
 #from moviepy.editor import VideoFileClip
@@ -37,11 +36,14 @@ def lane_fit_on_prediction(Roi_img, src, dst, dst_size):
 
    warped_img, M  = sliding_window_approach.perspective_warp(Roi_img, dst_size, src, dst)
 
+   margin=35
+   nwindows=12
+
    # InitialPoints Estimation using K-Means clustering
-   modifiedCenters = sliding_window_approach.initialPoints(warped_img)
+   margin, modifiedCenters = sliding_window_approach.initialPoints(warped_img, margin)
 
    # Sliding Window Search
-   out_img, curves, lanes, ploty = sliding_window_approach.sliding_window(warped_img, modifiedCenters)
+   out_img, curves, lanes, ploty = sliding_window_approach.sliding_window(warped_img, modifiedCenters, nwindows, margin)
    return warped_img, out_img, curves, lanes, ploty, modifiedCenters
 
 def visualize_lane_fit(input_image, out_img, curves, lanes, ploty, modifiedCenters, src, dst, dst_size, crop_ratio):
@@ -80,7 +82,7 @@ def run_lane_fit(input_image, seg_arr, class_number = 2,  crop_ratio = 0.2):
 
    # Overlay the inverse warped image on input image
    polyfit_img, centerLine, invwarp, final_img = visualize_lane_fit(input_image, out_img, curves, lanes, ploty, modifiedCenters, src, dst, dst_size, crop_ratio)
-   return invwarp, final_img, centerLine
+   return out_img, final_img, centerLine
 
 def visualize_segmentation(input_img, seg_arr, n_classes,display = False, output_file = None):
     seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = n_classes, input_shape = input_img.shape)
@@ -113,7 +115,7 @@ def visualization(input_img, seg_arr=None, lane_fit = None, evaluation = None, n
         vis_img = visualize_segmentation(input_img, seg_arr, n_classes, display=display, output_file=output_file)
     if visualize == "lane_fit":
         warp_img, vis_img, centerLine = run_lane_fit(input_img, seg_arr, class_number, crop_ratio)
-        cv2.imwrite(output_file, vis_img )
+        cv2.imwrite(output_file, warp_img )
 
         return vis_img, centerLine ##fixme
 
@@ -169,7 +171,7 @@ def main():
     print(os.path.join(args.input_folder+'*.png'))
     for im in im_files:
         if args.output_folder:
-            output_file = os.path.join(args.output_folder,os.path.basename(im))+"_lane_sw.png" #
+            output_file = os.path.join(args.output_folder,os.path.basename(im))+"_lane_sw_out_img_n.png" #
             print(output_file)
         else:
             output_file = None

@@ -55,8 +55,6 @@ init_cmd: |
   export_default GAZEBO_WORLD riseholme
   export_default EKF_PUBLISH_TF true
   export_default USE_CARROT false
-  # put this in your local file only:
-  # export_default SLACK_WEBHOOK https://hooks.slack.com/services/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
   export_default USE_GUI false
   export_default USE_OMNI false
   export_default USE_WAYPOINT_NAV false
