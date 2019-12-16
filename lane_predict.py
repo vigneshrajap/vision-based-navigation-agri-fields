@@ -84,13 +84,13 @@ def run_lane_fit(input_image, seg_arr, class_number = 2,  crop_ratio = 0.2):
    polyfit_img, centerLine, invwarp, final_img = visualize_lane_fit(input_image, out_img, curves, lanes, ploty, modifiedCenters, src, dst, dst_size, crop_ratio)
    return warp_img, final_img, centerLine
 
-def visualize_segmentation(input_img, seg_arr, n_classes,display = False, output_file = None):
+def visualize_segmentation(input_img, seg_arr, n_classes, class_number = 2, display = False, output_file = None):
     seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = n_classes, input_shape = input_img.shape)
     overlay_img = cv2.addWeighted(input_img,0.7,seg_img,0.3,0)
 
     # Reshaping the Lanes Class into binary array and Upscaling the image as input image
     dummy_img = np.zeros(seg_arr.shape)
-    dummy_img += ((seg_arr[:,: ] == 2)*(255)).astype('uint8') # Class Number 2 belongs to Lanes
+    dummy_img += ((seg_arr[:,: ] == class_number)*(255)).astype('uint8') # Class Number 2 belongs to Lanes
     original_h, original_w = overlay_img.shape[0:2]
     upscaled_img = cv2.resize(dummy_img, (original_w,original_h)).astype('uint8')
     upscaled_img_rgb = cv2.cvtColor(upscaled_img, cv2.COLOR_GRAY2RGB)
@@ -106,16 +106,16 @@ def visualize_segmentation(input_img, seg_arr, n_classes,display = False, output
     return upscaled_img_rgb #vis_img
 
 def visualization(input_img, seg_arr=None, lane_fit = None, evaluation = None, n_classes=None, visualize = None, display=False, output_file=None):
-    class_number = 2
+    class_number = 1
     crop_ratio = 0.2
 
     #visualize: None, "all" or one of, "segmentation", "lane_fit", "evaluation"
     #with or without gt label and IOU result
     if visualize == "segmentation":
-        vis_img = visualize_segmentation(input_img, seg_arr, n_classes, display=display, output_file=output_file)
+        vis_img = visualize_segmentation(input_img, seg_arr, n_classes, class_number, display=display, output_file=output_file)
+        cv2.imwrite(output_file, vis_img )
     if visualize == "lane_fit":
         warp_img, vis_img, centerLine = run_lane_fit(input_img, seg_arr, class_number, crop_ratio)
-        cv2.imwrite(output_file, vis_img )
         return vis_img, centerLine ##fixme
 
     if display:
@@ -171,7 +171,7 @@ def main():
     for im in im_files:
         if args.output_folder:
             base = os.path.basename(im)
-            output_file = os.path.join(args.output_folder,os.path.splitext(base)[0])+"_lane_warp_img.png" #
+            output_file = os.path.join(args.output_folder,os.path.splitext(base)[0])+"_crop_pred_img.png" #
             print(output_file)
         else:
             output_file = None
