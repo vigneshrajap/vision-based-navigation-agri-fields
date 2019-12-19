@@ -5,9 +5,6 @@ import cv2
 from sklearn.cluster import KMeans
 from itertools import imap
 import matplotlib.pyplot as plt
-prev_modifiedCenters = []
-base_size = 0.2
-clusters = 2
 
 def perspective_warp(img, dst_size, src, dst): # Choose the four vertices
 
@@ -36,9 +33,7 @@ def inv_perspective_warp(img, dst_size, src, dst):
     warped = cv2.warpPerspective(img, M, dst_size)
     return warped, M
 
-def initialPoints(warped_img, margin_l, margin_r):
-
-     global prev_modifiedCenters, base_size, clusters
+def initialPoints(warped_img, base_size=0.2, clusters=2):
 
      # Crop the search space
      bottom = (warped_img.shape[0] - int(base_size * warped_img.shape[0]))
@@ -47,29 +42,13 @@ def initialPoints(warped_img, margin_l, margin_r):
      # Find white pixels
      whitePixels = np.argwhere(base == 255)
 
-     #cluster_1 = []
      #cluster_1 = np.zeros([base.shape[0],base.shape[1],1],dtype=np.uint8)
      #cluster_2 = np.zeros([base.shape[0],base.shape[1],1],dtype=np.uint8)
-     #print base_size, margin_l, margin_r
 
      # Attempt to run kmeans (the kmeans parameters were not chosen with any sort of hard/soft optimization)
      try:
          kmeans = KMeans(n_clusters=clusters, random_state=0, n_init=3, max_iter=150).fit(whitePixels)
-         # for k_i in range(0, len(whitePixels)):
-         #     if kmeans.labels_[k_i]==0:
-         #        cluster_1[whitePixels[k_i][0]][whitePixels[k_i][1]] = 255
-         #     else:
-         #        cluster_2[whitePixels[k_i][0]][whitePixels[k_i][1]] = 255
-         #
-         # im_1, contours_1, hierarchy_1 = cv2.findContours(cluster_1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-         # im_2, contours_2, hierarchy_2 = cv2.findContours(cluster_2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-         # print contours, kmeans.cluster_centers_[0] #len(whitePixels), len(kmeans.labels_), len(cluster_1), len(cluster_2), len(cluster_1)+len(cluster_2) #kmeans.cluster_centers_,
-
-         # [margin_r, margin_c] = np.std(whitePixels, axis=0)
-         # margin = margin_r.astype(int)
-
-         #print margin_c, margin_r
          # plt.scatter(whitePixels[:, 1], whitePixels[:, 0], c=kmeans.labels_)
          # plt.gca().invert_yaxis()
          # centers1 = [list(imap(int, center)) for center in kmeans.cluster_centers_]
@@ -80,18 +59,13 @@ def initialPoints(warped_img, margin_l, margin_r):
          #
          # plt.show()
 
-         # for i in len(cluster_index_):
-             #whitePixels[0][i] =
-         # print base.shape, centroids #, cluster_index_[0], whitePixels[0][1]
-         # define criteria and apply kmeans()
-
      except:
           # If kmeans fails increase the search space unless it is the whole image, then it fails
           if base_size  > 1:
               return None
           else:
               base_size  = base_size  * 1.5
-              return initialPoints(warped_img, margin_l, margin_r)
+              return initialPoints(warped_img)
 
      # conver centers to integer values so can be used as pixel coords
      centers = [list(imap(int, center)) for center in kmeans.cluster_centers_]
@@ -122,18 +96,13 @@ def initialPoints(warped_img, margin_l, margin_r):
      # map the centers in terms of the image space
      modifiedCenters = [increaseY(center) for center in centers]
 
-     # if abs(modifiedCenters[0][1]-modifiedCenters[1][1])<50:
-     #     #print modifiedCenters, prev_modifiedCenters
-     #     modifiedCenters = prev_modifiedCenters
-     #     return margin, margin_1, modifiedCenters
-
-     # prev_modifiedCenters = modifiedCenters
-
      # return a list of tuples for centers
-     return margin_l, margin_r, modifiedCenters
+     return modifiedCenters
 
-def sliding_window(img, modifiedCenters, nwindows=12, margin=35, margin_1=35, minpix=1, draw_windows=True):
-    global prev_modifiedCenters, base_size, clusters
+def sliding_window(img, modifiedCenters, kmeans, nwindows=12, minpix=1, draw_windows=True):
+
+    margin_l=35
+    margin_r=35
 
     left_a = []
     left_b = []
@@ -146,19 +115,8 @@ def sliding_window(img, modifiedCenters, nwindows=12, margin=35, margin_1=35, mi
     right_fit_ = np.empty(3)
     out_img = np.dstack((img, img, img))*255
 
-    #modifiedCenters = initialPoints(img)
     leftx_base = modifiedCenters[0][1]
     rightx_base = modifiedCenters[1][1]
-
-    # Set height of windows
-    window_height = np.int(img.shape[0]/nwindows)
-    # Identify the x and y positions of all nonzero pixels in the image
-    nonzero = img.nonzero()
-    nonzeroy = np.array(nonzero[0])
-    nonzerox = np.array(nonzero[1])
-    # Current positions to be updated for each window
-    leftx_current = leftx_base
-    rightx_current = rightx_base
 
     # Set height of windows
     window_height = np.int(img.shape[0]/nwindows)
@@ -178,10 +136,10 @@ def sliding_window(img, modifiedCenters, nwindows=12, margin=35, margin_1=35, mi
       # Identify window boundaries in x and y (and right and left)
       win_y_low = img.shape[0] - (window+1)*window_height
       win_y_high = img.shape[0] - window*window_height
-      win_xleft_low = leftx_current - margin
-      win_xleft_high = leftx_current + margin
-      win_xright_low = rightx_current - margin_1
-      win_xright_high = rightx_current + margin_1
+      win_xleft_low = leftx_current - margin_l
+      win_xleft_high = leftx_current + margin_l
+      win_xright_low = rightx_current - margin_r
+      win_xright_high = rightx_current + margin_r
 
       # Identify the nonzero pixels in x and y within the window
       good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
@@ -201,10 +159,8 @@ def sliding_window(img, modifiedCenters, nwindows=12, margin=35, margin_1=35, mi
 
       # Draw the windows on the visualization image
       if draw_windows == True:
-        cv2.rectangle(out_img,(win_xleft_low,win_y_low),(win_xleft_high,win_y_high),
-            (255,0,0), 3)
-        cv2.rectangle(out_img,(win_xright_low,win_y_low),(win_xright_high,win_y_high),
-            (255,0,0), 3)
+        cv2.rectangle(out_img,(win_xleft_low,win_y_low),(win_xleft_high,win_y_high), (255,0,0), 3)
+        cv2.rectangle(out_img,(win_xright_low,win_y_low),(win_xright_high,win_y_high), (255,0,0), 3)
 
     # Concatenate the arrays of indices
     left_lane_inds = np.concatenate(left_lane_inds)
