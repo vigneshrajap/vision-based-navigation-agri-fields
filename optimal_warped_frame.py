@@ -12,7 +12,7 @@ import sliding_window_approach
 #     borderType=cv2.BORDER_REFLECT) for x in (img, img*img))
 #   return wsqrmean - wmean*wmean
 
-img_file = expanduser("~/Third_Paper/Datasets/Frogn_Fields/Frogn_004_crop_predictions/frogn_40000_crop_pred_img.png")
+img_file = expanduser("~/Third_Paper/Datasets/Frogn_Fields/Frogn_004_crop_predictions/frogn_40270_crop_pred_img.png")
 # dummy_folder/lane_predictions/frogn_10000_lane_pred.png")
 img = cv2.imread(img_file, 0)
 
@@ -24,6 +24,15 @@ dst=np.float32([(0,0), (1,0), (0,1), (1,1)])
 src=np.float32([(0,0.5), (1,0.5), (0,1), (1,1)])
 
 warped_img, M  = sliding_window_approach.perspective_warp(img, dst_size, src, dst)
+
+edges = cv2.Canny(warped_img,50,150,apertureSize = 3)
+minLineLength = 100
+maxLineGap = 10
+lines = cv2.HoughLinesP(warped_img,1,np.pi/180,100,minLineLength,maxLineGap)
+warped_img_c = cv2.cvtColor(warped_img,cv2.COLOR_GRAY2RGB)
+for line in lines:
+    x1, y1, x2, y2 = line[0]
+    cv2.line(warped_img_c,(x1,y1),(x2,y2),(0,255,0),3)
 #print M
 #cv2.imwrite('frogn_10000_lane_sw_warp_img.png', warped_img)
 # cv2.imshow(title_window, warped_img)
@@ -59,7 +68,7 @@ warped_img, M  = sliding_window_approach.perspective_warp(img, dst_size, src, ds
 # angle_r = ang_arr[var_arr.index(max(var_arr))]
 # rotated_r = imutils.rotate(warped_img, angle_r)
 #cv2.imwrite(str(angle_r)+'.png', warped_img)
-cv2.imwrite('warped_img.png', warped_img)
+cv2.imwrite('warped_img.png', warped_img_c)
 
 #
 # # plt.plot(img_col_sum)

@@ -216,12 +216,12 @@ def sliding_window(img, modifiedCenters, nwindows=12, margin=35, margin_1=35, mi
     # righty = nonzeroy[right_lane_inds]
 
     # Fit a second order polynomial to
-    left_fit = np.polyfit(lefty, leftx, 2)
+    left_fit = np.polyfit(lefty, leftx, 1)
     # right_fit = np.polyfit(righty, rightx, 2)
 
     left_a.append(left_fit[0])
     left_b.append(left_fit[1])
-    left_c.append(left_fit[2])
+    #left_c.append(left_fit[2])
 
     # right_a.append(right_fit[0])
     # right_b.append(right_fit[1])
@@ -229,18 +229,19 @@ def sliding_window(img, modifiedCenters, nwindows=12, margin=35, margin_1=35, mi
 
     left_fit_[0] = np.mean(left_a[-10:])
     left_fit_[1] = np.mean(left_b[-10:])
-    left_fit_[2] = np.mean(left_c[-10:])
+    #left_fit_[2] = np.mean(left_c[-10:])
 
     # right_fit_[0] = np.mean(right_a[-10:])
     # right_fit_[1] = np.mean(right_b[-10:])
     # right_fit_[2] = np.mean(right_c[-10:])
 
-    # Generate x and y values for plotting
+    # Generate x and y values for plotting#
     ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
-    left_fitx = left_fit_[0]*ploty**2 + left_fit_[1]*ploty + left_fit_[2]
+    #left_fitx = left_fit_[0]*ploty**2 + left_fit_[1]*ploty + left_fit_[2]
+    left_fitx = left_fit_[0]*ploty + left_fit_[1] #+ left_fit_[2]
     # right_fitx = right_fit_[0]*ploty**2 + right_fit_[1]*ploty + right_fit_[2]
 
-    out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [0, 100, 255] #[255, 0, 100]
+    out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 255] #[255, 0, 100]
     # out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 100, 255]
 
     return out_img, (left_fitx), (left_fit_), ploty #, right_fitx #, right_fit_

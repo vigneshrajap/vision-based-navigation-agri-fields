@@ -36,7 +36,7 @@ def inv_perspective_warp(img, dst_size, src, dst):
     warped = cv2.warpPerspective(img, M, dst_size)
     return warped, M
 
-def initialPoints(warped_img, margin):
+def initialPoints(warped_img, margin_l, margin_r):
 
      global prev_modifiedCenters, base_size, clusters
 
@@ -48,20 +48,21 @@ def initialPoints(warped_img, margin):
      whitePixels = np.argwhere(base == 255)
 
      #cluster_1 = []
-     cluster_1 = np.zeros([base.shape[0],base.shape[1],1],dtype=np.uint8)
-     cluster_2 = np.zeros([base.shape[0],base.shape[1],1],dtype=np.uint8)
+     #cluster_1 = np.zeros([base.shape[0],base.shape[1],1],dtype=np.uint8)
+     #cluster_2 = np.zeros([base.shape[0],base.shape[1],1],dtype=np.uint8)
+     #print base_size, margin_l, margin_r
 
      # Attempt to run kmeans (the kmeans parameters were not chosen with any sort of hard/soft optimization)
      try:
          kmeans = KMeans(n_clusters=clusters, random_state=0, n_init=3, max_iter=150).fit(whitePixels)
-         for k_i in range(0, len(whitePixels)):
-             if kmeans.labels_[k_i]==0:
-                cluster_1[whitePixels[k_i][0]][whitePixels[k_i][1]] = 255
-             else:
-                cluster_2[whitePixels[k_i][0]][whitePixels[k_i][1]] = 255
-
-         im_1, contours_1, hierarchy_1 = cv2.findContours(cluster_1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-         im_2, contours_2, hierarchy_2 = cv2.findContours(cluster_2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+         # for k_i in range(0, len(whitePixels)):
+         #     if kmeans.labels_[k_i]==0:
+         #        cluster_1[whitePixels[k_i][0]][whitePixels[k_i][1]] = 255
+         #     else:
+         #        cluster_2[whitePixels[k_i][0]][whitePixels[k_i][1]] = 255
+         #
+         # im_1, contours_1, hierarchy_1 = cv2.findContours(cluster_1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+         # im_2, contours_2, hierarchy_2 = cv2.findContours(cluster_2, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
          # print contours, kmeans.cluster_centers_[0] #len(whitePixels), len(kmeans.labels_), len(cluster_1), len(cluster_2), len(cluster_1)+len(cluster_2) #kmeans.cluster_centers_,
 
@@ -90,21 +91,21 @@ def initialPoints(warped_img, margin):
               return None
           else:
               base_size  = base_size  * 1.5
-              return initialPoints(warped_img, margin)
+              return initialPoints(warped_img, margin_l, margin_r)
 
      # conver centers to integer values so can be used as pixel coords
      centers = [list(imap(int, center)) for center in kmeans.cluster_centers_]
 
-     d_0 = []
-     d_1 = []
-     for c_i in range(0, len(contours_1[0])):
-       d_0.append(contours_1[0][c_i][0][0]-centers[0][1])
-     for c_j in range(0, len(contours_2[0])):
-       d_1.append(contours_2[0][c_j][0][0]-centers[1][1])
-     margin = abs(max(d_0))
-     margin_1 = abs(max(d_1))
+     # d_0 = []
+     # d_1 = []
+     # for c_i in range(0, len(contours_1[0])):
+     #   d_0.append(contours_1[0][c_i][0][0]-centers[0][1])
+     # for c_j in range(0, len(contours_2[0])):
+     #   d_1.append(contours_2[0][c_j][0][0]-centers[1][1])
+     #margin = abs(max(d_0))
+     #margin_1 = abs(max(d_1))
      #margin_r.astype(int)
-     print margin, margin_1
+
 
      #print  contours_2[0][c_j][0][0], centers[1][1]
 
@@ -121,15 +122,15 @@ def initialPoints(warped_img, margin):
      # map the centers in terms of the image space
      modifiedCenters = [increaseY(center) for center in centers]
 
-     if abs(modifiedCenters[0][1]-modifiedCenters[1][1])<50:
-         #print modifiedCenters, prev_modifiedCenters
-         modifiedCenters = prev_modifiedCenters
-         return margin, margin_1, modifiedCenters
+     # if abs(modifiedCenters[0][1]-modifiedCenters[1][1])<50:
+     #     #print modifiedCenters, prev_modifiedCenters
+     #     modifiedCenters = prev_modifiedCenters
+     #     return margin, margin_1, modifiedCenters
 
-     prev_modifiedCenters = modifiedCenters
+     # prev_modifiedCenters = modifiedCenters
 
      # return a list of tuples for centers
-     return margin, margin_1, modifiedCenters
+     return margin_l, margin_r, modifiedCenters
 
 def sliding_window(img, modifiedCenters, nwindows=12, margin=35, margin_1=35, minpix=1, draw_windows=True):
     global prev_modifiedCenters, base_size, clusters

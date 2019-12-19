@@ -6,127 +6,133 @@ import argparse
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+from sensor_msgs.msg import Image
 
-import sliding_window_approach_crop
+import sliding_window_approach
 from geometry_msgs.msg import Pose, PoseArray
 
-def upscaling_warping_parameters(pred_img, class_number, crop_ratio):
-   # Perspective warp
-   rheight, rwidth = pred_img.shape[:2]
-   Roi_g = pred_img[int(crop_ratio*rheight):rheight,0:rwidth]
-   dst_size = Roi_g.shape[:2]
-   # src=np.float32([(0.1,0), (0.8,0), (0,1), (1,1)])
-   #src=np.float32([(0.1,0.5), (0.8,0.5), (0,1), (1,1)])
-   #dst=np.float32([(0,0), (1,0), (0,1), (1,1)])
+class lane_finder_post_predict():
+    '''
+    A class to find fitted center of the lane points along the crop rows given an input RGB image.
+    '''
+    def __init__(self):
+       #### Hyperparameters ####
+       self.image = Image()
+       self.final_img = Image()
+       self.warp_img = Image()
+       self.invwarp_img = Image()
+       self.polyfit_img = Image()
 
-   dst=np.float32([(0,0), (1,0), (0,1), (1,1)])
-   #src=np.float32([(0.2,0.5), (0.8,0.5), (0.2,0.8), (0.8,0.8)])
-   #src=np.float32([(0,0.4), (1,0.4), (0,0.8), (1,0.8)])
-   src=np.float32([(0,0.5), (1,0.5), (0,1), (1,1)])
+       self.class_number = 2 # Extract Interesting Class (2 - Lanes in this case) from predictions
+       self.crop_ratio = 0.2 # Ratio to crop the background parts in the image from top
 
-   return Roi_g, src, dst, dst_size
+       #src=np.float32([(0.1,0), (0.8,0), (0,1), (1,1)])
+       #src=np.float32([(0.1,0.5), (0.8,0.5), (0,1), (1,1)])
+       #src=np.float32([(0.2,0.5), (0.8,0.5), (0.2,0.8), (0.8,0.8)])
+       #src=np.float32([(0,0.4), (1,0.4), (0,0.8), (1,0.8)])
+       self.src=np.float32([(0,0.5), (1,0.5), (0,1), (1,1)])
 
-def lane_fit_on_prediction(Roi_img, src, dst, dst_size):
+       self.dst=np.float32([(0,0), (1,0), (0,1), (1,1)])
 
-   warped_img, M  = sliding_window_approach_crop.perspective_warp(Roi_img, dst_size, src, dst)
+       self.margin_l=35
+       self.margin_r=35
+       self.nwindows=12
 
-   margin=35
-   nwindows=12
+       self.centerLine = []
+       #self.midPoints = PoseArray()
+       self.output_file = None
 
-   # InitialPoints Estimation using K-Means clustering
-   margin, modifiedCenters = sliding_window_approach_crop.initialPoints(warped_img, margin) #margin_1
+    def lane_fit_on_prediction(self, Roi_img, dst_size):
 
-   # Sliding Window Search
-   out_img, curves, lanes, ploty = sliding_window_approach_crop.sliding_window(warped_img, modifiedCenters, nwindows, margin) #, margin_1
-   return warped_img, out_img, curves, lanes, ploty, modifiedCenters
+       self.warp_img, M  = sliding_window_approach.perspective_warp(Roi_img, dst_size, self.src, self.dst) # Perspective warp
+       #cv2.imwrite(self.output_file, self.warp_img)
 
-def visualize_lane_fit(input_image, out_img, curves, lanes, ploty, modifiedCenters, src, dst, dst_size, crop_ratio):
-   # Visualize the fitted polygonals (One on each lane and on average curve)
-   out_img, midLane_i = sliding_window_approach_crop.visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters)
+       # InitialPoints Estimation using K-Means clustering
+       self.margin_l, self.margin_r, modifiedCenters = sliding_window_approach.initialPoints(self.warp_img, self.margin_l, self.margin_r)
 
-   # Inverse Perspective warp
-   invwarp, Minv = sliding_window_approach_crop.inv_perspective_warp(out_img, (dst_size[1], dst_size[0]), dst, src)
+       # Sliding Window Search
+       self.polyfit_img, curves, lanes, ploty = sliding_window_approach.sliding_window(self.warp_img, modifiedCenters, self.nwindows, self.margin_l, self.margin_r) #
+       return curves, lanes, ploty, modifiedCenters
 
-   midPoints = []
-   #midPoints = PoseArray()
-   # for i in midLane_i:
-   #   point_wp = np.array([i[0],i[1],1])
-   #   midLane_io = np.matmul(Minv, point_wp) # inverse-M*warp_pt
-   #   midLane_n = np.array([midLane_io[0]/midLane_io[2],midLane_io[1]/midLane_io[2]]) # divide by Z point
-   #   midLane_n = midLane_n.astype(int)
-   #   midPoints.append(midLane_n)
-     #midPoints.poses.append(Pose((midLane_n[0],midLane_n[1],0),(0,0,0,1)))
+    def visualize_lane_fit(self, curves, lanes, ploty, modifiedCenters, dst_size):
+       # Visualize the fitted polygonals (One on each lane and on average curve)
+       self.polyfit_img, midLane_i = sliding_window_approach.visualization_polyfit(self.polyfit_img, curves, lanes, ploty, modifiedCenters)
 
-   # Combine the result with the original image
-   final_img = cv2.cvtColor(input_image,cv2.COLOR_GRAY2RGB)
-   #final_img = input_image.copy()
-   rheight, rwidth = final_img.shape[:2]
-   final_img[int(rheight*crop_ratio):rheight,0:rwidth] = cv2.addWeighted(final_img[int(rheight*crop_ratio):int(rheight),0:rwidth],
-                                                           0.8, invwarp, 1.0, 0)
-   return out_img, midPoints, invwarp, final_img
+       # Inverse Perspective warp
+       self.invwarp_img, Minv = sliding_window_approach.inv_perspective_warp(self.polyfit_img, (dst_size[1], dst_size[0]), self.dst, self.src)
 
-def run_lane_fit(pred_inp_image, class_number = 2,  crop_ratio = 0.2):
-   # Extract Interesting Class (2 - Lanes in this case) from predictions
-   # Ratio to crop the background parts in the image from top
+       # for i in midLane_i:
+       #   point_wp = np.array([i[0],i[1],1])
+       #   midLane_io = np.matmul(Minv, point_wp) # inverse-M*warp_pt
+       #   midLane_n = np.array([midLane_io[0]/midLane_io[2],midLane_io[1]/midLane_io[2]]) # divide by Z point
+       #   midLane_n = midLane_n.astype(int)
+       #   midPoints.append(midLane_n)
+         #midPoints.poses.append(Pose((midLane_n[0],midLane_n[1],0),(0,0,0,1)))
 
-   # Setting the parameters for upscaling and warping-unwarping
-   Roi_img, src, dst, dst_size = upscaling_warping_parameters(pred_inp_image, class_number, crop_ratio)
+       # Combine the result with the original image
+       self.final_img = cv2.cvtColor(self.image,cv2.COLOR_GRAY2RGB)
+       #final_img = input_image.copy()
 
-   # Sliding Window Approach on Lanes Class from segmentation Array and fit the poly curves
-   warp_img, out_img, curves, lanes, ploty, modifiedCenters = lane_fit_on_prediction(Roi_img, src, dst, dst_size)
+       rheight, rwidth = self.final_img.shape[:2]
+       self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted(self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth],
+                                                               0.8, self.invwarp_img, 1.0, 0)
 
-   # Overlay the inverse warped image on input image
-   polyfit_img, centerLine, invwarp, final_img = visualize_lane_fit(pred_inp_image, out_img, curves, lanes, ploty, modifiedCenters, src, dst, dst_size, crop_ratio)
-   return polyfit_img, final_img, centerLine
+    def run_lane_fit(self):
 
-def visualization(vis_img, lane_fit = None, evaluation = None, n_classes=None, visualize = None, display=False, output_file=None):
+       # Setting the parameters for upscaling and warping-unwarping
+       rheight, rwidth = self.image.shape[:2]
+       Roi_img = self.image[int(self.crop_ratio*rheight):rheight,0:rwidth]
+       dst_size = Roi_img.shape[:2]
+       #print self.image.shape[:2], dst_size
+       # Sliding Window Approach on Lanes Class from segmentation Array and fit the poly curves
+       curves, lanes, ploty, modifiedCenters = self.lane_fit_on_prediction(Roi_img, dst_size)
 
-    if display:
-        cv2.imshow('Prediction', vis_img)
-    if not output_file is None:
-        cv2.imwrite(output_file, vis_img )
-    return vis_img
+       # Overlay the inverse warped image on input image
+       self.visualize_lane_fit(curves, lanes, ploty, modifiedCenters, dst_size)
 
-def lane_fit_on_predicted_image(inp = None, lane_fit = False, output_file = None, display=False): #visualize = None
+    def visualization(self, display=False):
+        if display:
+            cv2.imshow('Prediction', self.final_img)
+        if not self.output_file is None:
+            cv2.imwrite(self.output_file, self.final_img )
 
-    if lane_fit:
-        class_number = 1 # Extract Interesting Class (2 - Lanes in this case) from predictions
-        crop_ratio = 0.2 # Ratio to crop the background parts in the image from top
-        warp_img, final_img, fit = run_lane_fit(inp, class_number, crop_ratio)
-        #cv2.imwrite(output_file, warp_img )
+    def lane_fit_on_predicted_image(self, lane_fit = False, display=False): #visualize = None
+
+        if lane_fit:
+            self.run_lane_fit()
+        else:
+            self.final_img = None
 
         #visualize: None, "all" or one of, "segmentation", "lane_fit"
-        vis_img = visualization(final_img, lane_fit = None, evaluation = None, n_classes=3, visualize = "segmentation", display=False, output_file=output_file)
+        self.visualization(display=False)
 
-    else:
-        fit = None
-        out_img = None
-        vis_img = None
-
-    #return vis_img, out_img, fit
-
-def main():
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Example: Run prediction on an image folder. Example usage: python lane_predict.py --model_prefix=models/resnet_3class --epoch=25 --input_folder=Frogn_Dataset/images_prepped_test --output_folder=.")
     parser.add_argument("--input_folder",default = '', help = "(Relative) path to input image file")
     parser.add_argument("--output_folder", default = '', help = "(Relative) path to output image file. If empty, image is not written.")
     parser.add_argument("--display",default = False, help = "Whether to display video on screen (can be slow)")
-
     args = parser.parse_args()
 
     print('Output_folder',args.output_folder)
     im_files = glob.glob(os.path.join(args.input_folder,'*.png'))
     print(os.path.join(args.input_folder+'*.png'))
+
+    lfp = lane_finder_post_predict()
+
     for pred_im in im_files:
         if args.output_folder:
             base = os.path.basename(pred_im)
-            output_file = os.path.join(args.output_folder,os.path.splitext(base)[0][0:11])+".png" #os.path.splitext(base)[0]
-            print(output_file)
+            lfp.output_file = os.path.join(args.output_folder,os.path.splitext(base)[0][0:11])+".jpg" #os.path.splitext(base)[0]
+            print(lfp.output_file)
         else:
             output_file = None
-        seg_img = cv2.imread(pred_im, 0)
-        lane_fit_on_predicted_image(inp = seg_img, lane_fit = True, output_file = output_file, display=True) #visualize = "segmentation"
-        #vis_img, out_img, fit =
-    cv2.destroyAllWindows()
+        lfp.image = cv2.imread(pred_im, 0)
 
-if __name__ == '__main__':
-    main()
+        #blur_img = cv2.blur(seg_img,(10,10))
+        #gausblur_img = cv2.GaussianBlur(seg_img, (5,5),0)
+        lfp.image = cv2.medianBlur(lfp.image, 15)
+        #bilFilter = cv2.bilateralFilter(img,9,75,75)
+
+        lfp.lane_fit_on_predicted_image(lane_fit = True, display=True) #visualize = "segmentation"
+
+    cv2.destroyAllWindows()
