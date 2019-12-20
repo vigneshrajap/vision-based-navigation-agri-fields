@@ -42,22 +42,9 @@ def initialPoints(warped_img, base_size=0.2, clusters=2):
      # Find white pixels
      whitePixels = np.argwhere(base == 255)
 
-     #cluster_1 = np.zeros([base.shape[0],base.shape[1],1],dtype=np.uint8)
-     #cluster_2 = np.zeros([base.shape[0],base.shape[1],1],dtype=np.uint8)
-
      # Attempt to run kmeans (the kmeans parameters were not chosen with any sort of hard/soft optimization)
      try:
          kmeans = KMeans(n_clusters=clusters, random_state=0, n_init=3, max_iter=150).fit(whitePixels)
-
-         # plt.scatter(whitePixels[:, 1], whitePixels[:, 0], c=kmeans.labels_)
-         # plt.gca().invert_yaxis()
-         # centers1 = [list(imap(int, center)) for center in kmeans.cluster_centers_]
-         #
-         # plt.scatter(kmeans.cluster_centers_[1][:], kmeans.cluster_centers_[0][:], marker='x', s=169, linewidths=4,
-         #    color='w', zorder=10)
-         # plt.title("K-Means Clustering")
-         #
-         # plt.show()
 
      except:
           # If kmeans fails increase the search space unless it is the whole image, then it fails
@@ -70,6 +57,23 @@ def initialPoints(warped_img, base_size=0.2, clusters=2):
      # conver centers to integer values so can be used as pixel coords
      centers = [list(imap(int, center)) for center in kmeans.cluster_centers_]
 
+     # Lamda function to remap the y coordiates of the clusters into the image space
+     increaseY = lambda points: [points[0] + int((1 - base_size) * warped_img.shape[0]), points[1]]
+
+     # map the centers in terms of the image space
+     modifiedCenters = [increaseY(center) for center in centers]
+
+     # return a list of tuples for centers
+     return kmeans, modifiedCenters
+
+def sliding_window(img, modifiedCenters, kmeans_, nwindows=12, minpix=1, draw_windows=True):
+
+    margin_l=35
+    margin_r=35
+
+     #cluster_1 = np.zeros([base.shape[0],base.shape[1],1],dtype=np.uint8)
+     #cluster_2 = np.zeros([base.shape[0],base.shape[1],1],dtype=np.uint8)
+
      # d_0 = []
      # d_1 = []
      # for c_i in range(0, len(contours_1[0])):
@@ -80,7 +84,6 @@ def initialPoints(warped_img, base_size=0.2, clusters=2):
      #margin_1 = abs(max(d_1))
      #margin_r.astype(int)
 
-
      #print  contours_2[0][c_j][0][0], centers[1][1]
 
      # img = np.zeros([base.shape[0],base.shape[1],3],dtype=np.uint8)
@@ -90,19 +93,15 @@ def initialPoints(warped_img, base_size=0.2, clusters=2):
      # cv2.putText(img, 'X',(centers[1][1], centers[1][0]), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 5)
      # cv2.imwrite("/home/vignesh/result.png", img)
 
-     # Lamda function to remap the y coordiates of the clusters into the image space
-     increaseY = lambda points: [points[0] + int((1 - base_size) * warped_img.shape[0]), points[1]]
-
-     # map the centers in terms of the image space
-     modifiedCenters = [increaseY(center) for center in centers]
-
-     # return a list of tuples for centers
-     return modifiedCenters
-
-def sliding_window(img, modifiedCenters, kmeans, nwindows=12, minpix=1, draw_windows=True):
-
-    margin_l=35
-    margin_r=35
+     # plt.scatter(whitePixels[:, 1], whitePixels[:, 0], c=kmeans.labels_)
+     # plt.gca().invert_yaxis()
+     # centers1 = [list(imap(int, center)) for center in kmeans.cluster_centers_]
+     #
+     # plt.scatter(kmeans.cluster_centers_[1][:], kmeans.cluster_centers_[0][:], marker='x', s=169, linewidths=4,
+     #    color='w', zorder=10)
+     # plt.title("K-Means Clustering")
+     #
+     # plt.show()
 
     left_a = []
     left_b = []
@@ -120,6 +119,7 @@ def sliding_window(img, modifiedCenters, kmeans, nwindows=12, minpix=1, draw_win
 
     # Set height of windows
     window_height = np.int(img.shape[0]/nwindows)
+    #print window_height
     # Identify the x and y positions of all nonzero pixels in the image
     nonzero = img.nonzero()
     nonzeroy = np.array(nonzero[0])
@@ -131,7 +131,9 @@ def sliding_window(img, modifiedCenters, kmeans, nwindows=12, minpix=1, draw_win
     # Create empty lists to receive left and right lane pixel indices
     left_lane_inds = []
     right_lane_inds = []
-    #print margin
+    left_lane_inds_n = []
+    right_lane_inds_n = []
+
     for window in range(nwindows):
       # Identify window boundaries in x and y (and right and left)
       win_y_low = img.shape[0] - (window+1)*window_height
@@ -157,20 +159,104 @@ def sliding_window(img, modifiedCenters, kmeans, nwindows=12, minpix=1, draw_win
       if len(good_right_inds) > minpix:
             rightx_current = np.int(np.mean(nonzerox[good_right_inds]))
 
-      # Draw the windows on the visualization image
+      ############################### TEST ############################
+      ## Create a Search Window
+      increment = 5
+      margin_sw = 15
+      sw_xleft_low = sw_xleft_high = sw_xleft_low1 = sw_xleft_high1 = leftx_current
+      sw_xright_low = sw_xright_high = sw_xright_low1 = sw_xright_high1 = rightx_current
+
+      i = j = k = l = 1
+      area = float(window_height*margin_sw*2)
+      percent_white_pixels_ll = percent_white_pixels_lr = percent_white_pixels_rl = percent_white_pixels_rr = 1.0
+
+      while (percent_white_pixels_lr > 0.60) and (sw_xleft_low > 0) and (sw_xleft_high < img.shape[1]):
+          sw_xleft_low = (leftx_current+ increment*i) - margin_sw
+          sw_xleft_high = (leftx_current+ increment*i) + margin_sw
+
+          good_left_inds1 = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
+          (nonzerox >= sw_xleft_low) &  (nonzerox < sw_xleft_high)).nonzero()[0]
+
+          percent_white_pixels_lr = float(cv2.countNonZero(good_left_inds1)/area)
+          i += 1
+
+      while (percent_white_pixels_rr > 0.60) and (sw_xleft_low > 0) and (sw_xright_high < img.shape[1]):
+          #print sw_xright_low, sw_xright_high, img.shape[1]
+          sw_xright_low = (rightx_current+ increment*j) - margin_sw
+          sw_xright_high = (rightx_current+ increment*j) + margin_sw
+
+          good_right_inds1 = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
+          (nonzerox >= sw_xright_low) &  (nonzerox < sw_xright_high)).nonzero()[0]
+          percent_white_pixels_rr = float(cv2.countNonZero(good_right_inds1)/area)
+          j += 1
+
+      while (percent_white_pixels_ll > 0.60) and (sw_xleft_low1 > 0) and (sw_xleft_high1 < img.shape[1]):
+          sw_xleft_low1 = (leftx_current- increment*k) - margin_sw
+          sw_xleft_high1 = (leftx_current- increment*k) + margin_sw
+
+          good_left_inds2 = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
+          (nonzerox >= sw_xleft_low1) &  (nonzerox < sw_xleft_high1)).nonzero()[0]
+
+          percent_white_pixels_ll = float(cv2.countNonZero(good_left_inds2)/area)
+          k += 1
+
+      while (percent_white_pixels_rl > 0.60) and (sw_xright_low1 > 0) and (sw_xright_high1 < img.shape[1]):
+          #print sw_xright_low, sw_xright_high, img.shape[1]
+          sw_xright_low1 = (rightx_current- increment*l) - margin_sw
+          sw_xright_high1 = (rightx_current- increment*l) + margin_sw
+
+          good_right_inds2 = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
+          (nonzerox >= sw_xright_low1) &  (nonzerox < sw_xright_high1)).nonzero()[0]
+          percent_white_pixels_rl = float(cv2.countNonZero(good_right_inds2)/area)
+          l += 1
+
+      #print cv2.countNonZero(good_left_inds1), percent_white_pixels_l, i
+      #print cv2.countNonZero(good_right_inds1), percent_white_pixels_r, j
+      cv2.rectangle(out_img,(sw_xleft_low,win_y_low),(sw_xleft_high,win_y_high), (0,0,255), 5)
+      cv2.rectangle(out_img,(sw_xright_low,win_y_low),(sw_xright_high,win_y_high), (0,0,255), 5)
+      cv2.rectangle(out_img,(sw_xleft_low1,win_y_low),(sw_xleft_high1,win_y_high), (0,0,255), 5)
+      cv2.rectangle(out_img,(sw_xright_low1,win_y_low),(sw_xright_high1,win_y_high), (0,0,255), 5)
+
+      margin_ll = abs(sw_xleft_low-leftx_current)
+      margin_lr = abs(sw_xleft_low1-leftx_current)
+      margin_rl = abs(sw_xright_low-rightx_current)
+      margin_rr = abs(sw_xright_high1-rightx_current)
+
+      print margin_ll, margin_lr, sw_xleft_low, sw_xleft_high, sw_xleft_low1, sw_xleft_high1   #, margin_rl, margin_rr
+
+      win_xleft_low1 = leftx_current - margin_rl
+      win_xleft_high1 = leftx_current + margin_rr
+      win_xright_low1 = rightx_current - margin_ll
+      win_xright_high1 = rightx_current + margin_lr
+
+      # Identify the nonzero pixels in x and y within the window
+      good_left_inds_n = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
+      (nonzerox >= win_xleft_low1) &  (nonzerox < win_xleft_high1)).nonzero()[0]
+      good_right_inds_n = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
+     (nonzerox >= win_xright_low1) &  (nonzerox < win_xright_high1)).nonzero()[0]
+
+      # Append these indices to the lists
+      left_lane_inds_n.append(good_left_inds_n)
+      right_lane_inds_n.append(good_right_inds_n)
       if draw_windows == True:
-        cv2.rectangle(out_img,(win_xleft_low,win_y_low),(win_xleft_high,win_y_high), (255,0,0), 3)
-        cv2.rectangle(out_img,(win_xright_low,win_y_low),(win_xright_high,win_y_high), (255,0,0), 3)
+        cv2.rectangle(out_img,(win_xleft_low1,win_y_low),(win_xleft_high1,win_y_high), (0,255,0), 3)
+        cv2.rectangle(out_img,(win_xright_low1,win_y_low),(win_xright_high1,win_y_high), (0,255,0), 3)
+      ############################### TEST ############################
+
+      # Draw the windows on the visualization image
+      # if draw_windows == True:
+      #   cv2.rectangle(out_img,(win_xleft_low,win_y_low),(win_xleft_high,win_y_high), (255,0,0), 3)
+      #   cv2.rectangle(out_img,(win_xright_low,win_y_low),(win_xright_high,win_y_high), (255,0,0), 3)
 
     # Concatenate the arrays of indices
-    left_lane_inds = np.concatenate(left_lane_inds)
-    right_lane_inds = np.concatenate(right_lane_inds)
+    left_lane_inds_n = np.concatenate(left_lane_inds_n)
+    right_lane_inds_n = np.concatenate(right_lane_inds_n)
 
     # Extract left and right line pixel positions
-    leftx = nonzerox[left_lane_inds]
-    lefty = nonzeroy[left_lane_inds]
-    rightx = nonzerox[right_lane_inds]
-    righty = nonzeroy[right_lane_inds]
+    leftx = nonzerox[left_lane_inds_n]
+    lefty = nonzeroy[left_lane_inds_n]
+    rightx = nonzerox[right_lane_inds_n]
+    righty = nonzeroy[right_lane_inds_n]
 
     # Fit a second order polynomial to
     left_fit = np.polyfit(lefty, leftx, 2)
@@ -197,8 +283,8 @@ def sliding_window(img, modifiedCenters, kmeans, nwindows=12, minpix=1, draw_win
     left_fitx = left_fit_[0]*ploty**2 + left_fit_[1]*ploty + left_fit_[2]
     right_fitx = right_fit_[0]*ploty**2 + right_fit_[1]*ploty + right_fit_[2]
 
-    out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [0, 100, 255] #[255, 0, 100]
-    out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 100, 255]
+    # out_img[nonzeroy[left_lane_inds_n], nonzerox[left_lane_inds_n]] = [0, 100, 255] #[255, 0, 100]
+    # out_img[nonzeroy[right_lane_inds_n], nonzerox[right_lane_inds_n]] = [0, 100, 255]
 
     return out_img, (left_fitx, right_fitx), (left_fit_, right_fit_), ploty
 

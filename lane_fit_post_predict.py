@@ -42,7 +42,7 @@ class lane_finder_post_predict():
        self.lanes = []
        self.ploty = []
        self.kmeans = KMeans()
-       self.base_size = 0.2
+       self.base_size = 0.1
        self.clusters = 2
        self.modifiedCenters = []
 
@@ -99,7 +99,7 @@ class lane_finder_post_predict():
         if display:
             cv2.imshow('Prediction', self.final_img)
         if not self.output_file is None:
-            cv2.imwrite(self.output_file, self.final_img )
+            cv2.imwrite(self.output_file, self.polyfit_img )
 
     def lane_fit_on_predicted_image(self, lane_fit = False, display=False): #visualize = None
 
