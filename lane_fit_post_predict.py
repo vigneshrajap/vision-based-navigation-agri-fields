@@ -12,6 +12,8 @@ from sklearn.cluster import KMeans
 import sliding_window_approach
 from geometry_msgs.msg import Pose, PoseArray
 
+import timeit
+
 class lane_finder_post_predict():
     '''
     A class to find fitted center of the lane points along the crop rows given an input RGB image.
@@ -99,7 +101,7 @@ class lane_finder_post_predict():
         if display:
             cv2.imshow('Prediction', self.final_img)
         if not self.output_file is None:
-            cv2.imwrite(self.output_file, self.polyfit_img )
+            cv2.imwrite(self.output_file, self.final_img )
 
     def lane_fit_on_predicted_image(self, lane_fit = False, display=False): #visualize = None
 
@@ -139,5 +141,8 @@ if __name__ == '__main__':
         #bilFilter = cv2.bilateralFilter(img,9,75,75)
 
         lfp.lane_fit_on_predicted_image(lane_fit = True, display=True) #visualize = "segmentation"
+        
+        t = timeit.Timer("d.lane_fit_on_predicted_image()", "from __main__ import lane_finder_post_predict; d = lane_finder_post_predict()")
+        print t.timeit()
 
     cv2.destroyAllWindows()

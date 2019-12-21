@@ -212,22 +212,22 @@ def sliding_window(img, modifiedCenters, kmeans_, nwindows=12, minpix=1, draw_wi
 
       #print cv2.countNonZero(good_left_inds1), percent_white_pixels_l, i
       #print cv2.countNonZero(good_right_inds1), percent_white_pixels_r, j
-      cv2.rectangle(out_img,(sw_xleft_low,win_y_low),(sw_xleft_high,win_y_high), (0,0,255), 5)
-      cv2.rectangle(out_img,(sw_xright_low,win_y_low),(sw_xright_high,win_y_high), (0,0,255), 5)
-      cv2.rectangle(out_img,(sw_xleft_low1,win_y_low),(sw_xleft_high1,win_y_high), (0,0,255), 5)
-      cv2.rectangle(out_img,(sw_xright_low1,win_y_low),(sw_xright_high1,win_y_high), (0,0,255), 5)
+      # cv2.rectangle(out_img,(sw_xleft_low,win_y_low),(sw_xleft_high,win_y_high), (0,0,255), 5)
+      # cv2.rectangle(out_img,(sw_xright_low,win_y_low),(sw_xright_high,win_y_high), (0,0,255), 5)
+      # cv2.rectangle(out_img,(sw_xleft_low1,win_y_low),(sw_xleft_high1,win_y_high), (0,0,255), 5)
+      # cv2.rectangle(out_img,(sw_xright_low1,win_y_low),(sw_xright_high1,win_y_high), (0,0,255), 5)
 
-      margin_ll = abs(sw_xleft_low-leftx_current)
-      margin_lr = abs(sw_xleft_low1-leftx_current)
-      margin_rl = abs(sw_xright_low-rightx_current)
-      margin_rr = abs(sw_xright_high1-rightx_current)
+      margin_ll = abs((sw_xleft_low+sw_xleft_high)/2-leftx_current)
+      margin_lr = abs((sw_xleft_low1+sw_xleft_high1)/2-leftx_current)
+      margin_rl = abs((sw_xright_low+sw_xright_high)/2-rightx_current)
+      margin_rr = abs((sw_xright_low1+sw_xright_high1)/2-rightx_current)
 
-      print margin_ll, margin_lr, sw_xleft_low, sw_xleft_high, sw_xleft_low1, sw_xleft_high1   #, margin_rl, margin_rr
+      # print margin_ll, margin_lr, sw_xleft_low, sw_xleft_high, sw_xleft_low1, sw_xleft_high1   #, margin_rl, margin_rr
 
-      win_xleft_low1 = leftx_current - margin_rl
-      win_xleft_high1 = leftx_current + margin_rr
-      win_xright_low1 = rightx_current - margin_ll
-      win_xright_high1 = rightx_current + margin_lr
+      win_xleft_low1 = leftx_current - margin_lr
+      win_xleft_high1 = leftx_current + margin_ll
+      win_xright_low1 = rightx_current - margin_rr
+      win_xright_high1 = rightx_current + margin_rl
 
       # Identify the nonzero pixels in x and y within the window
       good_left_inds_n = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
@@ -283,8 +283,8 @@ def sliding_window(img, modifiedCenters, kmeans_, nwindows=12, minpix=1, draw_wi
     left_fitx = left_fit_[0]*ploty**2 + left_fit_[1]*ploty + left_fit_[2]
     right_fitx = right_fit_[0]*ploty**2 + right_fit_[1]*ploty + right_fit_[2]
 
-    # out_img[nonzeroy[left_lane_inds_n], nonzerox[left_lane_inds_n]] = [0, 100, 255] #[255, 0, 100]
-    # out_img[nonzeroy[right_lane_inds_n], nonzerox[right_lane_inds_n]] = [0, 100, 255]
+    out_img[nonzeroy[left_lane_inds_n], nonzerox[left_lane_inds_n]] = [255, 0, 0] #[255, 0, 100]
+    out_img[nonzeroy[right_lane_inds_n], nonzerox[right_lane_inds_n]] = [255, 0, 0]
 
     return out_img, (left_fitx, right_fitx), (left_fit_, right_fit_), ploty
 
