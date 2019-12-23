@@ -131,124 +131,137 @@ def initialPoints(warped_img, margin):
      # return a list of tuples for centers
      return margin, modifiedCenters #margin_1
 
-def sliding_window(img, modifiedCenters, nwindows=12, margin=35, margin_1=35, minpix=1, draw_windows=True):
+def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, margin_r=35, minpix=1, draw_windows=True):
     global prev_modifiedCenters, base_size, clusters
 
-    left_a = []
-    left_b = []
-    left_c = []
-    # right_a = []
-    # right_b = []
-    # right_c = []
-
-    left_fit_= np.empty(3)
-    # right_fit_ = np.empty(3)
+    # Creates a list containing 3 lists, each of [] items, all set to 0
+    line_ = [[]for y in range(3)] # line parameter a,b,c
     out_img = np.dstack((img, img, img))*255
-
-    #modifiedCenters = initialPoints(img)
-    leftx_base = modifiedCenters[0][1]
-    # rightx_base = modifiedCenters[1][1]
-
     # Set height of windows
     window_height = np.int(img.shape[0]/nwindows)
     # Identify the x and y positions of all nonzero pixels in the image
     nonzero = img.nonzero()
     nonzeroy = np.array(nonzero[0])
     nonzerox = np.array(nonzero[1])
-    # Current positions to be updated for each window
-    leftx_current = leftx_base
-    # rightx_current = rightx_base
 
-    # Set height of windows
-    window_height = np.int(img.shape[0]/nwindows)
-    # Identify the x and y positions of all nonzero pixels in the image
-    nonzero = img.nonzero()
-    nonzeroy = np.array(nonzero[0])
-    nonzerox = np.array(nonzero[1])
-    # Current positions to be updated for each window
-    leftx_current = leftx_base
-    # rightx_current = rightx_base
+    if ((len(modifiedCenters[0])%2)!=0):
+        fit_= np.zeros((len(modifiedCenters[0]),3))
+        lane_inds_n1 = []
+        for p_in in range(len(modifiedCenters[0])):
+          x_base = modifiedCenters[0][p_in]
 
-    # Create empty lists to receive left and right lane pixel indices
-    left_lane_inds = []
-    # right_lane_inds = []
-    #print margin
-    for window in range(nwindows):
-      # Identify window boundaries in x and y (and right and left)
-      win_y_low = img.shape[0] - (window+1)*window_height
-      win_y_high = img.shape[0] - window*window_height
-      win_xleft_low = leftx_current - margin
-      win_xleft_high = leftx_current + margin
-      # win_xright_low = rightx_current - margin_1
-      # win_xright_high = rightx_current + margin_1
+          # Current positions to be updated for each window
+          x_current = x_base
 
-      # Identify the nonzero pixels in x and y within the window
-      good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
-      (nonzerox >= win_xleft_low) &  (nonzerox < win_xleft_high)).nonzero()[0]
-      # good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
-      # (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
+          # Create empty lists to receive left and right lane pixel indices
+          #lane_inds = [[]for y in range(len(modifiedCenters[0]))]
+          lane_inds = []
+          lane_inds_n = []
 
-      # Append these indices to the lists
-      left_lane_inds.append(good_left_inds)
-      # right_lane_inds.append(good_right_inds)
+          #lane_inds_n = [[]for y in range(len(modifiedCenters[0]))]
 
-      # If you found > minpix pixels, recenter next window on their mean position
-      if len(good_left_inds) > minpix:
-            leftx_current = np.int(np.mean(nonzerox[good_left_inds]))
-      # if len(good_right_inds) > minpix:
-      #       rightx_current = np.int(np.mean(nonzerox[good_right_inds]))
+          for window in range(nwindows):
+            # Identify window boundaries in x and y (and right and left)
+            win_y_low = img.shape[0] - (window+1)*window_height
+            win_y_high = img.shape[0] - window*window_height
+            win_x_low = x_current - margin_l
+            win_x_high = x_current + margin_l
 
-      # Draw the windows on the visualization image
-      if draw_windows == True:
-        cv2.rectangle(out_img,(win_xleft_low,win_y_low),(win_xleft_high,win_y_high),
-            (255,0,0), 3)
-        # cv2.rectangle(out_img,(win_xright_low,win_y_low),(win_xright_high,win_y_high),
-        #     (255,0,0), 3)
+            # Identify the nonzero pixels in x and y within the window
+            good_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
+            (nonzerox >= win_x_low) &  (nonzerox < win_x_high)).nonzero()[0]
 
-    # Concatenate the arrays of indices
-    left_lane_inds = np.concatenate(left_lane_inds)
-    # right_lane_inds = np.concatenate(right_lane_inds)
+            # Append these indices to the lists
+            #lane_inds[p_in].append(good_inds)
+            lane_inds.append(good_inds)
 
-    # Extract left and right line pixel positions
-    leftx = nonzerox[left_lane_inds]
-    lefty = nonzeroy[left_lane_inds]
-    # rightx = nonzerox[right_lane_inds]
-    # righty = nonzeroy[right_lane_inds]
+            # If you found > minpix pixels, recenter next window on their mean position
+            if len(good_inds) > minpix:
+                  x_current = np.int(np.mean(nonzerox[good_inds]))
+            #print x_current
+            # if draw_windows == True:
+            #    cv2.rectangle(out_img,(win_x_low,win_y_low),(win_x_high,win_y_high), (0,255,255), 3)
+            ############################### TEST ############################
+            ## Create a Search Window
+            increment = 5
+            margin_sw = 15
+            sw_x_low = sw_x_high = x_current
 
-    # Fit a second order polynomial to
-    left_fit = np.polyfit(lefty, leftx, 1)
-    # right_fit = np.polyfit(righty, rightx, 2)
+            k = l = 1
+            area = float(window_height*margin_sw*2)
+            percent_white_pixels_l = percent_white_pixels_r = 1.0
 
-    left_a.append(left_fit[0])
-    left_b.append(left_fit[1])
-    #left_c.append(left_fit[2])
+            while (percent_white_pixels_l > 0.60) and (sw_x_low > 0) and (sw_x_high < img.shape[1]):
+                 sw_x_low_l = (x_current- increment*k) - margin_sw
+                 sw_x_high_l = (x_current- increment*k) + margin_sw
 
-    # right_a.append(right_fit[0])
-    # right_b.append(right_fit[1])
-    # right_c.append(right_fit[2])
+                 good_inds1 = ((nonzeroy >= win_y_low)&(nonzeroy < win_y_high)&(nonzerox >= sw_x_low_l)& (nonzerox < sw_x_high_l)).nonzero()[0]
 
-    left_fit_[0] = np.mean(left_a[-10:])
-    left_fit_[1] = np.mean(left_b[-10:])
-    #left_fit_[2] = np.mean(left_c[-10:])
+                 percent_white_pixels_l = float(cv2.countNonZero(good_inds1)/area)
+                 k += 1
 
-    # right_fit_[0] = np.mean(right_a[-10:])
-    # right_fit_[1] = np.mean(right_b[-10:])
-    # right_fit_[2] = np.mean(right_c[-10:])
+            while (percent_white_pixels_r > 0.60) and (sw_x_low > 0) and (sw_x_high < img.shape[1]):
+                 sw_x_low_r = (x_current+ increment*l) - margin_sw
+                 sw_x_high_r = (x_current+ increment*l) + margin_sw
 
-    # Generate x and y values for plotting#
-    ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
-    #left_fitx = left_fit_[0]*ploty**2 + left_fit_[1]*ploty + left_fit_[2]
-    left_fitx = left_fit_[0]*ploty + left_fit_[1] #+ left_fit_[2]
-    # right_fitx = right_fit_[0]*ploty**2 + right_fit_[1]*ploty + right_fit_[2]
+                 good_inds2 = ((nonzeroy >= win_y_low)&(nonzeroy < win_y_high)&(nonzerox >= sw_x_low_r)& (nonzerox < sw_x_high_r)).nonzero()[0]
 
-    out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 255] #[255, 0, 100]
-    # out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 100, 255]
+                 percent_white_pixels_r = float(cv2.countNonZero(good_inds2)/area)
+                 l += 1
 
-    return out_img, (left_fitx), (left_fit_), ploty #, right_fitx #, right_fit_
+            # cv2.rectangle(out_img,(sw_xleft_low,win_y_low),(sw_xleft_high,win_y_high), (0,0,255), 5)
+            # cv2.rectangle(out_img,(sw_x_low,win_y_low),(sw_x_high,win_y_high), (0,0,255), 5)
+
+            margin_l = abs((sw_x_low_l+sw_x_high_l)/2-x_current)
+            margin_r = abs((sw_x_low_r+sw_x_high_r)/2-x_current)
+
+            win_x_low = x_current - margin_l
+            win_x_high = x_current + margin_r
+
+            if win_x_low < 0:
+                win_x_low = 1
+
+            # Identify the nonzero pixels in x and y within the window
+            good_inds_n = ((nonzeroy >= win_y_low)&(nonzeroy < win_y_high)&(nonzerox >= win_x_low) &  (nonzerox < win_x_high)).nonzero()[0]
+
+            # Append these indices to the lists
+            #lane_inds_n[p_in].append(good_inds_n)
+            lane_inds_n.append(good_inds_n)
+            #print lane_inds_n
+
+            if draw_windows == True:
+               cv2.rectangle(out_img,(win_x_low,win_y_low),(win_x_high,win_y_high), (0,255,0), 3)
+            ############################### TEST ############################
+
+            # Concatenate the arrays of indices
+            lane_inds_nn = np.concatenate(lane_inds_n)
+
+            # # Extract left and right line pixel positions
+            x_ = nonzerox[lane_inds_nn]
+            y_ = nonzeroy[lane_inds_nn]
+            print win_x_low, good_inds_n
+            # Fit a second order polynomial to
+            #fit = np.polyfit(y_, x_, 2)
+            #
+            # line_[0].append(fit[0])
+            # line_[1].append(fit[1])
+            # line_[2].append(fit[2])
+    #
+    #         fit_[0] = np.mean(line_[0][-10:])
+    #         fit_[1] = np.mean(line_[1][-10:])
+    #         fit_[2] = np.mean(line_[2][-10:])
+    #
+    #         # Generate x and y values for plotting
+    #         ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
+    #         #fitx = fit_[0]*ploty**2 + fit_[1]*ploty + fit_[2]
+
+            out_img[nonzeroy[lane_inds_nn], nonzerox[lane_inds_nn]] = [255, 0, 0] #[255, 0, 100]
+
+    return out_img #, (left_fitx), (left_fit_), ploty #, right_fitx #, right_fit_
 
 def visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters):
 
-   cv2.circle(out_img, (modifiedCenters[0][1], modifiedCenters[0][0]), 8, (0, 255, 0), -1)
+   #cv2.circle(out_img, (modifiedCenters[0][1], modifiedCenters[0][0]), 8, (0, 255, 0), -1)
    #cv2.circle(out_img, (modifiedCenters[1][1], modifiedCenters[1][0]), 8, (0, 255, 0), -1)
 
    # Fitted curves as points

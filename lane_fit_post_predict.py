@@ -10,8 +10,9 @@ from sensor_msgs.msg import Image
 from sklearn.cluster import KMeans
 
 import sliding_window_approach
+import sliding_window_approach_crop
 from geometry_msgs.msg import Pose, PoseArray
-
+import scipy.signal as signal
 import timeit
 
 class lane_finder_post_predict():
@@ -56,11 +57,33 @@ class lane_finder_post_predict():
 
        self.warp_img, M  = sliding_window_approach.perspective_warp(Roi_img, dst_size, self.src, self.dst) # Perspective warp
 
+       newdata =  np.sum(self.warp_img, axis=0) # Sum the columns of warped image to determine peaks
+
+       # plt.plot(newdata) # plotting by columns
+       # window = signal.general_gaussian(40, p=0.5, sig=70)
+       # filtered = signal.fftconvolve(window, newdata)
+       # filtered = (np.average(newdata) / np.average(filtered)) * filtered
+       # filtered = np.roll(filtered, -25)
+       # plt.plot(filtered) # plotting by columns
+
+       #peakidx = signal.find_peaks_cwt(newdata, np.arange(1,100), noise_perc=0.1)
+
+       peakidx = signal.find_peaks(newdata, height=80000, distance=self.warp_img.shape[1]/3) #, np.arange(1,100), noise_perc=0.1
+       #print peakidx, len(peakidx[0]), peakidx[0][0]
+
+       #print peakidx, newdata[peakidx[0]]
+       # for p_in in range(len(peakidx[0])):
+       #  plt.plot(peakidx[0][p_in], newdata[peakidx[0][p_in]], marker='o', markersize=10)
+       # plt.show()
+       #plt.savefig('/home/vignesh/hist_col.png')
+       #plt.close()
+
        # InitialPoints Estimation using K-Means clustering
-       self.kmeans, self.modifiedCenters = sliding_window_approach.initialPoints(self.warp_img,self.base_size,self.clusters)
+       #self.kmeans, self.modifiedCenters = sliding_window_approach.initialPoints(self.warp_img,self.base_size,self.clusters)
 
        # Sliding Window Search
-       self.polyfit_img, self.curves, self.lanes, self.ploty = sliding_window_approach.sliding_window(self.warp_img, self.modifiedCenters, self.kmeans, self.nwindows)
+       #, self.curves, self.lanes, self.ploty =
+       self.polyfit_img = sliding_window_approach_crop.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
 
     def visualize_lane_fit(self, dst_size):
        # Visualize the fitted polygonals (One on each lane and on average curve)
@@ -95,23 +118,21 @@ class lane_finder_post_predict():
        self.lane_fit_on_prediction(Roi_img, dst_size)
 
        # Overlay the inverse warped image on input image
-       self.visualize_lane_fit(dst_size)
+       #self.visualize_lane_fit(dst_size)
 
     def visualization(self, display=False):
         if display:
             cv2.imshow('Prediction', self.final_img)
         if not self.output_file is None:
-            cv2.imwrite(self.output_file, self.final_img )
+            cv2.imwrite(self.output_file, self.polyfit_img )
 
     def lane_fit_on_predicted_image(self, lane_fit = False, display=False): #visualize = None
 
         if lane_fit:
             self.run_lane_fit()
+            self.visualization()
         else:
             self.final_img = None
-
-        #visualize: None, "all" or one of, "segmentation", "lane_fit"
-        self.visualization(display=False)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Example: Run prediction on an image folder. Example usage: python lane_predict.py --model_prefix=models/resnet_3class --epoch=25 --input_folder=Frogn_Dataset/images_prepped_test --output_folder=.")
@@ -129,7 +150,7 @@ if __name__ == '__main__':
     for pred_im in im_files:
         if args.output_folder:
             base = os.path.basename(pred_im)
-            lfp.output_file = os.path.join(args.output_folder,os.path.splitext(base)[0][0:11])+".jpg" #os.path.splitext(base)[0]
+            lfp.output_file = os.path.join(args.output_folder,os.path.splitext(base)[0][7:11])+".jpg" #os.path.splitext(base)[0]
             print(lfp.output_file)
         else:
             output_file = None
@@ -140,9 +161,9 @@ if __name__ == '__main__':
         lfp.image = cv2.medianBlur(lfp.image, 15)
         #bilFilter = cv2.bilateralFilter(img,9,75,75)
 
-        lfp.lane_fit_on_predicted_image(lane_fit = True, display=True) #visualize = "segmentation"
-        
-        t = timeit.Timer("d.lane_fit_on_predicted_image()", "from __main__ import lane_finder_post_predict; d = lane_finder_post_predict()")
-        print t.timeit()
+        lfp.lane_fit_on_predicted_image(lane_fit = True, display=False) #visualize = "segmentation"
+
+        #t = timeit.Timer("d.lane_fit_on_predicted_image()", "from __main__ import lane_finder_post_predict; d = lane_finder_post_predict()")
+        #print t.timeit()
 
     cv2.destroyAllWindows()

@@ -66,7 +66,7 @@ def initialPoints(warped_img, base_size=0.2, clusters=2):
      # return a list of tuples for centers
      return kmeans, modifiedCenters
 
-def sliding_window(img, modifiedCenters, kmeans_, nwindows=12, minpix=1, draw_windows=True):
+def sliding_window(img, modifiedCenters, kmeans_=None, nwindows=12, minpix=1, draw_windows=True):
 
     margin_l=35
     margin_r=35
@@ -102,6 +102,9 @@ def sliding_window(img, modifiedCenters, kmeans_, nwindows=12, minpix=1, draw_wi
      # plt.title("K-Means Clustering")
      #
      # plt.show()
+
+    #peakidx[0][p_in]
+
 
     left_a = []
     left_b = []
