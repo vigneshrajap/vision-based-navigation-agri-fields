@@ -82,12 +82,11 @@ class lane_finder_post_predict():
        #self.kmeans, self.modifiedCenters = sliding_window_approach.initialPoints(self.warp_img,self.base_size,self.clusters)
 
        # Sliding Window Search
-       #, self.curves, self.lanes, self.ploty =
-       self.polyfit_img = sliding_window_approach_crop.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
+       self.polyfit_img, self.curves, self.lanes, self.ploty = sliding_window_approach_crop.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
 
     def visualize_lane_fit(self, dst_size):
        # Visualize the fitted polygonals (One on each lane and on average curve)
-       self.polyfit_img, midLane_i = sliding_window_approach.visualization_polyfit(self.polyfit_img, self.curves, self.lanes, self.ploty, self.modifiedCenters)
+       self.polyfit_img, midLane_i = sliding_window_approach_crop.visualization_polyfit(self.polyfit_img, self.curves, self.lanes, self.ploty, self.modifiedCenters)
 
        # Inverse Perspective warp
        self.invwarp_img, Minv = sliding_window_approach.inv_perspective_warp(self.polyfit_img, (dst_size[1], dst_size[0]), self.dst, self.src)
@@ -118,7 +117,7 @@ class lane_finder_post_predict():
        self.lane_fit_on_prediction(Roi_img, dst_size)
 
        # Overlay the inverse warped image on input image
-       #self.visualize_lane_fit(dst_size)
+       self.visualize_lane_fit(dst_size)
 
     def visualization(self, display=False):
         if display:
