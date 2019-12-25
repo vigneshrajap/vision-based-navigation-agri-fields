@@ -105,7 +105,6 @@ def sliding_window(img, modifiedCenters, kmeans_=None, nwindows=12, minpix=1, dr
 
     #peakidx[0][p_in]
 
-
     left_a = []
     left_b = []
     left_c = []
@@ -118,7 +117,7 @@ def sliding_window(img, modifiedCenters, kmeans_=None, nwindows=12, minpix=1, dr
     out_img = np.dstack((img, img, img))*255
 
     leftx_base = modifiedCenters[0][1]
-    rightx_base = modifiedCenters[1][1]
+    rightx_base = modifiedCenters[0][2]
 
     # Set height of windows
     window_height = np.int(img.shape[0]/nwindows)
@@ -173,6 +172,16 @@ def sliding_window(img, modifiedCenters, kmeans_=None, nwindows=12, minpix=1, dr
       area = float(window_height*margin_sw*2)
       percent_white_pixels_ll = percent_white_pixels_lr = percent_white_pixels_rl = percent_white_pixels_rr = 1.0
 
+      while (percent_white_pixels_ll > 0.60) and (sw_xleft_low1 > 0) and (sw_xleft_high1 < img.shape[1]):
+          sw_xleft_low1 = (leftx_current- increment*k) - margin_sw
+          sw_xleft_high1 = (leftx_current- increment*k) + margin_sw
+
+          good_left_inds2 = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
+          (nonzerox >= sw_xleft_low1) &  (nonzerox < sw_xleft_high1)).nonzero()[0]
+
+          percent_white_pixels_ll = float(cv2.countNonZero(good_left_inds2)/area)
+          k += 1
+
       while (percent_white_pixels_lr > 0.60) and (sw_xleft_low > 0) and (sw_xleft_high < img.shape[1]):
           sw_xleft_low = (leftx_current+ increment*i) - margin_sw
           sw_xleft_high = (leftx_current+ increment*i) + margin_sw
@@ -183,6 +192,8 @@ def sliding_window(img, modifiedCenters, kmeans_=None, nwindows=12, minpix=1, dr
           percent_white_pixels_lr = float(cv2.countNonZero(good_left_inds1)/area)
           i += 1
 
+      #print str("original"), leftx_current, sw_xleft_low1, sw_xleft_high1, k,sw_xleft_low, sw_xleft_high, i
+
       while (percent_white_pixels_rr > 0.60) and (sw_xleft_low > 0) and (sw_xright_high < img.shape[1]):
           #print sw_xright_low, sw_xright_high, img.shape[1]
           sw_xright_low = (rightx_current+ increment*j) - margin_sw
@@ -192,16 +203,6 @@ def sliding_window(img, modifiedCenters, kmeans_=None, nwindows=12, minpix=1, dr
           (nonzerox >= sw_xright_low) &  (nonzerox < sw_xright_high)).nonzero()[0]
           percent_white_pixels_rr = float(cv2.countNonZero(good_right_inds1)/area)
           j += 1
-
-      while (percent_white_pixels_ll > 0.60) and (sw_xleft_low1 > 0) and (sw_xleft_high1 < img.shape[1]):
-          sw_xleft_low1 = (leftx_current- increment*k) - margin_sw
-          sw_xleft_high1 = (leftx_current- increment*k) + margin_sw
-
-          good_left_inds2 = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
-          (nonzerox >= sw_xleft_low1) &  (nonzerox < sw_xleft_high1)).nonzero()[0]
-
-          percent_white_pixels_ll = float(cv2.countNonZero(good_left_inds2)/area)
-          k += 1
 
       while (percent_white_pixels_rl > 0.60) and (sw_xright_low1 > 0) and (sw_xright_high1 < img.shape[1]):
           #print sw_xright_low, sw_xright_high, img.shape[1]
@@ -241,6 +242,7 @@ def sliding_window(img, modifiedCenters, kmeans_=None, nwindows=12, minpix=1, dr
       # Append these indices to the lists
       left_lane_inds_n.append(good_left_inds_n)
       right_lane_inds_n.append(good_right_inds_n)
+
       if draw_windows == True:
         cv2.rectangle(out_img,(win_xleft_low1,win_y_low),(win_xleft_high1,win_y_high), (0,255,0), 3)
         cv2.rectangle(out_img,(win_xright_low1,win_y_low),(win_xright_high1,win_y_high), (0,255,0), 3)
@@ -285,6 +287,8 @@ def sliding_window(img, modifiedCenters, kmeans_=None, nwindows=12, minpix=1, dr
     ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
     left_fitx = left_fit_[0]*ploty**2 + left_fit_[1]*ploty + left_fit_[2]
     right_fitx = right_fit_[0]*ploty**2 + right_fit_[1]*ploty + right_fit_[2]
+
+    print str("original"),  left_fit, left_fit_[0], left_fitx
 
     out_img[nonzeroy[left_lane_inds_n], nonzerox[left_lane_inds_n]] = [255, 0, 0] #[255, 0, 100]
     out_img[nonzeroy[right_lane_inds_n], nonzerox[right_lane_inds_n]] = [255, 0, 0]

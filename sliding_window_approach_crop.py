@@ -132,7 +132,7 @@ def initialPoints(warped_img, margin):
      return margin, modifiedCenters #margin_1
 
 def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, margin_r=35, minpix=1, draw_windows=True):
-    global prev_modifiedCenters, base_size, clusters
+    #global prev_modifiedCenters, base_size, clusters
 
     # Creates a list containing 3 lists, each of [] items, all set to 0
     out_img = np.dstack((img, img, img))*255
@@ -146,18 +146,19 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, 
     if ((len(modifiedCenters[0])%2)!=0):
         fitx_ = [[]for y in range(len(modifiedCenters[0]))]
         fit_= np.zeros((len(modifiedCenters[0]),3))
-        line_ = np.zeros((len(modifiedCenters[0]),3)) #[[]for y in range(3)] # line parameter a,b,c
+        line_a_ = np.zeros((len(modifiedCenters[0]),3)) #[[]for y in range(3)] # line parameter a,b,c
+        line_b_ = np.zeros((len(modifiedCenters[0]),3)) #[[]for y in range(3)] # line parameter a,b,c
+        line_c_ = np.zeros((len(modifiedCenters[0]),3)) #[[]for y in range(3)] # line parameter a,b,c
 
-        lane_inds_nn = []
-        for p_in in range(1): #range(len(modifiedCenters[0]))
+        # # Create empty lists to receive left and right lane pixel indices
+        # lane_inds = []
+        lane_inds_n = []
+
+        for p_in in range(1,2): #range(len(modifiedCenters[0]))
           x_base = modifiedCenters[0][p_in]
 
           # Current positions to be updated for each window
           x_current = x_base
-
-          # Create empty lists to receive left and right lane pixel indices
-          lane_inds = []
-          lane_inds_n = []
 
           for window in range(nwindows):
             # Identify window boundaries in x and y (and right and left)
@@ -172,41 +173,45 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, 
 
             # Append these indices to the lists
             #lane_inds[p_in].append(good_inds)
-            lane_inds.append(good_inds)
+            # lane_inds.append(good_inds)
 
             # If you found > minpix pixels, recenter next window on their mean position
             if len(good_inds) > minpix:
                   x_current = np.int(np.mean(nonzerox[good_inds]))
-            #print x_current
+
             # if draw_windows == True:
             #    cv2.rectangle(out_img,(win_x_low,win_y_low),(win_x_high,win_y_high), (0,255,255), 3)
             ############################### TEST ############################
             ## Create a Search Window
             increment = 5
             margin_sw = 15
-            sw_x_low = sw_x_high = x_current
+            sw_x_low_l = sw_x_high_l = sw_x_low_r = sw_x_high_r = x_current
 
             k = l = 1
             area = float(window_height*margin_sw*2)
             percent_white_pixels_l = percent_white_pixels_r = 1.0
 
-            while (percent_white_pixels_l > 0.60) and (sw_x_low > 0) and (sw_x_high < img.shape[1]):
+            while (percent_white_pixels_l > 0.60) and (sw_x_low_l > 0) and (sw_x_high_l < img.shape[1]):
                  sw_x_low_l = (x_current- increment*k) - margin_sw
                  sw_x_high_l = (x_current- increment*k) + margin_sw
 
-                 good_inds1 = ((nonzeroy >= win_y_low)&(nonzeroy < win_y_high)&(nonzerox >= sw_x_low_l)& (nonzerox < sw_x_high_l)).nonzero()[0]
+                 good_inds1 = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
+                 (nonzerox >= sw_x_low_l) & (nonzerox < sw_x_high_l)).nonzero()[0]
 
                  percent_white_pixels_l = float(cv2.countNonZero(good_inds1)/area)
                  k += 1
 
-            while (percent_white_pixels_r > 0.60) and (sw_x_low > 0) and (sw_x_high < img.shape[1]):
+            while (percent_white_pixels_r > 0.60) and (sw_x_low_r > 0) and (sw_x_high_r < img.shape[1]):
                  sw_x_low_r = (x_current+ increment*l) - margin_sw
                  sw_x_high_r = (x_current+ increment*l) + margin_sw
 
-                 good_inds2 = ((nonzeroy >= win_y_low)&(nonzeroy<win_y_high)&(nonzerox >= sw_x_low_r)& (nonzerox < sw_x_high_r)).nonzero()[0]
+                 good_inds2 = ((nonzeroy >= win_y_low) & (nonzeroy<win_y_high) &
+                 (nonzerox >= sw_x_low_r) & (nonzerox < sw_x_high_r)).nonzero()[0]
 
                  percent_white_pixels_r = float(cv2.countNonZero(good_inds2)/area)
                  l += 1
+
+            # print x_current, sw_x_low_l, sw_x_high_l, k, sw_x_low_r, sw_x_high_r, l
 
             # cv2.rectangle(out_img,(sw_xleft_low,win_y_low),(sw_xleft_high,win_y_high), (0,0,255), 5)
             # cv2.rectangle(out_img,(sw_x_low,win_y_low),(sw_x_high,win_y_high), (0,0,255), 5)
@@ -221,44 +226,44 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, 
                 win_x_low = 0
 
             # Identify the nonzero pixels in x and y within the window
-            good_inds_n = ((nonzeroy>=win_y_low)&(nonzeroy<win_y_high)&(nonzerox>=win_x_low)&(nonzerox<win_x_high)).nonzero()[0]
+            good_inds_n = ((nonzeroy>=win_y_low) & (nonzeroy<win_y_high) &
+            (nonzerox>=win_x_low) & (nonzerox<win_x_high)).nonzero()[0]
 
             # Append these indices to the lists
             #lane_inds_n[p_in].append(good_inds_n)
             if len(good_inds_n):
              lane_inds_n.append(good_inds_n)
 
-             # Concatenate the arrays of indices
-             lane_inds_nn = np.concatenate(lane_inds_n)
-
             if draw_windows == True:
                cv2.rectangle(out_img,(win_x_low,win_y_low),(win_x_high,win_y_high), (0,255,0), 3)
 
-          # Extract left and right line pixel positions
-          x_ = nonzerox[lane_inds_nn]
-          y_ = nonzeroy[lane_inds_nn]
+          # Concatenate the arrays of indices
+          lane_inds_n = np.concatenate(lane_inds_n)
 
-          #print window, lane_inds_nn #, lane_inds_n, lane_inds_nn
+          # Extract left and right line pixel positions
+          x_ = nonzerox[lane_inds_n]
+          y_ = nonzeroy[lane_inds_n]
 
           # Fit a second order polynomial to
           fit = np.polyfit(y_, x_, 2)
 
-          line_[p_in][0] = fit[0]
-          line_[p_in][1] = fit[1]
-          line_[p_in][2] = fit[2]
+          line_a_[p_in][0] = fit[0]
+          line_b_[p_in][1] = fit[1]
+          line_c_[p_in][2] = fit[2]
 
-          fit_[p_in][0] = np.mean(line_[0][-10:])
-          fit_[p_in][1] = np.mean(line_[1][-10:])
-          fit_[p_in][2] = np.mean(line_[2][-10:])
+          fit_[p_in][0] = np.mean(line_a_[p_in][-10:])
+          fit_[p_in][1] = np.mean(line_b_[p_in][-10:])
+          fit_[p_in][2] = np.mean(line_c_[p_in][-10:])
 
           # Generate x and y values for plotting
           ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
-          fitx_[p_in].append(fit_[p_in][0]*ploty**2 + fit_[p_in][1]*ploty + fit_[p_in][2])
+          fitx_[p_in] = fit_[p_in][0]*ploty**2 + fit_[p_in][1]*ploty + fit_[p_in][2]
 
-          print fit_, line_, fitx_
+          print fit, fit_[p_in][0], fitx_[p_in]
+
           ############################### TEST ############################
 
-          out_img[nonzeroy[lane_inds_nn], nonzerox[lane_inds_nn]] = [255, 0, 0] #[255, 0, 100]
+          out_img[nonzeroy[lane_inds_n], nonzerox[lane_inds_n]] = [255, 0, 0] #[255, 0, 100]
 
     return out_img , fitx_, fit_, ploty #, right_fitx #, right_fit_
 

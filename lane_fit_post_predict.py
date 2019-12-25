@@ -82,7 +82,9 @@ class lane_finder_post_predict():
        #self.kmeans, self.modifiedCenters = sliding_window_approach.initialPoints(self.warp_img,self.base_size,self.clusters)
 
        # Sliding Window Search
-       self.polyfit_img, self.curves, self.lanes, self.ploty = sliding_window_approach_crop.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
+       self.polyfit_img, self.curves, self.lanes, self.ploty = sliding_window_approach.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
+
+       polyfit_img, curves, lanes, ploty = sliding_window_approach_crop.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
 
     def visualize_lane_fit(self, dst_size):
        # Visualize the fitted polygonals (One on each lane and on average curve)
@@ -106,7 +108,6 @@ class lane_finder_post_predict():
        rheight, rwidth = self.final_img.shape[:2]
        self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted(self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth],
                                                                0.8, self.invwarp_img, 1.0, 0)
-
     def run_lane_fit(self):
        # Setting the parameters for upscaling and warping-unwarping
        rheight, rwidth = self.image.shape[:2]
