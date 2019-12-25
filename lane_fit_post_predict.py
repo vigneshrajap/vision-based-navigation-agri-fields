@@ -39,7 +39,7 @@ class lane_finder_post_predict():
 
        self.margin_l = 35
        self.margin_r = 35
-       self.nwindows = 12
+       self.nwindows = 10
 
        self.curves = []
        self.lanes = []
@@ -82,9 +82,9 @@ class lane_finder_post_predict():
        #self.kmeans, self.modifiedCenters = sliding_window_approach.initialPoints(self.warp_img,self.base_size,self.clusters)
 
        # Sliding Window Search
-       self.polyfit_img, self.curves, self.lanes, self.ploty = sliding_window_approach.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
+       # polyfit_img, curves, lanes, ploty = sliding_window_approach.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
 
-       polyfit_img, curves, lanes, ploty = sliding_window_approach_crop.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
+       self.polyfit_img, self.curves, self.lanes, self.ploty  = sliding_window_approach_crop.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
 
     def visualize_lane_fit(self, dst_size):
        # Visualize the fitted polygonals (One on each lane and on average curve)
@@ -124,7 +124,7 @@ class lane_finder_post_predict():
         if display:
             cv2.imshow('Prediction', self.final_img)
         if not self.output_file is None:
-            cv2.imwrite(self.output_file, self.polyfit_img )
+            cv2.imwrite(self.output_file, self.final_img )
 
     def lane_fit_on_predicted_image(self, lane_fit = False, display=False): #visualize = None
 

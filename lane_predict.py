@@ -44,6 +44,7 @@ def lane_fit_on_prediction(Roi_img, src, dst, dst_size):
 
    # Sliding Window Search
    out_img, curves, lanes, ploty = sliding_window_approach.sliding_window(warped_img, modifiedCenters, nwindows, margin, margin_1)
+
    return warped_img, out_img, curves, lanes, ploty, modifiedCenters
 
 def visualize_lane_fit(input_image, out_img, curves, lanes, ploty, modifiedCenters, src, dst, dst_size, crop_ratio):
