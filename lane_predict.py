@@ -15,6 +15,7 @@ sys.path.insert(1, '../image-segmentation-keras')
 from keras_segmentation import predict
 import sliding_window_approach
 from geometry_msgs.msg import Pose, PoseArray
+import timeit
 
 def upscaling_warping_parameters(rgb_img, seg_arr, class_number, crop_ratio):
    # Reshaping the Lanes Class into binary array and Upscaling the image as input image
@@ -107,7 +108,7 @@ def visualize_segmentation(input_img, seg_arr, n_classes, class_number = 2, disp
     return upscaled_img_rgb #vis_img
 
 def visualization(input_img, seg_arr=None, lane_fit = None, evaluation = None, n_classes=None, visualize = None, display=False, output_file=None):
-    class_number = 1
+    class_number = 1 # 1 for Crops, 2 for Lanes
     crop_ratio = 0.2
 
     #visualize: None, "all" or one of, "segmentation", "lane_fit", "evaluation"
@@ -178,6 +179,9 @@ def main():
             output_file = None
         seg_arr, input_image, out_img, fit = predict_on_image(model,inp = im, lane_fit = False, evaluate = False, visualize = "segmentation", output_file = output_file, display=True)
         vis_img = visualization(input_image, seg_arr=seg_arr, lane_fit = None, evaluation = None, n_classes=3, visualize = "segmentation", display=False, output_file=output_file)
+
+        # t = timeit.Timer("predict_on_image()", "from __main__ import lane_predict")
+        # print t.timeit()
 
     cv2.destroyAllWindows()
 

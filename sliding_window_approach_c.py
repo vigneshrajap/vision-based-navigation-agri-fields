@@ -143,7 +143,12 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, 
     nonzeroy = np.array(nonzero[0])
     nonzerox = np.array(nonzero[1])
 
-    if ((len(modifiedCenters[0])%2)!=0):
+    fitx_ = []
+    fit_ = []
+    ploty = []
+
+    # if ((len(modifiedCenters[0])%2)!=0):
+    if len(modifiedCenters[0]):
         fitx_ = [[]for y in range(len(modifiedCenters[0]))]
         fit_= np.zeros((len(modifiedCenters[0]),3))
 
@@ -252,7 +257,7 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, 
           fit_[p_in][0] = np.mean(line_a_[-10:])
           fit_[p_in][1] = np.mean(line_b_[-10:])
           fit_[p_in][2] = np.mean(line_c_[-10:])
-          print fit_[p_in]
+          # print fit_[p_in]
 
           # Generate x and y values for plotting
           ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
@@ -270,24 +275,22 @@ def visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters):
 
    #cv2.circle(out_img, (modifiedCenters[0][1], modifiedCenters[0][0]), 8, (0, 255, 0), -1)
    #cv2.circle(out_img, (modifiedCenters[1][1], modifiedCenters[1][0]), 8, (0, 255, 0), -1)
+   Lane_i = []
 
-   # Fitted curves as points
-   leftLane = np.array([np.transpose(np.vstack([curves[1], ploty]))]) #curves[0]
-   leftLane1 = np.array([np.transpose(np.vstack([curves[2], ploty]))]) #curves[0]
+   if len(curves):
+     for c_in in range(len(curves)): #
 
-   #rightLane = np.array([np.flipud(np.transpose(np.vstack([curves[1], ploty])))])
+       # Fitted curves as points
+       Lane = np.array([np.transpose(np.vstack([curves[c_in], ploty]))]) #curves[0]
+       Lane_i = Lane[0].astype(int)
+
+       cv2.polylines(out_img, [Lane_i], 0, (0,255,255), thickness=5, lineType=8, shift=0)
+
    #points = np.hstack((leftLane, rightLane))
    #curves_m = (curves[0]+curves[1])/2
    #midLane = np.array([np.transpose(np.vstack([curves_m, ploty]))])
-
-   leftLane_i = leftLane[0].astype(int)
-   leftLane_i1 = leftLane1[0].astype(int)
-   #rightLane_i = rightLane[0].astype(int)
    #midLane_i = midLane[0].astype(int)
 
-   cv2.polylines(out_img, [leftLane_i], 0, (0,255,255), thickness=5, lineType=8, shift=0)
-   cv2.polylines(out_img, [leftLane_i1], 0, (0,255,255), thickness=5, lineType=8, shift=0)
-   #cv2.polylines(out_img, [rightLane_i], 0, (0,255,255), thickness=5, lineType=8, shift=0)
    #cv2.polylines(out_img, [midLane_i], 0, (255,0,255), thickness=5, lineType=8, shift=0)
 
-   return out_img, leftLane_i #midLane_i
+   return out_img, Lane_i #midLane_i

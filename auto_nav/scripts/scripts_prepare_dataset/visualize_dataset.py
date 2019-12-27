@@ -13,7 +13,7 @@ random.seed(0)
 class_colors = [  ( random.randint(0,255),random.randint(0,255),random.randint(0,255)   ) for _ in range(5000)  ]
 
 #input_dir = expanduser("~/planner_ws/src/vision-based-navigation-agri-fields/Frogn_Dataset/annotations_prepped_train/")
-input_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset_32x/annotations_prepped_train/")
+input_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset_32x_352/annotations_prepped_train/")
 output_dir = expanduser("~/Third_Paper/Datasets/Ground_Truth/")
 n_classes = 5
 colors = class_colors

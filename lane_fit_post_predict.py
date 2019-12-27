@@ -10,7 +10,7 @@ from sensor_msgs.msg import Image
 from sklearn.cluster import KMeans
 
 import sliding_window_approach
-import sliding_window_approach_crop
+import sliding_window_approach_c
 from geometry_msgs.msg import Pose, PoseArray
 import scipy.signal as signal
 import timeit
@@ -52,14 +52,14 @@ class lane_finder_post_predict():
        self.centerLine = []
        #self.midPoints = PoseArray()
        self.output_file = None
+       self.base = None
 
     def lane_fit_on_prediction(self, Roi_img, dst_size):
 
        self.warp_img, M  = sliding_window_approach.perspective_warp(Roi_img, dst_size, self.src, self.dst) # Perspective warp
 
-       newdata =  np.sum(self.warp_img, axis=0) # Sum the columns of warped image to determine peaks
+       coldata =  np.sum(self.warp_img, axis=0) # Sum the columns of warped image to determine peaks
 
-       # plt.plot(newdata) # plotting by columns
        # window = signal.general_gaussian(40, p=0.5, sig=70)
        # filtered = signal.fftconvolve(window, newdata)
        # filtered = (np.average(newdata) / np.average(filtered)) * filtered
@@ -68,14 +68,16 @@ class lane_finder_post_predict():
 
        #peakidx = signal.find_peaks_cwt(newdata, np.arange(1,100), noise_perc=0.1)
 
-       peakidx = signal.find_peaks(newdata, height=80000, distance=self.warp_img.shape[1]/3) #, np.arange(1,100), noise_perc=0.1
+       peakidx = signal.find_peaks(coldata, height=80000, distance=self.warp_img.shape[1]/3) #, np.arange(1,100), noise_perc=0.1
        #print peakidx, len(peakidx[0]), peakidx[0][0]
 
-       #print peakidx, newdata[peakidx[0]]
+       #plt.plot(rowdata) # plotting by rows
+       #print peakidx_r, rowdata[peakidx_r[0]]
+
        # for p_in in range(len(peakidx[0])):
-       #  plt.plot(peakidx[0][p_in], newdata[peakidx[0][p_in]], marker='o', markersize=10)
-       # plt.show()
-       #plt.savefig('/home/vignesh/hist_col.png')
+       #  plt.plot(peakidx_r[0][p_in], rowdata[peakidx_r[0][p_in]], marker='o', markersize=10)
+       #plt.show()
+       #plt.savefig('/home/vignesh/dummy_folder/hist_row'+str(os.path.splitext(self.base)[0][7:11])+'.png')
        #plt.close()
 
        # InitialPoints Estimation using K-Means clustering
@@ -84,11 +86,25 @@ class lane_finder_post_predict():
        # Sliding Window Search
        # polyfit_img, curves, lanes, ploty = sliding_window_approach.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
 
-       self.polyfit_img, self.curves, self.lanes, self.ploty  = sliding_window_approach_crop.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
+       self.polyfit_img, self.curves, self.lanes, self.ploty  = sliding_window_approach_c.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
 
     def visualize_lane_fit(self, dst_size):
+
+       rowdata =  np.sum(self.warp_img, axis=1) # Sum the rows of warped image to determine peaks
+
+       peakidx_r = signal.find_peaks(rowdata) #, height=80000, distance=self.warp_img.shape[1]/3#, np.arange(1,100), noise_perc=0.1
+
+       if rowdata[0]==0:
+           coldata1 =  np.sum(self.warp_img, axis=0) # Sum the rows of warped image to determine peaks
+           # plt.plot(coldata1)
+           # plt.savefig('/home/vignesh/dummy_folder/e_row'+str(os.path.splitext(self.base)[0][7:11])+'.png')
+           # plt.close()
+
+           #plt.close()
+           #print rowdata[0], str("End of the cropping row")
+
        # Visualize the fitted polygonals (One on each lane and on average curve)
-       self.polyfit_img, midLane_i = sliding_window_approach_crop.visualization_polyfit(self.polyfit_img, self.curves, self.lanes, self.ploty, self.modifiedCenters)
+       self.polyfit_img, midLane_i = sliding_window_approach_c.visualization_polyfit(self.polyfit_img, self.curves, self.lanes, self.ploty, self.modifiedCenters)
 
        # Inverse Perspective warp
        self.invwarp_img, Minv = sliding_window_approach.inv_perspective_warp(self.polyfit_img, (dst_size[1], dst_size[0]), self.dst, self.src)
@@ -149,8 +165,8 @@ if __name__ == '__main__':
 
     for pred_im in im_files:
         if args.output_folder:
-            base = os.path.basename(pred_im)
-            lfp.output_file = os.path.join(args.output_folder,os.path.splitext(base)[0][7:11])+".jpg" #os.path.splitext(base)[0]
+            lfp.base = os.path.basename(pred_im)
+            lfp.output_file = os.path.join(args.output_folder,os.path.splitext(lfp.base)[0][7:11])+".jpg" #os.path.splitext(base)[0]
             print(lfp.output_file)
         else:
             output_file = None
