@@ -48,15 +48,45 @@ class lane_finder_post_predict():
        self.base_size = 0.1
        self.clusters = 2
        self.modifiedCenters = []
+       #self.M = []
+       self.Minv = []
 
        self.centerLine = []
        #self.midPoints = PoseArray()
        self.output_file = None
        self.base = None
+       self.end_points = []
+
+    def end_row_detection(self):
+       top_roi =  self.warp_img[0:self.warp_img.shape[0]/2,0:self.warp_img.shape[1]]
+       rowdata = np.sum(top_roi, axis=1) # Sum the rows of warped image to determine peaks
+       num_zeros = (rowdata == 0).sum() # Count the occurence of zero in np array
+
+       if num_zeros>top_roi.shape[0]/6:
+
+           coldata1 =  np.sum(self.warp_img, axis=0) # Sum the peak cols
+           end_col_ind = np.argmax(coldata1, axis=0)
+
+           #im2, cnt, heirarchy = cv2.findContours(self.warp_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+           edges = cv2.Canny(self.warp_img,100,200)
+           end_row_ind = edges[:,end_col_ind].nonzero()[0]
+           #indices = np.where(edges != [0])
+           #coordinates = np.array([indices[0],indices[1]])
+           #print coordinates[0] #, cv2.countNonZero(coordinates[:][1]==end_col_ind)
+
+           self.end_points = [np.argmin(end_row_ind, axis=0), end_col_ind]
+           # plt.plot(coldata1)
+           # plt.savefig('/home/vignesh/dummy_folder/e_row'+str(os.path.splitext(self.base)[0][7:11])+'.png')
+           # plt.close()
+           # print num_zeros
 
     def lane_fit_on_prediction(self, Roi_img, dst_size):
 
        self.warp_img, M  = sliding_window_approach.perspective_warp(Roi_img, dst_size, self.src, self.dst) # Perspective warp
+
+       ## End Row Check ##
+       self.end_row_detection()
+       #print self.end_points
 
        coldata =  np.sum(self.warp_img, axis=0) # Sum the columns of warped image to determine peaks
 
@@ -66,13 +96,7 @@ class lane_finder_post_predict():
        # filtered = np.roll(filtered, -25)
        # plt.plot(filtered) # plotting by columns
 
-       #peakidx = signal.find_peaks_cwt(newdata, np.arange(1,100), noise_perc=0.1)
-
        peakidx = signal.find_peaks(coldata, height=80000, distance=self.warp_img.shape[1]/3) #, np.arange(1,100), noise_perc=0.1
-       #print peakidx, len(peakidx[0]), peakidx[0][0]
-
-       #plt.plot(rowdata) # plotting by rows
-       #print peakidx_r, rowdata[peakidx_r[0]]
 
        # for p_in in range(len(peakidx[0])):
        #  plt.plot(peakidx_r[0][p_in], rowdata[peakidx_r[0][p_in]], marker='o', markersize=10)
@@ -85,29 +109,15 @@ class lane_finder_post_predict():
 
        # Sliding Window Search
        # polyfit_img, curves, lanes, ploty = sliding_window_approach.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
-
        self.polyfit_img, self.curves, self.lanes, self.ploty  = sliding_window_approach_c.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
 
     def visualize_lane_fit(self, dst_size):
-
-       rowdata =  np.sum(self.warp_img, axis=1) # Sum the rows of warped image to determine peaks
-
-       peakidx_r = signal.find_peaks(rowdata) #, height=80000, distance=self.warp_img.shape[1]/3#, np.arange(1,100), noise_perc=0.1
-
-       if rowdata[0]==0:
-           coldata1 =  np.sum(self.warp_img, axis=0) # Sum the rows of warped image to determine peaks
-           # plt.plot(coldata1)
-           # plt.savefig('/home/vignesh/dummy_folder/e_row'+str(os.path.splitext(self.base)[0][7:11])+'.png')
-           # plt.close()
-
-           #plt.close()
-           #print rowdata[0], str("End of the cropping row")
 
        # Visualize the fitted polygonals (One on each lane and on average curve)
        self.polyfit_img, midLane_i = sliding_window_approach_c.visualization_polyfit(self.polyfit_img, self.curves, self.lanes, self.ploty, self.modifiedCenters)
 
        # Inverse Perspective warp
-       self.invwarp_img, Minv = sliding_window_approach.inv_perspective_warp(self.polyfit_img, (dst_size[1], dst_size[0]), self.dst, self.src)
+       self.invwarp_img, self.Minv = sliding_window_approach.inv_perspective_warp(self.polyfit_img, (dst_size[1], dst_size[0]), self.dst, self.src)
 
        # for i in midLane_i:
        #   point_wp = np.array([i[0],i[1],1])
@@ -124,6 +134,18 @@ class lane_finder_post_predict():
        rheight, rwidth = self.final_img.shape[:2]
        self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted(self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth],
                                                                0.8, self.invwarp_img, 1.0, 0)
+
+       if len(self.end_points):
+           a = np.array([[self.end_points[1], self.end_points[0]]], dtype='float32')
+           a = np.array([a])
+           pointsOut = cv2.perspectiveTransform(a, self.Minv)
+           print np.int(pointsOut[0][0][0]), np.int(pointsOut[0][0][1])
+           cv2.circle(self.final_img, (np.int(pointsOut[0][0][0]), np.int(pointsOut[0][0][1])), 8, (255, 255, 0), 20)
+           cv2.line(self.final_img, (0, np.int(pointsOut[0][0][1])), (self.final_img.shape[1]-1, np.int(pointsOut[0][0][1])), (0,0,255), 3)
+           self.final_img = cv2.putText(self.final_img,  "Reached End of Row!!!",
+                                            (self.final_img.shape[1]/3, np.int(pointsOut[0][0][1])-10), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1.0,(255,255),1, cv2.LINE_AA)
+           self.end_points = []
+
     def run_lane_fit(self):
        # Setting the parameters for upscaling and warping-unwarping
        rheight, rwidth = self.image.shape[:2]
