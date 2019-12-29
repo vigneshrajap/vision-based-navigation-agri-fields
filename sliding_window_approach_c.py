@@ -257,7 +257,6 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, 
           fit_[p_in][0] = np.mean(line_a_[-10:])
           fit_[p_in][1] = np.mean(line_b_[-10:])
           fit_[p_in][2] = np.mean(line_c_[-10:])
-          # print fit_[p_in]
 
           # Generate x and y values for plotting
           ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
@@ -279,16 +278,9 @@ def visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters):
      for c_in in range(len(curves)): #
 
        # Fitted curves as points
-       Lane = np.array([np.transpose(np.vstack([curves[c_in], ploty]))]) #curves[0]
+       Lane = np.array([np.transpose(np.vstack([curves[c_in], ploty]))])
        Lane_i = Lane[0].astype(int)
 
        cv2.polylines(out_img, [Lane_i], 0, (0,255,255), thickness=5, lineType=8, shift=0)
 
-   #points = np.hstack((leftLane, rightLane))
-   #curves_m = (curves[0]+curves[1])/2
-   #midLane = np.array([np.transpose(np.vstack([curves_m, ploty]))])
-   #midLane_i = midLane[0].astype(int)
-
-   #cv2.polylines(out_img, [midLane_i], 0, (255,0,255), thickness=5, lineType=8, shift=0)
-
-   return out_img, Lane_i #midLane_i
+   return out_img
