@@ -104,7 +104,7 @@ def initialPoints(warped_img, margin):
      margin = abs(max(d_0))
      #margin_1 = abs(max(d_1))
      #margin_r.astype(int)
-     print margin #, margin_1
+     #print margin #, margin_1
 
      #print  contours_2[0][c_j][0][0], centers[1][1]
 
@@ -129,10 +129,9 @@ def initialPoints(warped_img, margin):
      prev_modifiedCenters = modifiedCenters
 
      # return a list of tuples for centers
-     return margin, modifiedCenters #margin_1
+     return margin, modifiedCenters
 
 def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, margin_r=35, minpix=1, draw_windows=True):
-    #global prev_modifiedCenters, base_size, clusters
 
     # Creates a list containing 3 lists, each of [] items, all set to 0
     out_img = np.dstack((img, img, img))*255
@@ -144,13 +143,11 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, 
     nonzerox = np.array(nonzero[1])
 
     fitx_ = []
-    fit_ = []
-    ploty = []
+    ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
 
-    # if ((len(modifiedCenters[0])%2)!=0):
     if len(modifiedCenters[0]):
         fitx_ = [[]for y in range(len(modifiedCenters[0]))]
-        fit_= np.zeros((len(modifiedCenters[0]),3))
+        #fit_= np.zeros((len(modifiedCenters[0]),3))
 
         for p_in in range(len(modifiedCenters[0])): #
           x_base = modifiedCenters[0][p_in]
@@ -158,9 +155,7 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, 
           # Create empty lists to receive left and right lane pixel indices
           # lane_inds = []
           lane_inds_n = []
-          line_a_ = []
-          line_b_ = []
-          line_c_ = []
+
           # Current positions to be updated for each window
           x_current = x_base
 
@@ -234,42 +229,40 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, 
             (nonzerox>=win_x_low) & (nonzerox<win_x_high)).nonzero()[0]
 
             # Append these indices to the lists
-            #lane_inds_n[p_in].append(good_inds_n)
             if len(good_inds_n):
-             lane_inds_n.append(good_inds_n)
+                     lane_inds_n.append(good_inds_n)
+                     if draw_windows == True:
+                       cv2.rectangle(out_img,(win_x_low,win_y_low),(win_x_high,win_y_high), (0,255,0), 3)
 
-            if draw_windows == True:
-               cv2.rectangle(out_img,(win_x_low,win_y_low),(win_x_high,win_y_high), (0,255,0), 3)
-
+          print x_current
           # Concatenate the arrays of indices
           lane_inds_n = np.concatenate(lane_inds_n)
           # Extract left and right line pixel positions
           x_ = nonzerox[lane_inds_n]
           y_ = nonzeroy[lane_inds_n]
 
-          # Fit a second order polynomial to
-          fit = np.polyfit(y_, x_, 2)
+          # Fit a first order straight line / second order polynomial
+          fit_l = np.polyfit(y_, x_, 1, full=True)
+          fit_p = np.polyfit(y_, x_, 2, full=True)
 
-          line_a_.append(fit[0])
-          line_b_.append(fit[1])
-          line_c_.append(fit[2])
-
-          fit_[p_in][0] = np.mean(line_a_[-10:])
-          fit_[p_in][1] = np.mean(line_b_[-10:])
-          fit_[p_in][2] = np.mean(line_c_[-10:])
+          # print fit_l[1], fit_p[1], np.argmin([fit_l[1], fit_p[1]])
 
           # Generate x and y values for plotting
-          ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
-          fitx_[p_in] = fit_[p_in][0]*ploty**2 + fit_[p_in][1]*ploty + fit_[p_in][2]
+          if (np.argmin([fit_l[1], fit_p[1]])==0):
+              fitx_[p_in] = fit_l[0][0]*ploty + fit_l[0][1]
+              # print str("Line")
+          else:
+              #fitx_[p_in] = fit_[p_in][0]*ploty**2 + fit_[p_in][1]*ploty + fit_[p_in][2]
+              fitx_[p_in] = fit_p[0][0]*ploty**2 + fit_p[0][1]*ploty + fit_p[0][2]
 
           #print fitx_[p_in]
           ############################### TEST ############################
 
           out_img[nonzeroy[lane_inds_n], nonzerox[lane_inds_n]] = [255, 0, 0] #[255, 0, 100]
 
-    return out_img , fitx_, fit_, ploty #, right_fitx #, right_fit_
+    return out_img , fitx_, ploty #, right_fitx #, right_fit_
 
-def visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters):
+def visualization_polyfit(out_img, curves, ploty, modifiedCenters):
 
    #cv2.circle(out_img, (modifiedCenters[1][1], modifiedCenters[1][0]), 8, (0, 255, 0), -1)
    Lane_i = []
