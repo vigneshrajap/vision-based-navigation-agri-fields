@@ -234,7 +234,7 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, 
                      if draw_windows == True:
                        cv2.rectangle(out_img,(win_x_low,win_y_low),(win_x_high,win_y_high), (0,255,0), 3)
 
-          print x_current
+          # print x_current
           # Concatenate the arrays of indices
           lane_inds_n = np.concatenate(lane_inds_n)
           # Extract left and right line pixel positions

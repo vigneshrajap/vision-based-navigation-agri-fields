@@ -13,6 +13,7 @@ import sliding_window_approach
 import sliding_window_approach_c
 from geometry_msgs.msg import Pose, PoseArray
 import scipy.signal as signal
+import math
 import timeit
 
 class lane_finder_post_predict():
@@ -85,10 +86,6 @@ class lane_finder_post_predict():
 
        self.warp_img, M  = sliding_window_approach.perspective_warp(Roi_img, dst_size, self.src, self.dst) # Perspective warp
 
-       ## End Row Check ##
-       # self.end_row_detection()
-       #print self.end_points
-
        coldata =  np.sum(self.warp_img, axis=0) # Sum the columns of warped image to determine peaks
 
        # window = signal.general_gaussian(40, p=0.5, sig=70)
@@ -157,8 +154,30 @@ class lane_finder_post_predict():
 
                cv2.circle(self.invwarp_img, (peakidx_in[0],peakidx_in[1]), 0, (0,0,255), thickness=25, lineType=8, shift=0)
 
-       # print points[0]
+           ## End Row Check ##
+           # self.end_row_detection()
 
+           mask = np.zeros_like(self.image)
+           radius = 75
+           axes = (radius, radius)
+           angle=0
+           startAngle=-180
+           endAngle=0
+           col_ind = np.int(self.modifiedCenters[0][0]+ (self.crop_ratio*self.image.shape[0]))
+           center=(self.image.shape[1]/2, col_ind)
+           color=(255,255,255)
+           thickness = -1
+           # create a white filled ellipse
+           mask = cv2.ellipse(mask, center, axes, angle, startAngle, endAngle, color, thickness)
+           # Bitwise AND operation to black out regions outside the mask
+           result = np.bitwise_and(self.image, mask)
+
+           el_area = float((math.pi*math.pow(radius,2))/2)
+           percent_white_pixels_el = float(cv2.countNonZero(result)/el_area)
+
+           print percent_white_pixels_el
+
+           #cv2.imwrite('/home/vignesh/dummy_folder/test.png',result)
        # for i in midLane_i:
        #   point_wp = np.array([i[0],i[1],1])
        #   midLane_io = np.matmul(Minv, point_wp) # inverse-M*warp_pt
@@ -169,22 +188,10 @@ class lane_finder_post_predict():
 
        # Combine the result with the original image
        self.final_img = cv2.cvtColor(self.image,cv2.COLOR_GRAY2RGB)
-       #final_img = input_image.copy()
 
        rheight, rwidth = self.final_img.shape[:2]
        self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted(self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth],
                                                                0.8, self.invwarp_img, 1.0, 0)
-
-       radius=50
-       axes = (radius,radius)
-       angle=0;
-       startAngle=-180;
-       endAngle=0;
-       center=(50,50)
-       color=255
-       thickness = 3
-
-       cv2.ellipse(self.final_img, center, axes, angle, startAngle, endAngle, color)
 
        # if len(self.end_points):
        #     a = np.array([[self.end_points[1], self.end_points[0]]], dtype='float32')
@@ -219,7 +226,7 @@ class lane_finder_post_predict():
 
         if lane_fit:
             self.run_lane_fit()
-            self.visualization()
+            #self.visualization()
         else:
             self.final_img = None
 
@@ -231,7 +238,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     print('Output_folder',args.output_folder)
-    im_files = glob.glob(os.path.join(args.input_folder,'*.png'))
+    im_files = sorted(glob.glob(os.path.join(args.input_folder,'*.png')))
     print(os.path.join(args.input_folder+'*.png'))
 
     lfp = lane_finder_post_predict() #Class object
