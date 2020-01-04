@@ -256,11 +256,13 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, 
               fitx_[p_in] = fit_p[0][0]*ploty**2 + fit_p[0][1]*ploty + fit_p[0][2]
 
           #print fitx_[p_in]
+
+          sw_end = [x_current, margin_ll, margin_rr]
           ############################### TEST ############################
 
           out_img[nonzeroy[lane_inds_n], nonzerox[lane_inds_n]] = [255, 0, 0] #[255, 0, 100]
 
-    return out_img , fitx_, ploty #, right_fitx #, right_fit_
+    return out_img , fitx_, ploty, sw_end  #, right_fitx #, right_fit_
 
 def visualization_polyfit(out_img, curves, ploty, modifiedCenters):
 

@@ -50,104 +50,98 @@ class lane_finder_post_predict():
        self.base_size = 0.1
        self.clusters = 2
        self.modifiedCenters = []
-       #self.M = []
-       self.Minv = []
+       self.M_t = []
+       self.M_tinv = []
 
        self.centerLine = []
        self.output_file = None
        self.base = None
        self.end_points = []
-       #self.weights = np.empty([3, 1])
+       self.sw_end = []
+       self.weights = np.empty([1, 1])
 
-    def end_row_detection(self):
-       top_roi =  self.warp_img[0:self.warp_img.shape[0]/2,0:self.warp_img.shape[1]]
-       rowdata = np.sum(top_roi, axis=1) # Sum the rows of warped image to determine peaks
-       num_zeros = (rowdata == 0).sum() # Count the occurence of zero in np array
+    # def end_row_detection(self):
+    #    top_roi =  self.warp_img[0:self.warp_img.shape[0]/2,0:self.warp_img.shape[1]]
+    #    rowdata = np.sum(top_roi, axis=1) # Sum the rows of warped image to determine peaks
+    #    num_zeros = (rowdata == 0).sum() # Count the occurence of zero in np array
+    #
+    #    if num_zeros>top_roi.shape[0]/8:
+    #
+    #        coldata1 =  np.sum(self.warp_img, axis=0) # Sum the peak cols
+    #        end_col_ind = np.argmax(coldata1, axis=0)
+    #
+    #        #im2, cnt, heirarchy = cv2.findContours(self.warp_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #        edges = cv2.Canny(self.warp_img,100,200)
+    #        end_row_ind = edges[:,end_col_ind].nonzero()[0]
+    #        #indices = np.where(edges != [0])
+    #        #coordinates = np.array([indices[0],indices[1]])
+    #        #print coordinates[0] #, cv2.countNonZero(coordinates[:][1]==end_col_ind)
+    #
+    #        self.end_points = [np.argmin(end_row_ind, axis=0), end_col_ind]
+    #        # plt.plot(coldata1)
+    #        # plt.savefig('/home/vignesh/dummy_folder/e_row'+str(os.path.splitext(self.base)[0][7:11])+'.png')
+    #        # plt.close()
+    #        # print num_zeros
 
-       if num_zeros>top_roi.shape[0]/8:
+    def MidPoints_IDW(self):
 
-           coldata1 =  np.sum(self.warp_img, axis=0) # Sum the peak cols
-           end_col_ind = np.argmax(coldata1, axis=0)
+       if len(self.modifiedCenters[0]):
+           # Mid Lane for robot desired trajectory
+           self.weights = np.reshape(self.weights, (len(self.modifiedCenters[0]),1), order='F')
+           dist_peaks = abs(self.modifiedCenters[0]-self.warp_img.shape[1]/2) # Distance to center of image
 
-           #im2, cnt, heirarchy = cv2.findContours(self.warp_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-           edges = cv2.Canny(self.warp_img,100,200)
-           end_row_ind = edges[:,end_col_ind].nonzero()[0]
-           #indices = np.where(edges != [0])
-           #coordinates = np.array([indices[0],indices[1]])
-           #print coordinates[0] #, cv2.countNonZero(coordinates[:][1]==end_col_ind)
+           # In IDW, weights are 1 / distance
+           if not dist_peaks: # Case where the peak aligned with center of the image
+               peak_center = np.where(dist_peaks == 0)
+               dist_peaks[peak_center] = 1
 
-           self.end_points = [np.argmin(end_row_ind, axis=0), end_col_ind]
-           # plt.plot(coldata1)
-           # plt.savefig('/home/vignesh/dummy_folder/e_row'+str(os.path.splitext(self.base)[0][7:11])+'.png')
-           # plt.close()
-           # print num_zeros
+           self.weights = 1.0 / dist_peaks
+
+           # Make weights sum to one
+           self.weights /= np.sum(self.weights,axis=0)
+
+           # Multiply the weights for each interpolated point by all observed Z-values
+           curves_idw = [[]for y in range(len(self.curves))]
+
+           for c_in in range(0, len(self.modifiedCenters[0])):
+               curves_idw[c_in] =  (self.weights[c_in]*self.curves[c_in])
+
+           curves_m = np.sum(curves_idw, axis=0)
+           midLane = np.array([np.transpose(np.vstack([curves_m, self.ploty]))])
+           self.centerLine = midLane.astype(int)
+           cv2.polylines(self.polyfit_img, [self.centerLine], 0, (255,0,0), thickness=5, lineType=8, shift=0)
 
     def lane_fit_on_prediction(self, Roi_img, dst_size):
 
-       self.warp_img, M  = sliding_window_approach.perspective_warp(Roi_img, dst_size, self.src, self.dst) # Perspective warp
+       self.warp_img, self.M_t  = sliding_window_approach.perspective_warp(Roi_img, dst_size, self.src, self.dst) # Perspective warp
 
        coldata =  np.sum(self.warp_img, axis=0) # Sum the columns of warped image to determine peaks
 
-       # window = signal.general_gaussian(40, p=0.5, sig=70)
-       # filtered = signal.fftconvolve(window, newdata)
-       # filtered = (np.average(newdata) / np.average(filtered)) * filtered
-       # filtered = np.roll(filtered, -25)
-       # plt.plot(filtered) # plotting by columns
-
        self.modifiedCenters = signal.find_peaks(coldata, height=60000, distance=self.warp_img.shape[1]/3) #, np.arange(1,100), noise_perc=0.1
-       # print self.modifiedCenters #width= (0,self.warp_img.shape[1]/3.25),
-       # for p_in in range(len(peakidx[0])):
-       #  plt.plot(peakidx_r[0][p_in], rowdata[peakidx_r[0][p_in]], marker='o', markersize=10)
-       #plt.show()
-       #plt.savefig('/home/vignesh/dummy_folder/hist_row'+str(os.path.splitext(self.base)[0][7:11])+'.png')
-       #plt.close()
 
        # InitialPoints Estimation using K-Means clustering
        #self.kmeans, self.modifiedCenters = sliding_window_approach.initialPoints(self.warp_img,self.base_size,self.clusters)
 
        # Sliding Window Search
        # polyfit_img, curves, lanes, ploty = sliding_window_approach.sliding_window(self.warp_img, peakidx, self.kmeans, self.nwindows)
-       self.polyfit_img, self.curves, self.ploty  = sliding_window_approach_c.sliding_window(self.warp_img, self.modifiedCenters, self.kmeans, self.nwindows)
+       self.polyfit_img, self.curves, self.ploty, self.sw_end  = sliding_window_approach_c.sliding_window(self.warp_img, self.modifiedCenters, self.kmeans, self.nwindows)
 
     def visualize_lane_fit(self, dst_size):
 
-       if len(self.modifiedCenters[0]):
-           # Mid Lane for robot desired trajectory
-           weights = np.array([len(self.modifiedCenters[0]),1], order='F')
-           dist_peaks = abs(self.modifiedCenters[0]-self.warp_img.shape[1]/2) # Distance to center of image
-
-           # In IDW, weights are 1 / distance
-           weights = 1.0 / dist_peaks
-
-           # Make weights sum to one
-           weights /= weights.sum(axis=0)
-
-           # Multiply the weights for each interpolated point by all observed Z-values
-           curves_idw = [[]for y in range(len(self.curves))]
-           #curves_idw = np.empty[(len(self.curves))]
-           for c_in in range(0, len(self.modifiedCenters[0])):
-               # print c_in, weights[c_in]         #, len(self.curves[c_in])
-
-              #curves_idw[c_in] = weights[c_in]*self.curves[c_in] #np.dot(weights, self.curves) #weights*
-               curves_idw[c_in] =  (weights[c_in]*self.curves[c_in])
-
-           #print  #curves_idw[0]+curves_idw[1]
-           curves_m = np.sum(curves_idw, axis=0)
-           midLane = np.array([np.transpose(np.vstack([curves_m, self.ploty]))])
-           self.centerLine = midLane.astype(int)
-           cv2.polylines(self.polyfit_img, [self.centerLine], 0, (255,0,0), thickness=5, lineType=8, shift=0)
+       # Find the MidPoints using inverse distance weighting and plot the center line
+       self.MidPoints_IDW()
 
        # Visualize the fitted polygonals (One on each lane and on average curve)
        self.polyfit_img = sliding_window_approach_c.visualization_polyfit(self.polyfit_img, self.curves, self.ploty, self.modifiedCenters)
 
        # Inverse Perspective warp
-       self.invwarp_img, self.Minv = sliding_window_approach.inv_perspective_warp(self.polyfit_img, (dst_size[1], dst_size[0]), self.dst, self.src)
+       self.invwarp_img, self.M_tinv = sliding_window_approach.inv_perspective_warp(self.polyfit_img, (dst_size[1], dst_size[0]), self.dst, self.src)
 
        if len(self.modifiedCenters[0]):
            points= np.zeros((len(self.modifiedCenters[0]),2))
            for mc_in in range(len(self.modifiedCenters[0])):
                point_wp = np.array([self.modifiedCenters[0][mc_in], self.warp_img.shape[0]-5, 1])
-               peakidx_i = np.matmul(self.Minv, point_wp) # inverse-M*warp_pt
+               peakidx_i = np.matmul(self.M_tinv, point_wp) # inverse-M*warp_pt
                peakidx_in = np.array([peakidx_i[0]/peakidx_i[2],peakidx_i[1]/peakidx_i[2]]) # divide by Z point
                peakidx_in = peakidx_in.astype(int)
                points[mc_in] = peakidx_in
@@ -160,12 +154,23 @@ class lane_finder_post_predict():
            mask = np.zeros_like(self.image)
            radius = 75
            axes = (radius, radius)
-           angle=0
-           startAngle=-180
-           endAngle=0
-           col_ind = np.int(self.modifiedCenters[0][0]+ (self.crop_ratio*self.image.shape[0]))
-           center=(self.image.shape[1]/2, col_ind)
-           color=(255,255,255)
+           angle = 0
+           startAngle = -180 # Semicircle
+           endAngle = 0
+
+           point_wp1 = np.array([self.sw_end[0], self.warp_img.shape[0], 1])
+           peakidx_i1 = np.matmul(self.M_tinv, point_wp1) # inverse-M*warp_pt
+           peakidx_i1 = peakidx_i1.astype(int)
+           #print self.sw_end[0], self.warp_img.shape[0], peakidx_i1
+
+           center = (peakidx_i1[0]+np.int(self.crop_ratio*self.image.shape[0]),peakidx_i1[1]) # divide by Z point ############## CHECK
+
+           #center = (peakidx_i1[0]/peakidx_i1[2],peakidx_i1[1]/peakidx_i1[2]) # divide by Z point
+           #center = center.astype(int)
+
+           #col_ind = np.int(self.modifiedCenters[0][0]+ (self.crop_ratio*self.image.shape[0]))
+           #center = (self.image.shape[1]/2, col_ind)
+           color = (255,255,255)
            thickness = -1
            # create a white filled ellipse
            mask = cv2.ellipse(mask, center, axes, angle, startAngle, endAngle, color, thickness)
@@ -174,17 +179,11 @@ class lane_finder_post_predict():
 
            el_area = float((math.pi*math.pow(radius,2))/2)
            percent_white_pixels_el = float(cv2.countNonZero(result)/el_area)
+           #print percent_white_pixels_el, center, self.sw_end
 
-           print percent_white_pixels_el
+           #test = cv2.cvtColor(self.image,cv2.COLOR_GRAY2RGB)
 
-           #cv2.imwrite('/home/vignesh/dummy_folder/test.png',result)
-       # for i in midLane_i:
-       #   point_wp = np.array([i[0],i[1],1])
-       #   midLane_io = np.matmul(Minv, point_wp) # inverse-M*warp_pt
-       #   midLane_n = np.array([midLane_io[0]/midLane_io[2],midLane_io[1]/midLane_io[2]]) # divide by Z point
-       #   midLane_n = midLane_n.astype(int)
-       #   midPoints.append(midLane_n)
-         #midPoints.poses.append(Pose((midLane_n[0],midLane_n[1],0),(0,0,0,1)))
+           #cv2.imwrite('/home/vignesh/dummy_folder/test.png',test)
 
        # Combine the result with the original image
        self.final_img = cv2.cvtColor(self.image,cv2.COLOR_GRAY2RGB)
@@ -193,16 +192,7 @@ class lane_finder_post_predict():
        self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted(self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth],
                                                                0.8, self.invwarp_img, 1.0, 0)
 
-       # if len(self.end_points):
-       #     a = np.array([[self.end_points[1], self.end_points[0]]], dtype='float32')
-       #     a = np.array([a])
-       #     pointsOut = cv2.perspectiveTransform(a, self.Minv)
-       #     # print np.int(pointsOut[0][0][0]), np.int(pointsOut[0][0][1])
-       #     cv2.circle(self.final_img, (np.int(pointsOut[0][0][0]), np.int(pointsOut[0][0][1])), 8, (255, 255, 0), 20)
-       #     cv2.line(self.final_img, (0, np.int(pointsOut[0][0][1])), (self.final_img.shape[1]-1, np.int(pointsOut[0][0][1])), (0,0,255), 3)
-       #     self.final_img = cv2.putText(self.final_img,  "Reached End of Row!!!",
-       #                                      (self.final_img.shape[1]/3, np.int(pointsOut[0][0][1])-10), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1.0,(255,255),1, cv2.LINE_AA)
-       #     self.end_points = []
+       self.final_img = cv2.ellipse(self.final_img, center, axes, angle, startAngle, endAngle, (0,255,0), 3)
 
     def run_lane_fit(self):
        # Setting the parameters for upscaling and warping-unwarping
@@ -226,7 +216,8 @@ class lane_finder_post_predict():
 
         if lane_fit:
             self.run_lane_fit()
-            #self.visualization()
+            self.visualization()
+            self.modifiedCenters = [] # reinitialize to zero
         else:
             self.final_img = None
 
@@ -250,12 +241,9 @@ if __name__ == '__main__':
             print(lfp.output_file)
         else:
             output_file = None
-        lfp.image = cv2.imread(pred_im, 0)
 
-        #blur_img = cv2.blur(seg_img,(10,10))
-        #gausblur_img = cv2.GaussianBlur(seg_img, (5,5),0)
+        lfp.image = cv2.imread(pred_im, 0)
         lfp.image = cv2.medianBlur(lfp.image, 15)
-        #bilFilter = cv2.bilateralFilter(img,9,75,75)
 
         lfp.lane_fit_on_predicted_image(lane_fit = True, display=False) #visualize = "segmentation"
 
