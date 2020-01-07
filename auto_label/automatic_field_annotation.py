@@ -48,7 +48,7 @@ if __name__ == "__main__":
      cam_model = OcamCalibCameraModel(calib_file)
      #FIXME: need to transform the points from world coordinates to camera coordinates!
      xyz_start = [0,1,0]
-     xyz_stop = [0,1,1]
+     xyz_stop = [0,1,10]
      line_pixels = lines_to_camera_pixels(cam_model,xyz_start,xyz_stop)
      print('line_pixels',line_pixels)
      
@@ -62,8 +62,12 @@ if __name__ == "__main__":
      
      print(mask)
      plt.figure(1)
-     plt.imshow(mask)
      plt.colorbar
+     plt.imshow(mask*255) #tOO thin, not visible...
+     
+     #plot section only
+     plt.figure(2)
+     plt.imshow(mask[1000:1100,2000:2100])
      
 
          
