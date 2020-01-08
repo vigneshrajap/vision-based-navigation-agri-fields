@@ -15,6 +15,9 @@ import tf2_geometry_msgs
 from geometry_msgs.msg import Vector3, Quaternion, Transform, TransformStamped, Point, PoseStamped
 from sensor_msgs.msg import NavSatFix, Imu
 import geo2UTM
+import timeit
+from os.path import expanduser
+import shapely.geometry as geom
 
 class offset_estimation():
     '''
@@ -22,9 +25,9 @@ class offset_estimation():
     '''
     def __init__(self):
         self.datum = [-6614855.745, -594362.895, 0.0] # Manual Datum (NEGATE if UTM is the child frame)
-        self.gps_robot = [0.425, -0.62, 1.05]
+        self.gps_robot = [0.425, -0.62, 1.05] # Fixed Static Transform
         self.gt_utm = []
-        self.book = pe.get_book(file_name="/home/vignesh/planner_ws/src/vision-based-navigation-agri-fields/auto_nav/config/ground_truth_coordinates.xls")
+        self.book = pe.get_book(file_name=expanduser("~")+"/planner_ws/src/vision-based-navigation-agri-fields/auto_nav/config/ground_truth_coordinates.xls")
         self.lane_number = str(1) #rospy.set_param('lane_number', 1)
 
         self.map_frame = str('map')
@@ -55,6 +58,8 @@ class offset_estimation():
         self.yaw_imu = []
 
         self.rot_vec = []
+        self.robot_pose_map = PoseStamped()
+        self.increment = 10 # Fit Line segments over increment values
 
         self.gps_oldTime = []
         self.gps_NewTime = []
@@ -64,16 +69,18 @@ class offset_estimation():
         self.dt_imu = 0
         self.oneshot = 0
 
+        print self.book["Sheet"+self.lane_number].number_of_rows()
+
         for row in self.book["Sheet"+self.lane_number]:
                 self.gt_utm.append([row[1],row[2]]) # Latitude, Longitude
 
         self.listener = tf.TransformListener()
-        self.map_transform = TransformStamped()
-        self.map_transform.header.stamp = rospy.Time.now()
-        self.map_transform.header.frame_id = self.map_frame
-        self.map_transform.child_frame_id = self.utm_frame
-        self.map_transform.transform.translation = Vector3(self.datum[0], self.datum[1], self.datum[2]);
-        self.map_transform.transform.rotation = Quaternion(0,0,0,1) # Set to identity
+        self.map_trans = TransformStamped()
+        self.map_trans.header.stamp = rospy.Time.now()
+        self.map_trans.header.frame_id = self.map_frame
+        self.map_trans.child_frame_id = self.utm_frame
+        self.map_trans.transform.translation = Vector3(self.datum[0], self.datum[1], self.datum[2]);
+        self.map_trans.transform.rotation = Quaternion(0,0,0,1) # Set to identity
 
         #Listen to image messages and publish predictions with callback
         self.fix_sub = rospy.Subscriber(self.gps_topic_name, NavSatFix, self.gpsFixCallback)
@@ -108,6 +115,30 @@ class offset_estimation():
         # Preprocess
         self.img_receive = True
 
+    def GNSS_WorldToRobot(self):
+        gps_fix_utm = geo2UTM.geo2UTM(oe.gps_fix.latitude, oe.gps_fix.longitude) # Custom Library to convert geo to UTM co-ordinates
+
+        gps_pose_utm = PoseStamped()
+        gps_pose_utm.pose.position = Point(gps_fix_utm[0], gps_fix_utm[1], 0)
+        gps_pose_utm.pose.orientation = Quaternion(0,0,0,1) # GPS orientation is meaningless, set to identity
+
+        gps_pose_map = PoseStamped()
+        gps_pose_map.header.stamp = rospy.Time.now()
+        gps_pose_map = tf2_geometry_msgs.do_transform_pose(gps_pose_utm, oe.map_trans) # Transform RTK values w.r.t to "Map" frame
+
+        self.rot_vec = self.qv_mult() # Rotate the static offset value by IMU yaw
+        #print self.rot_vec, self.gps_robot
+
+        gps_trans = TransformStamped()
+        gps_trans.header.stamp = rospy.Time.now()
+        gps_trans.header.frame_id = self.robot_frame
+        gps_trans.child_frame_id = self.gps_frame
+        gps_trans.transform.translation = Vector3(self.rot_vec[0], self.rot_vec[1], 0.0) #oe.gps_robot[2]#(oe.rot_vec[0], oe.rot_vec[1], oe.rot_vec[2])
+        gps_trans.transform.rotation = Quaternion(0,0,0,1) # Set to identity
+
+        self.robot_pose_map.header.stamp = rospy.Time.now()
+        self.robot_pose_map = tf2_geometry_msgs.do_transform_pose(gps_pose_map, gps_trans) # Transform RTK values w.r.t to "Map" frame
+
     def ground_truth_utm2map(self):
 
         for i in range(1, len(self.gt_utm)): # Skip the first row (String)
@@ -115,27 +146,34 @@ class offset_estimation():
           pose_stamped.pose.position = Point(self.gt_utm[i][0], self.gt_utm[i][1], 0)
           pose_stamped.pose.orientation = Quaternion(0,0,0,1) # GPS orientation is meaningless, set to identity
 
-          pose_transformed = PoseStamped()
-          pose_transformed.header.stamp = rospy.Time.now()
-          pose_transformed = tf2_geometry_msgs.do_transform_pose(pose_stamped, self.map_transform) # Transform RTK values w.r.t to "Map" frame
+          pose_trans = PoseStamped()
+          pose_trans.header.stamp = rospy.Time.now()
+          pose_trans = tf2_geometry_msgs.do_transform_pose(pose_stamped, self.map_trans) # Transform RTK values w.r.t to "Map" frame
 
-          self.gt_map_x.append(pose_transformed.pose.position.x)
-          self.gt_map_y.append(pose_transformed.pose.position.y)
+          self.gt_map_x.append(pose_trans.pose.position.x)
+          self.gt_map_y.append(pose_trans.pose.position.y)
 
         # Fitting the straight line and obtain a, b, c co-ordinates
         #self.coefficients = np.polyfit(self.gt_map_x, self.gt_map_y, 1)
         #self.gt_line = [oe.coefficients[0], -1, oe.coefficients[1]] # a, b, c
 
-        increment = 5
         inc = 0
-        self.coefficients = np.empty([np.int(len(self.gt_map_x)/increment), 2])
-        self.gt_line = np.empty([np.int(len(self.gt_map_x)/increment), 3])
-        self.gt_yaw = np.empty([np.int(len(self.gt_map_x)/increment), 1])
-        for ind in range(increment+1,len(self.gt_map_x),increment):
-            self.coefficients[inc] = (np.polyfit(self.gt_map_x[ind-increment:ind], self.gt_map_y[ind-increment:ind], 1)) # SWITCH TO SECOND ORDER
+        #self.coefficients = np.empty([np.int(len(self.gt_map_x)/self.increment), 2])
+        self.coefficients = np.empty([np.int(len(self.gt_map_x)/self.increment), 3])
+        self.gt_line = np.empty([np.int(len(self.gt_map_x)/self.increment), 3])
+        self.gt_yaw = np.empty([np.int(len(self.gt_map_x)/self.increment), 1])
+        for ind in range(self.increment+1,len(self.gt_map_x),self.increment):
+            #self.coefficients[inc] = (np.polyfit(self.gt_map_x[ind-self.increment:ind], self.gt_map_y[ind-self.increment:ind], 1)) # SWITCH TO SECOND ORDER
+            self.coefficients[inc] = (np.polyfit(self.gt_map_x[ind-self.increment:ind], self.gt_map_y[ind-self.increment:ind], 2)) # SWITCH TO SECOND ORDER
+            # self.gt_line[inc, 0] = oe.coefficients[inc][0]
+            # self.gt_line[inc, 1] = -1
+            # self.gt_line[inc, 2] = oe.coefficients[inc][1] # a, b, c
             self.gt_line[inc, 0] = oe.coefficients[inc][0]
-            self.gt_line[inc, 1] = -1
-            self.gt_line[inc, 2] = oe.coefficients[inc][1] # a, b, c
+            self.gt_line[inc, 1] = oe.coefficients[inc][1]
+            self.gt_line[inc, 2] = oe.coefficients[inc][2]# a, b, c
+
+            #line = geom.LineString([self.gt_map_x[ind-self.increment:ind],self.gt_map_y[ind-self.increment:ind]])
+            print str(self.gt_map_x[ind-self.increment:ind])[1:-1], str(self.gt_map_y[ind-self.increment:ind])[1:-1]
 
             inc = inc + 1
 
@@ -154,7 +192,6 @@ if __name__ == '__main__':
     try:
         #Initialize node
         rospy.init_node('lateral_heading_offset')
-        r = rospy.Rate(1)
         oe = offset_estimation()
 
         # Function to obtain the ground truth values in Map frame
@@ -175,60 +212,37 @@ if __name__ == '__main__':
                # oe.dt_gps = oe.dt_gps + (oe.gps_NewTime - oe.gps_oldTime)
                # oe.dt_imu = oe.dt_imu + (oe.imu_NewTime - oe.imu_oldTime)
 
-               gps_fix_utm = geo2UTM.geo2UTM(oe.gps_fix.latitude, oe.gps_fix.longitude) # Custom Library to convert geo to UTM co-ordinates
-
-               gps_pose_utm = PoseStamped()
-               gps_pose_utm.pose.position = Point(gps_fix_utm[0], gps_fix_utm[1], 0)
-               gps_pose_utm.pose.orientation = Quaternion(0,0,0,1) # GPS orientation is meaningless, set to identity
-
-               gps_pose_map = PoseStamped()
-               gps_pose_map.header.stamp = rospy.Time.now()
-               gps_pose_map = tf2_geometry_msgs.do_transform_pose(gps_pose_utm, oe.map_transform) # Transform RTK values w.r.t to "Map" frame
-
-               # # Min distance from point (current robot gps) to the line (ground truth)
-               # dist_n = abs(oe.gt_line[0]*gps_pose_map.pose.position.x+oe.gt_line[1]*gps_pose_map.pose.position.y+ oe.gt_line[2])
-               # dist_d = math.sqrt(pow(oe.gt_line[0],2)+pow(oe.gt_line[1],2))
-               # dist_0 = dist_n/dist_d
-
-               # try:
-               #    (trans,rot) = oe.listener.lookupTransform(oe.robot_frame, oe.gps_frame, rospy.Time(0))
-               # except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-               #    continue
-
-               oe.rot_vec = oe.qv_mult()
-
-               gps_transform = TransformStamped()
-               gps_transform.header.stamp = rospy.Time.now()
-               gps_transform.header.frame_id = oe.robot_frame
-               gps_transform.child_frame_id = oe.gps_frame
-               gps_transform.transform.translation = Vector3(oe.gps_robot[0], oe.gps_robot[1], 0.0) #oe.gps_robot[2]#(oe.rot_vec[0], oe.rot_vec[1], oe.rot_vec[2])
-               gps_transform.transform.rotation = Quaternion(0,0,0,1) # Set to identity
-
-               robot_pose_map = PoseStamped()
-               robot_pose_map.header.stamp = rospy.Time.now()
-               robot_pose_map = tf2_geometry_msgs.do_transform_pose(gps_pose_map, gps_transform) # Transform RTK values w.r.t to "Map" frame
+               # RTK Fix from UTM Frame to Robot Frame
+               oe.GNSS_WorldToRobot()
 
                # Min distance from point (current robot gps) to the line (ground truth)
                dist_0 = np.empty([np.int(len(oe.gt_line)),1])
-
+               print oe.robot_pose_map.pose.position
                for c_n in range(0,len(oe.gt_line)):
-                 dist_n = abs(oe.gt_line[c_n,0]*robot_pose_map.pose.position.x+oe.gt_line[c_n,1]*robot_pose_map.pose.position.y+ oe.gt_line[c_n,2])
+                 dist_n = abs(oe.gt_line[c_n,0]*oe.robot_pose_map.pose.position.x+oe.gt_line[c_n,1]*oe.robot_pose_map.pose.position.y+ oe.gt_line[c_n,2])
                  dist_d = math.sqrt(pow(oe.gt_line[c_n,0],2)+pow(oe.gt_line[c_n,1],2))
                  dist_0[c_n] = dist_n/dist_d
 
+               # Min Lateral Offset and its line segement index
                lateral_offset = np.min(dist_0)
                segment_index = np.where(dist_0 == np.min(dist_0))
 
+               # Angular Offset => IMU with GT yaw (line segement index)
                if oe.receive_imu_fix==True:
                    angular_offset = oe.gt_yaw[segment_index[0][0]]-oe.yaw_imu
                    print "lateral_offset:", lateral_offset, "angular_offset:", angular_offset #, oe.dt_gps, oe.dt_imu #, oe.gps_oldTime, newTime
 
+               # RGB Image nearest to current GNSS fix msg
                if oe.img_receive==True:
                    rospy.loginfo('Received image for prediction')
 
-               oe.gps_oldTime = oe.gps_NewTime
-               oe.imu_oldTime = oe.imu_NewTime
+               # oe.gps_oldTime = oe.gps_NewTime
+               # oe.imu_oldTime = oe.imu_NewTime
                oe.receive_gps_fix = False
+               oe.img_receive = False
+
+               # t = timeit.Timer("d.ground_truth_utm2map()", "from __main__ import offset_estimation; d = offset_estimation()")
+               # print t.timeit()
 
     except rospy.ROSInterruptException:
          cv2.destroyAllWindows() # Closes all the frames
