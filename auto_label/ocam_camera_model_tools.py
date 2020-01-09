@@ -106,14 +106,14 @@ class OcamCalibCameraModel:
         #NOTE: model (x,y) is (height,width) so we swap
         dx = y - self.xc
         dy = x - self.yc;
-        px = self.invM[0]*dx +self.invM[1]*dy;
-        py = self.invM[2]*dx + self.invM[3]*dy;
+        px = self.inv_M[0,0]*dx +self.inv_M[0,1]*dy;
+        py = self.inv_M[1,0]*dx + self.inv_M[1,1]*dy;
         R2 = px*px + py*py;
 
         direction = [0,0,0]
         direction[0] = py;
         direction[1] = px;
-        direction[2] = -eval_poly4(self.fx, sqrt(R2));
+        direction[2] = -eval_poly4(self.fx, np.sqrt(R2));
 
         return direction
     
