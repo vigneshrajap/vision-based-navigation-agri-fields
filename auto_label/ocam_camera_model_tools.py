@@ -141,7 +141,7 @@ if __name__ == "__main__":
     calib_file = os.path.join('/home/marianne/catkin_ws/src/vision-based-navigation-agri-fields/auto_nav/scripts/input_cam_model_campus_2018-08-31.xml')
     ocam_obj = OcamCalibCameraModel(calib_file)
     #vector to point debug
-    point = [0,0,1]
+    point = [0.1,0.1,1]
     pixel = ocam_obj.vector_to_pixel(point)
     print(pixel)
     

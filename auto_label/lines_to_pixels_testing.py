@@ -18,7 +18,7 @@ def make_line_samples(start,stop,numsamples):
     return samples_per_point
 
 def lines_to_camera_pixels(cam_model,xyz_start, xyz_stop):
-    line_points = make_line_samples(xyz_start,xyz_stop,10000)
+    line_points = make_line_samples(xyz_start,xyz_stop,1000)
     print('line_points', line_points)
     
     pixels = []
@@ -28,12 +28,13 @@ def lines_to_camera_pixels(cam_model,xyz_start, xyz_stop):
         if(new_pixel[0] < cam_model.height and new_pixel[1] < cam_model.width): #if within image boundaries
             pixels.append(new_pixel)
     return np.array(pixels)
+
 if __name__ == "__main__":
      calib_file = os.path.join('/home/marianne/catkin_ws/src/vision-based-navigation-agri-fields/auto_nav/scripts/input_cam_model_campus_2018-08-31.xml')
      cam_model = OcamCalibCameraModel(calib_file)
      #FIXME: need to transform the points from world coordinates to camera coordinates!
-     xyz_start = [0,1,0]
-     xyz_stop = [0,1,10]
+     xyz_start = [0,0,0]
+     xyz_stop = [0,10,0]
      line_pixels = lines_to_camera_pixels(cam_model,xyz_start,xyz_stop)
      print('line_pixels',line_pixels)
      
@@ -51,8 +52,8 @@ if __name__ == "__main__":
      plt.imshow(mask*255) #too thin, not visible...
      
      #plot section only
-     plt.figure(2)
-     plt.imshow(mask[1000:1100,2000:2100])
+     plt.figure(3)
+     plt.imshow(mask[700:800,1300:1400])
      
 
          

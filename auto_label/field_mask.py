@@ -43,12 +43,18 @@ class Polygon():
                
 
 def make_field_mask(widths,labels,extent):
-    '''
-    self.points = np.array([position,
-                         position + np.array([0,self.h]), 
-                         position + np.array([self.w,self.h]),
-                         position + np.array([self.w,0])])
-    ''' 
+    #Create adjacent rectangles with row/crop labels and save as polygons
+    position = [0,0]
+    list_of_polygons = []
+    h = extent
+    for w,label in zip(widths,labels):
+        points = np.array([position,
+                           position + np.array([w,0]),
+                           position + np.array([w,h]),
+                           position + np.array([0,h])])
+        list_of_polygons.append(Polygon(points,label))
+        position = points[0] #position of next rectangle
+    return list_of_polygons
         
 def camera_to_world_transform(robot_pose,camera_pose,point):
     #transform xyz point from camera coordinate system to world coordinate system
@@ -84,37 +90,12 @@ def lines_to_camera_pixels(cam_model,xyz_start, xyz_stop,num_samples):
     
 
 if __name__ == "__main__":
-    #Simple test
-    points = np.array([[0,0],[0,1],[1,1],[1,0]])
-    box = Polygon(points)
-    plt.figure(1)
-    box.plot()
-    
     #make a "crop row"
-    row_width = 0.5
-    row_extent = 5
-    row_offset = 0
-    row_label = 1
-    row = Rectangle(width = row_width, height = row_extent, position = [0,0])#position = [row_offset-row_width/2,0])
-
-    box2 = Polygon(row.points)
+    list_of_polygons = make_field_mask(widths = [0.5], labels = [1], extent = 5)#position = [row_offset-row_width/2,0])
+    box1 = list_of_polygons[0]
     plt.figure(2)
-    box2.plot()
+    box1.plot()
     
-    '''
     #Transform box
     calib_file = os.path.join('/home/marianne/catkin_ws/src/vision-based-navigation-agri-fields/auto_nav/scripts/input_cam_model_campus_2018-08-31.xml')
     cam_model = OcamCalibCameraModel(calib_file)
-
-    x = 0 # horizontal plane
-    box_line_pixels = []
-    for pp in box2.point_pairs:
-        xyz_start = [pp[0,0],0,pp[0,1]] #fixme change back to x,y,z order when camera transform is implemented
-        xyz_stop = [pp[1,0],0,pp[1,1]] #fixme ...
-        box_line_pixels.append(lines_to_camera_pixels(cam_model,xyz_start, xyz_stop,num_samples = 1000))
-    
-    for line_pixels in box_line_pixels:
-        plt.figure(3)
-        plt.plot(line_pixels[:,0],line_pixels[:,1])
-        plt.show()
-    '''
