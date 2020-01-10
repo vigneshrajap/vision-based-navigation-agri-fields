@@ -110,7 +110,7 @@ class OcamCalibCameraModel:
         py = self.inv_M[1,0]*dx + self.inv_M[1,1]*dy;
         R2 = px*px + py*py;
 
-        direction = [0,0,0]
+        direction = np.array([0,0,0])
         direction[0] = py;
         direction[1] = px;
         direction[2] = -eval_poly4(self.fx, np.sqrt(R2));

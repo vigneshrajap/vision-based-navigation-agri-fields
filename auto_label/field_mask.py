@@ -8,7 +8,7 @@ Created on Wed Jan  8 09:12:38 2020
 
 import numpy as np
 import matplotlib.pyplot as plt
-from ocam_camera_model_tools import OcamCalibCameraModel
+from ocam_camera_model_tools import OcamCalibCameraModel,vec3_normalise
 import os
 
 def line_XY_intersection(point, direction):
@@ -77,49 +77,79 @@ class Polygon():
 
 def make_field_mask(widths,labels,extent):
     #Create adjacent rectangles with row/crop labels and save as polygons
+    #Origo is at h = 0 and w/2 (in the middle of the center row)
+    widths = np.array(widths)
+    
     position = [0,0]
     list_of_polygons = []
     h = extent
+    #shift to get the desired origo
+    shift = -np.array([np.sum(widths)/2, 0])
     for w,label in zip(widths,labels):
-        points = np.array([position,
-                           position + np.array([w,0]),
-                           position + np.array([w,h]),
-                           position + np.array([0,h])])
+        points = np.array([position + shift,
+                           position + shift + np.array([w,0]),
+                           position + shift + np.array([w,h]),
+                           position + shift + np.array([0,h])])
         list_of_polygons.append(Polygon(points,label))
         position = points[0] #position of next rectangle
+    
     return list_of_polygons
         
+
+#%% Transformation related stuff (move later?)
+'''
+Roll, pitch, yaw is rotation around x,y,z axis. 
+To combine rotation matrices, use Euler convension and rotate in x,y,z order around x axis first: R=RzRyRx
+
+'''
+#camera-robot specific
 def camera_to_world_transform(robot_pose,camera_pose,point):
     #transform xyz point from camera coordinate system to world coordinate system
+    #return transformed_point
     pass
+
+def create_transformation_matrix(rx,ry,rz,tx,ty,tz):
+    Rx = x_rotation_matrix(rx)
+    Ry = y_rotation_matrix(ry)
+    Rz = z_rotation_matrix(rz)
+    R = Rz.dot(Ry).dot(Rx)
+    t = np.array([tx,ty,tz])
+    T = np.eye(4)
+    T[0:3,0:3] = R
+    T[0:3,3] = t
+    return T
+
+#General
+#Rotation matrices independent of x,y,z rotation order and coordinate system definition: 
+def x_rotation_matrix(theta):
+    Rx = np.array([
+            np.array([1, 0, 0]),
+            np.array([0, np.cos(theta), -np.sin(theta)]),
+            np.array([0, np.sin(theta), np.cos(theta)])
+            ])
+    return Rx
+
+def y_rotation_matrix(theta):
+    Ry = np.array([
+            [np.cos(theta), 0, np.sin(theta)],
+            [0, 1, 0],
+            [-np.sin(theta), 0, np.cos(theta)]
+            ])
+    return Ry
     
+def z_rotation_matrix(theta):
+    Rz = np.array([
+            [np.cos(theta), -np.sin(theta), 0],
+            [np.sin(theta), np.cos(theta), 0],
+            [0, 0, 1]
+            ])
+    return Rz
 
-
-'''
-def make_line_samples(start,stop,num_samples):
-    samples = []
-    for coord in zip(start,stop):
-        samples.append(np.linspace(coord[0],coord[1],num_samples))
-    samples_per_point = map(list, zip(*samples)) #"transpose the coordinate list"
-    return samples_per_point
-
-def lines_to_camera_pixels(cam_model,xyz_start, xyz_stop,num_samples):
-    line_points = make_line_samples(xyz_start,xyz_stop,num_samples)
-    #debug
-    plt.figure(6)
-    plt.plot(np.array(line_points)[:,0],np.array(line_points)[:,2],'*')
-    plt.axis('scaled')
-    
-    pixels = []
-    for p in line_points:
-        new_pixel = np.array(cam_model.vector_to_pixel(p)[0:2])
-        
-        if(new_pixel[0] < cam_model.height and new_pixel[1] < cam_model.width): #if within image boundaries
-            pixels.append(new_pixel)
-    return np.array(pixels)
-'''
-
-
+def transform_xyz_point(T,point):
+    P = np.eye(4)
+    P[0:3,3] = point
+    P_transformed = T.dot(P)
+    return P_transformed[0:3,3]
     
 
 if __name__ == "__main__":
@@ -135,4 +165,18 @@ if __name__ == "__main__":
     #Transform box
     calib_file = os.path.join('../auto_nav/scripts/input_cam_model_campus_2018-08-31.xml')
     cam_model = OcamCalibCameraModel(calib_file)
+    vector = cam_model.pixel_to_vector(cam_model.width/2, cam_model.height*(3/4))
+    normalized_vector = vec3_normalise(vector)
+    print(vector,normalized_vector)
+    
+    #test transformations
+    #roll,pitch,yaw = x,y,z x forwards
+    point = [1,0,0]
+    T = create_transformation_matrix(0,0,np.pi/2,0,0,0)
+    transformed_point = transform_xyz_point(T,point)
+    print('Transformed point',transformed_point)
+    
+    
+    
+
     
