@@ -131,7 +131,7 @@ def initialPoints(warped_img, margin):
      # return a list of tuples for centers
      return margin, modifiedCenters
 
-def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=35, margin_r=35, minpix=1, draw_windows=True):
+def sliding_window(img, modifiedCenters, kmeans=None, nwindows=12, margin_l=50, margin_r=50, minpix=1, draw_windows=True):
 
     # Creates a list containing 3 lists, each of [] items, all set to 0
     out_img = np.dstack((img, img, img))*255

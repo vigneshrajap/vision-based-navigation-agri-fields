@@ -36,7 +36,7 @@ class lane_finder_post_predict():
        #src=np.float32([(0.2,0.5), (0.8,0.5), (0.2,0.8), (0.8,0.8)])
        #src=np.float32([(0,0.4), (1,0.4), (0,0.8), (1,0.8)])
        #self.src=np.float32([(0,0.3), (1,0.3), (0,1), (1,1)])
-       self.src=np.float32([(0.2,0.5), (0.8,0.5), (0.2,1), (0.8,1)])
+       self.src=np.float32([(0.1,0.2), (0.9,0.2), (0.1,1), (0.9,1)])
 
        self.dst=np.float32([(0,0), (1,0), (0,1), (1,1)])
 
@@ -192,7 +192,21 @@ class lane_finder_post_predict():
        self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted(self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth],
                                                                0.8, self.invwarp_img, 1.0, 0)
 
-       self.final_img = cv2.ellipse(self.final_img, center, axes, angle, startAngle, endAngle, (0,255,0), 3)
+       #x = 10
+       #y = 100
+       #self.final_img = cv2.rectangle(self.final_img, (x, 0), (y + 10, 0 + 250), (36,255,12), 1)
+       #cv2.putText(self.final_img, 'Fedex', (x, y+20), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+
+       # Draw a rectangle around the text
+       self.final_img = cv2.rectangle(self.final_img,(10,10), (270,140), (0,0,255), 4)
+       font = cv2.FONT_HERSHEY_SIMPLEX
+
+       cv2.putText(self.final_img,os.path.splitext(self.base)[0][0:13],(20,40), font, 0.6,(255,0,0),2,cv2.LINE_AA)
+       cv2.putText(self.final_img, 'Detected Lanes: 1',(20,70), font, 0.6,(255,0,0),2,cv2.LINE_AA)
+       cv2.putText(self.final_img, "Window Margins:" + ' ' + str(self.sw_end[1]) + ',' + ' ' + str(self.sw_end[2]),(20,100), font, 0.6,(255,0,0),2,cv2.LINE_AA)
+       cv2.putText(self.final_img, 'Central Lane Curvature: 0',(20,130), font, 0.6,(255,0,0),2,cv2.LINE_AA)
+
+       # self.final_img = cv2.ellipse(self.final_img, center, axes, angle, startAngle, endAngle, (0,255,0), 3)
 
     def run_lane_fit(self):
        # Setting the parameters for upscaling and warping-unwarping
@@ -237,7 +251,7 @@ if __name__ == '__main__':
     for pred_im in im_files:
         if args.output_folder:
             lfp.base = os.path.basename(pred_im)
-            lfp.output_file = os.path.join(args.output_folder,"frogn_"+os.path.splitext(lfp.base)[0][7:11])+".jpg" #os.path.splitext(base)[0]
+            lfp.output_file = os.path.join(args.output_folder,os.path.splitext(lfp.base)[0][0:13])+".jpg" #os.path.splitext(base)[0] #+"_osw"
             print(lfp.output_file)
         else:
             output_file = None
