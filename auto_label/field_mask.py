@@ -69,27 +69,31 @@ class Polygon():
         '''
         is_inside = True
         for p, p_next in self.make_pointpairs():
+            print()
             if orient2d(p,p_next,q) < 0: 
                 is_inside = False
                 break
         return is_inside
+    
                
 
 def make_field_mask(widths,labels,extent):
     #Create adjacent rectangles with row/crop labels and save as polygons
-    #Origo is at h = 0 and w/2 (in the middle of the center row)
+    #Origo is at x = 0 and y = w/2 (in the middle of the center row)
+    #x ahead, y to the left
     widths = np.array(widths)
     
     position = [0,0]
     list_of_polygons = []
     h = extent
     #shift to get the desired origo
-    shift = -np.array([np.sum(widths)/2, 0])
+    shift = -np.array([0,np.sum(widths)/2]) 
     for w,label in zip(widths,labels):
         points = np.array([position + shift,
-                           position + shift + np.array([w,0]),
-                           position + shift + np.array([w,h]),
-                           position + shift + np.array([0,h])])
+                           position + shift + np.array([h,0]),
+                           position + shift + np.array([h,w]),
+                           position + shift + np.array([0,w])
+                           ])
         list_of_polygons.append(Polygon(points,label))
         position = points[0] #position of next rectangle
     
@@ -196,16 +200,17 @@ def transform_xyz_point(T,point):
     
 
 if __name__ == "__main__":
-    #make a "crop row"
+    #%% Make a field mask
     list_of_polygons = make_field_mask(widths = [0.5], labels = [1], extent = 5)#position = [row_offset-row_width/2,0])
     box1 = list_of_polygons[0]
     plt.figure(2)
     box1.plot()
+    print(box1.points)
     
-    is_inside = box1.check_if_inside([0.45,1])
-    print(is_inside)
+    #is_inside = box1.check_if_inside([0.45,1])
+    #print(is_inside)
     
-    #Transformations 
+    #%%Transformations 
     
     #Transform pixel
     calib_file = os.path.join('../auto_nav/scripts/input_cam_model_campus_2018-08-31.xml')
@@ -219,6 +224,16 @@ if __name__ == "__main__":
     vector_robot = transform_xyz_point(T_camera_to_robot,normalized_vector)
     print('vector_robot', vector_robot)
     
-    T_robot_to_world = set_up_robot_to_world_transform(robot_rpy = [0,0,np.pi/16],robot_xyz = [0,0,0])
+    T_robot_to_world = set_up_robot_to_world_transform(robot_rpy = [0,0,0],robot_xyz = [0,0,0])
     vector_world = transform_point_camera_to_world(point = normalized_vector,T_camera_to_robot = T_camera_to_robot, T_robot_to_world = T_robot_to_world)
-    print('point_world',vector_world)
+    print('vector_world',vector_world)
+    
+    # Check if inside polygons
+    camera_origo = transform_point_camera_to_world(point=[0,0,0],T_camera_to_robot=T_camera_to_robot, T_robot_to_world=T_robot_to_world)
+    print('camera_origo',camera_origo)
+    ground_point = line_XY_intersection(point=camera_origo,direction = np.array(vector_world)-np.array(camera_origo))
+    print('ground_point', ground_point)
+    point_is_inside = box1.check_if_inside(ground_point)
+    print('Point',ground_point, 'is inside box ', box1.points, ': ', point_is_inside)
+    
+    
