@@ -103,47 +103,86 @@ To combine rotation matrices, use Euler convension and rotate in x,y,z order aro
 
 '''
 #camera-robot specific
-def camera_to_world_transform(robot_pose,camera_pose,point):
+'''
+def transform_camera_to_world_transform(T_wr = eye(4),T_rc,point = [0,0,0]):
     #transform xyz point from camera coordinate system to world coordinate system
     #return transformed_point
+    
     pass
+'''
 
-def create_transformation_matrix(rx,ry,rz,tx,ty,tz):
-    Rx = x_rotation_matrix(rx)
-    Ry = y_rotation_matrix(ry)
-    Rz = z_rotation_matrix(rz)
-    R = Rz.dot(Ry).dot(Rx)
-    t = np.array([tx,ty,tz])
-    T = np.eye(4)
-    T[0:3,0:3] = R
-    T[0:3,3] = t
-    return T
+def set_up_robot_to_camera_transform():
+    ''' 
+    Robot coordinates: x ahead, y left, z up
+    Camera coordinaes: x right, y down, z ahead
+    '''
+    # Align coordinate systems
+    rx = -np.pi/2
+    ry = np.pi/2
+    rz = 0
+    T_RC_init = create_transformation_matrix(rx,ry,rz,0,0,0)
+    T_RC = T_RC_init
+    return T_RC
+
+
+def set_up_camera_to_robot_transform():
+    ''' 
+    Robot coordinates: x ahead, y left, z up
+    Camera coordinaes: x right, y down, z ahead
+    '''
+    # Align coordinate systems
+    rx = np.pi/2
+    ry = 0
+    rz = np.pi/2
+    T_RC_init = create_transformation_matrix(rx,ry,rz,0,0,0)
+    T_RC = T_RC_init
+    return T_RC
+
 
 #General
-#Rotation matrices independent of x,y,z rotation order and coordinate system definition: 
+#Rotation matrices independent of coordinate system definition: 
 def x_rotation_matrix(theta):
     Rx = np.array([
             np.array([1, 0, 0]),
-            np.array([0, np.cos(theta), -np.sin(theta)]),
-            np.array([0, np.sin(theta), np.cos(theta)])
+            np.array([0, np.cos(theta), np.sin(theta)]),
+            np.array([0, -np.sin(theta), np.cos(theta)])
             ])
     return Rx
 
 def y_rotation_matrix(theta):
     Ry = np.array([
-            [np.cos(theta), 0, np.sin(theta)],
+            [np.cos(theta), 0, -np.sin(theta)],
             [0, 1, 0],
-            [-np.sin(theta), 0, np.cos(theta)]
+            [np.sin(theta), 0, np.cos(theta)]
             ])
     return Ry
     
 def z_rotation_matrix(theta):
     Rz = np.array([
-            [np.cos(theta), -np.sin(theta), 0],
-            [np.sin(theta), np.cos(theta), 0],
+            [np.cos(theta), np.sin(theta), 0],
+            [-np.sin(theta), np.cos(theta), 0],
             [0, 0, 1]
             ])
     return Rz
+
+def create_transformation_matrix(rx,ry,rz,tx,ty,tz):
+    '''
+    Make a homogeneous 4x4 translation matrix from rotation angles (in radians) rx,ry,rz and translations (in meteres) tx,ty,tz
+    Transformation order:
+        1. x axis rotation
+        2. y axis rotation
+        3. z axis rotation
+        4. translation
+    '''
+    Rx = x_rotation_matrix(rx)
+    Ry = y_rotation_matrix(ry)
+    Rz = z_rotation_matrix(rz)
+    R = Rz.dot(Ry).dot(Rx) #combine rotation matrices: x rotation first
+    t = np.array([tx,ty,tz])
+    T = np.eye(4)
+    T[0:3,0:3] = R
+    T[0:3,3] = t
+    return T
 
 def transform_xyz_point(T,point):
     P = np.eye(4)
@@ -165,18 +204,21 @@ if __name__ == "__main__":
     #Transform box
     calib_file = os.path.join('../auto_nav/scripts/input_cam_model_campus_2018-08-31.xml')
     cam_model = OcamCalibCameraModel(calib_file)
-    vector = cam_model.pixel_to_vector(cam_model.width/2, cam_model.height*(3/4))
+    vector = cam_model.pixel_to_vector(cam_model.width*3/4, cam_model.height*1/2)    
     normalized_vector = vec3_normalise(vector)
     print(vector,normalized_vector)
     
     #test transformations
     #roll,pitch,yaw = x,y,z x forwards
-    point = [1,0,0]
-    T = create_transformation_matrix(0,0,np.pi/2,0,0,0)
+    
+    point = [0,1,0]
+    T = create_transformation_matrix(np.pi/2,0,0,0,0,0)
     transformed_point = transform_xyz_point(T,point)
     print('Transformed point',transformed_point)
     
     
-    
-
+    #Camera robot transformations
+    T_CR = set_up_camera_to_robot_transform()
+    vector_R = transform_xyz_point(T_CR,normalized_vector)
+    print('vector_R', vector_R)
     
