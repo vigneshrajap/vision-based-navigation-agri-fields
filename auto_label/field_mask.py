@@ -110,33 +110,35 @@ def transform_camera_to_world_transform(T_wr = eye(4),T_rc,point = [0,0,0]):
     
     pass
 '''
+def transform_point_camera_to_world(point = [0,0,0], T_camera_to_robot = np.eye(4), T_robot_to_world = np.eye(4)):
+    '''
+    Transform point from camera coordinates to world coordinates. 
+    '''
+    T_cam_to_world = T_robot_to_world.dot(T_camera_to_robot)
+    return transform_xyz_point(T_cam_to_world,point)
 
-def set_up_robot_to_camera_transform():
+def set_up_robot_to_world_transform(robot_rpy, robot_xyz):
+    return create_transformation_matrix(r=robot_rpy, t=robot_xyz)
+        
+def set_up_camera_to_robot_transform(camera_rpy = [0,0,0],camera_xyz = [0,0,0]):
     ''' 
     Robot coordinates: x ahead, y left, z up
     Camera coordinaes: x right, y down, z ahead
+    
+    inputs: camera pose in robot (base) coordinates
     '''
-    # Align coordinate systems
-    rx = -np.pi/2
-    ry = np.pi/2
-    rz = 0
-    T_RC_init = create_transformation_matrix(rx,ry,rz,0,0,0)
-    T_RC = T_RC_init
-    return T_RC
-
-
-def set_up_camera_to_robot_transform():
-    ''' 
-    Robot coordinates: x ahead, y left, z up
-    Camera coordinaes: x right, y down, z ahead
-    '''
-    # Align coordinate systems
+    # Rotation between coordinate systems. Creating a camera coordinate system 
+    # aligned with the robot coordinate system (x_robot = z_cam, y_robot = -x_cam, z_robot = -y_cam)
     rx = np.pi/2
     ry = 0
     rz = np.pi/2
-    T_RC_init = create_transformation_matrix(rx,ry,rz,0,0,0)
-    T_RC = T_RC_init
-    return T_RC
+    T_cam_to_camaligned = create_transformation_matrix(r = [rx,ry,rz],t = [0,0,0])
+    
+    #camera tilt and position compared to robot coordinate system
+    T_camaligned_to_rob = create_transformation_matrix(r = camera_rpy,t = camera_xyz)
+    
+    T_cam_to_rob = T_camaligned_to_rob.dot(T_cam_to_camaligned)
+    return T_cam_to_rob
 
 
 #General
@@ -165,7 +167,7 @@ def z_rotation_matrix(theta):
             ])
     return Rz
 
-def create_transformation_matrix(rx,ry,rz,tx,ty,tz):
+def create_transformation_matrix(r,t):
     '''
     Make a homogeneous 4x4 translation matrix from rotation angles (in radians) rx,ry,rz and translations (in meteres) tx,ty,tz
     Transformation order:
@@ -174,6 +176,8 @@ def create_transformation_matrix(rx,ry,rz,tx,ty,tz):
         3. z axis rotation
         4. translation
     '''
+    rx,ry,rz = r 
+    tx,ty,tz = t
     Rx = x_rotation_matrix(rx)
     Ry = y_rotation_matrix(ry)
     Rz = z_rotation_matrix(rz)
@@ -201,24 +205,20 @@ if __name__ == "__main__":
     is_inside = box1.check_if_inside([0.45,1])
     print(is_inside)
     
-    #Transform box
+    #Transformations 
+    
+    #Transform pixel
     calib_file = os.path.join('../auto_nav/scripts/input_cam_model_campus_2018-08-31.xml')
     cam_model = OcamCalibCameraModel(calib_file)
-    vector = cam_model.pixel_to_vector(cam_model.width*3/4, cam_model.height*1/2)    
+    vector = cam_model.pixel_to_vector(cam_model.width*1/2, cam_model.height*1/2)    
     normalized_vector = vec3_normalise(vector)
     print(vector,normalized_vector)
     
-    #test transformations
-    #roll,pitch,yaw = x,y,z x forwards
-    
-    point = [0,1,0]
-    T = create_transformation_matrix(np.pi/2,0,0,0,0,0)
-    transformed_point = transform_xyz_point(T,point)
-    print('Transformed point',transformed_point)
-    
-    
     #Camera robot transformations
-    T_CR = set_up_camera_to_robot_transform()
-    vector_R = transform_xyz_point(T_CR,normalized_vector)
-    print('vector_R', vector_R)
+    T_camera_to_robot = set_up_camera_to_robot_transform(camera_rpy = [0,-np.pi/8,0],camera_xyz =[0,0,1])
+    vector_robot = transform_xyz_point(T_camera_to_robot,normalized_vector)
+    print('vector_robot', vector_robot)
     
+    T_robot_to_world = set_up_robot_to_world_transform(robot_rpy = [0,0,np.pi/16],robot_xyz = [0,0,0])
+    vector_world = transform_point_camera_to_world(point = normalized_vector,T_camera_to_robot = T_camera_to_robot, T_robot_to_world = T_robot_to_world)
+    print('point_world',vector_world)
