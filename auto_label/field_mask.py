@@ -238,11 +238,12 @@ if __name__ == "__main__":
     calib_file = os.path.join('../auto_nav/scripts/input_cam_model_campus_2018-08-31.xml')
     cam_model = OcamCalibCameraModel(calib_file)
 
-    #Camera setup
+    #Camera setup    
     #dummy values, should get values from outside
-    camera_tilt = np.pi/8
+    camera_tilt = np.pi/8 
     camera_height = 1
     T_camera_to_robot = set_up_camera_to_robot_transform(rpy = [0,-camera_tilt,0], xyz =[0,0,camera_height])    
+    
     
     #Robot position 
     #dummy values, should get values from outside
