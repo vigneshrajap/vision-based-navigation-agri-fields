@@ -71,7 +71,6 @@ class Polygon():
         '''
         is_inside = True
         for p, p_next in self.make_pointpairs():
-            print()
             if orient2d(p,p_next,q) < 0: 
                 is_inside = False
                 break
@@ -85,7 +84,7 @@ def make_field_mask(widths,labels,extent):
     #x ahead, y to the left
     widths = np.array(widths)
     
-    position = [0,0]
+    position = np.array([0,0])
     list_of_polygons = []
     h = extent
     #shift to get the desired origo
@@ -97,7 +96,7 @@ def make_field_mask(widths,labels,extent):
                            position + shift + np.array([0,w])
                            ])
         list_of_polygons.append(Polygon(points,label))
-        position = points[0] #position of next rectangle
+        position = position + np.array([0,w]) #position of next rectangle
     
     return list_of_polygons
         
@@ -109,13 +108,7 @@ To combine rotation matrices, use Euler convension and rotate in x,y,z order aro
 
 '''
 #camera-robot specific
-'''
-def transform_camera_to_world_transform(T_wr = eye(4),T_rc,point = [0,0,0]):
-    #transform xyz point from camera coordinate system to world coordinate system
-    #return transformed_point
-    
-    pass
-'''
+
 def transform_point_camera_to_world(point = [0,0,0], T_camera_to_robot = np.eye(4), T_robot_to_world = np.eye(4)):
     '''
     Transform point from camera coordinates to world coordinates. 
@@ -203,7 +196,7 @@ def transform_xyz_point(T,point):
 
 if __name__ == "__main__":
     #%% Make a field mask
-    list_of_polygons = make_field_mask(widths = [0.5], labels = [1], extent = 5)#position = [row_offset-row_width/2,0])
+    list_of_polygons = make_field_mask(widths = [0.5,0.3,0.5], labels = [1,0,1], extent = 5)#position = [row_offset-row_width/2,0])
     for p in list_of_polygons:
         print(p.points)
     box1 = list_of_polygons[0]
@@ -237,8 +230,8 @@ if __name__ == "__main__":
     print('Point',ground_point, 'is inside box ', box1.points, ': ', point_is_inside)
     
     # For a set of pixels
-    '''
-    cropped_dims = [200,400]
+    
+    cropped_dims = [200,300]
     h_start = np.round(cam_model.height/2-cropped_dims[0]/2)
     h_stop = np.round(cam_model.height/2+cropped_dims[0]/2)
     w_start = np.round(cam_model.width/2-cropped_dims[1]/2)
@@ -246,25 +239,22 @@ if __name__ == "__main__":
     
     mask_image = np.zeros((cropped_dims[0],cropped_dims[1],2))
     #for j in tqdm(np.arange(mask_image.shape[1])):
-    for j in np.arange(mask_image.shape[1]):
+    for j in tqdm(np.arange(mask_image.shape[1])):
         for i in np.arange(mask_image.shape[0]):
-            
-            v = cam_model.pixel_to_vector(i+h_start,j+w_start)
+            pixel = [i+h_start,j+w_start]
+            v = cam_model.pixel_to_vector(pixel[1],pixel[0])
             v_world = transform_point_camera_to_world(point = v,T_camera_to_robot = T_camera_to_robot, T_robot_to_world = T_robot_to_world)
             gp = line_XY_intersection(point=camera_origo,direction = np.array(v_world)-np.array(camera_origo))
-            print(gp)
             for poly_index,poly in enumerate(list_of_polygons):
                 if poly.check_if_inside(gp):
                     mask_image[i,j,0] = poly_index
                     mask_image[i,j,1] = poly.label
                     break
-                
-    plt.imsave(arr = mask_image[:,:,1]*255,fname='field_mask_index.png')
-    plt.imsave(arr = mask_image[:,:,0]*255,fname='field_mask_label.png')
-    np.save('field_mask.npy',mask_image)
-    '''
+    
+    plt.figure(10)
+    plt.imshow(mask_image[:,:,0])  
+    plt.figure(11)          
+    plt.imshow(mask_image[:,:,1])
     
         
-            
-            
             
