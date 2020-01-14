@@ -10,6 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ocam_camera_model_tools import OcamCalibCameraModel,vec3_normalise
 import os
+from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 def line_XY_intersection(point, direction):
     """
@@ -202,11 +204,9 @@ def transform_xyz_point(T,point):
 if __name__ == "__main__":
     #%% Make a field mask
     list_of_polygons = make_field_mask(widths = [0.5], labels = [1], extent = 5)#position = [row_offset-row_width/2,0])
+    for p in list_of_polygons:
+        print(p.points)
     box1 = list_of_polygons[0]
-    plt.figure(2)
-    box1.plot()
-    print(box1.points)
-    
     #is_inside = box1.check_if_inside([0.45,1])
     #print(is_inside)
     
@@ -221,14 +221,14 @@ if __name__ == "__main__":
     
     #Camera robot transformations
     T_camera_to_robot = set_up_camera_to_robot_transform(camera_rpy = [0,-np.pi/8,0],camera_xyz =[0,0,1])
-    vector_robot = transform_xyz_point(T_camera_to_robot,normalized_vector)
+    vector_robot = transform_xyz_point(T_camera_to_robot,vector)
     print('vector_robot', vector_robot)
     
     T_robot_to_world = set_up_robot_to_world_transform(robot_rpy = [0,0,0],robot_xyz = [0,0,0])
-    vector_world = transform_point_camera_to_world(point = normalized_vector,T_camera_to_robot = T_camera_to_robot, T_robot_to_world = T_robot_to_world)
+    vector_world = transform_point_camera_to_world(point = vector,T_camera_to_robot = T_camera_to_robot, T_robot_to_world = T_robot_to_world)
     print('vector_world',vector_world)
     
-    # Check if inside polygons
+    # Check if inside any polygons
     camera_origo = transform_point_camera_to_world(point=[0,0,0],T_camera_to_robot=T_camera_to_robot, T_robot_to_world=T_robot_to_world)
     print('camera_origo',camera_origo)
     ground_point = line_XY_intersection(point=camera_origo,direction = np.array(vector_world)-np.array(camera_origo))
@@ -236,4 +236,35 @@ if __name__ == "__main__":
     point_is_inside = box1.check_if_inside(ground_point)
     print('Point',ground_point, 'is inside box ', box1.points, ': ', point_is_inside)
     
+    # For a set of pixels
+    '''
+    cropped_dims = [200,400]
+    h_start = np.round(cam_model.height/2-cropped_dims[0]/2)
+    h_stop = np.round(cam_model.height/2+cropped_dims[0]/2)
+    w_start = np.round(cam_model.width/2-cropped_dims[1]/2)
+    w_stop = np.round(cam_model.width/2+cropped_dims[1]/2)
     
+    mask_image = np.zeros((cropped_dims[0],cropped_dims[1],2))
+    #for j in tqdm(np.arange(mask_image.shape[1])):
+    for j in np.arange(mask_image.shape[1]):
+        for i in np.arange(mask_image.shape[0]):
+            
+            v = cam_model.pixel_to_vector(i+h_start,j+w_start)
+            v_world = transform_point_camera_to_world(point = v,T_camera_to_robot = T_camera_to_robot, T_robot_to_world = T_robot_to_world)
+            gp = line_XY_intersection(point=camera_origo,direction = np.array(v_world)-np.array(camera_origo))
+            print(gp)
+            for poly_index,poly in enumerate(list_of_polygons):
+                if poly.check_if_inside(gp):
+                    mask_image[i,j,0] = poly_index
+                    mask_image[i,j,1] = poly.label
+                    break
+                
+    plt.imsave(arr = mask_image[:,:,1]*255,fname='field_mask_index.png')
+    plt.imsave(arr = mask_image[:,:,0]*255,fname='field_mask_label.png')
+    np.save('field_mask.npy',mask_image)
+    '''
+    
+        
+            
+            
+            
