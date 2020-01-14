@@ -15,7 +15,8 @@ sys.path.insert(1, '../image-segmentation-keras')
 from keras_segmentation import predict
 import sliding_window_approach
 from geometry_msgs.msg import Pose, PoseArray
-import timeit
+import time
+start_time = time.time()
 
 def upscaling_warping_parameters(rgb_img, seg_arr, class_number, crop_ratio):
    # Reshaping the Lanes Class into binary array and Upscaling the image as input image
@@ -177,11 +178,16 @@ def main():
             print(output_file)
         else:
             output_file = None
-        seg_arr, input_image, out_img, fit = predict_on_image(model,inp = im, lane_fit = False, evaluate = False, visualize = "segmentation", output_file = output_file, display=True)
-        vis_img = visualization(input_image, seg_arr=seg_arr, lane_fit = None, evaluation = None, n_classes=3, visualize = "segmentation", display=False, output_file=output_file)
 
-        # t = timeit.Timer("predict_on_image()", "from __main__ import lane_predict")
-        # print t.timeit()
+        seg_arr, input_image, out_img, fit = predict_on_image(model,inp = im, lane_fit = False, evaluate = False, visualize = "segmentation", output_file = output_file, display=True)
+        #vis_img = visualization(input_image, seg_arr=seg_arr, lane_fit = None, evaluation = None, n_classes=3, visualize = "segmentation", display=False, output_file=output_file)
+        #
+        # print(timeit.timeit(stmt = "for_loop(seq)",
+        #                     setup="seq='Pylenin'",
+        #                     number=10000))
+
+        #print(timeit.timeit(predict_on_image(model,inp = im, lane_fit = False, evaluate = False, visualize = "segmentation", output_file = output_file, display=True)))
+        print("--- %s seconds ---" % (time.time() - start_time))
 
     cv2.destroyAllWindows()
 
