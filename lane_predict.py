@@ -109,7 +109,7 @@ def visualize_segmentation(input_img, seg_arr, n_classes, class_number = 2, disp
     return upscaled_img_rgb #vis_img
 
 def visualization(input_img, seg_arr=None, lane_fit = None, evaluation = None, n_classes=None, visualize = None, display=False, output_file=None):
-    class_number = 1 # 1 for Crops, 2 for Lanes
+    class_number = 2 # 1 for Crops, 2 for Lanes
     crop_ratio = 0.2
 
     #visualize: None, "all" or one of, "segmentation", "lane_fit", "evaluation"
@@ -180,7 +180,7 @@ def main():
             output_file = None
 
         seg_arr, input_image, out_img, fit = predict_on_image(model,inp = im, lane_fit = False, evaluate = False, visualize = "segmentation", output_file = output_file, display=True)
-        #vis_img = visualization(input_image, seg_arr=seg_arr, lane_fit = None, evaluation = None, n_classes=3, visualize = "segmentation", display=False, output_file=output_file)
+        vis_img = visualization(input_image, seg_arr=seg_arr, lane_fit = None, evaluation = None, n_classes=3, visualize = "segmentation", display=False, output_file=output_file)
         #
         # print(timeit.timeit(stmt = "for_loop(seq)",
         #                     setup="seq='Pylenin'",
