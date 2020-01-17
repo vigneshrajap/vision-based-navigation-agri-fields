@@ -106,14 +106,14 @@ class OcamCalibCameraModel:
         #NOTE: model (x,y) is (height,width) so we swap
         dx = y - self.xc
         dy = x - self.yc;
-        px = self.invM[0]*dx +self.invM[1]*dy;
-        py = self.invM[2]*dx + self.invM[3]*dy;
+        px = self.inv_M[0,0]*dx +self.inv_M[0,1]*dy;
+        py = self.inv_M[1,0]*dx + self.inv_M[1,1]*dy;
         R2 = px*px + py*py;
 
-        direction = [0,0,0]
+        direction = np.array([0,0,0])
         direction[0] = py;
         direction[1] = px;
-        direction[2] = -eval_poly4(self.fx, sqrt(R2));
+        direction[2] = -eval_poly4(self.fx, np.sqrt(R2));
 
         return direction
     
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     calib_file = os.path.join('/home/marianne/catkin_ws/src/vision-based-navigation-agri-fields/auto_nav/scripts/input_cam_model_campus_2018-08-31.xml')
     ocam_obj = OcamCalibCameraModel(calib_file)
     #vector to point debug
-    point = [0,0,1]
+    point = [0.1,0.1,1]
     pixel = ocam_obj.vector_to_pixel(point)
     print(pixel)
     
