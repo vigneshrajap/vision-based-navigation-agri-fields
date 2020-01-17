@@ -37,27 +37,25 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=10, margin_l=50, 
 
     # Creates a list containing 3 lists, each of [] items, all set to 0
     out_img = np.dstack((img, img, img))*255
+
     # Set height of windows
     window_height = np.int(img.shape[0]/nwindows)
+
     # Identify the x and y positions of all nonzero pixels in the image
     nonzero = img.nonzero()
     nonzeroy = np.array(nonzero[0])
     nonzerox = np.array(nonzero[1])
 
-    template = np.zeros([img.shape[0],img.shape[1]],dtype=np.uint8)
     fitx_ = []
     ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
     sw_end = []
 
     if len(modifiedCenters[0]):
+        template = np.zeros([img.shape[0],img.shape[1]],dtype=np.uint8)
         fitx_ = [[]for y in range(len(modifiedCenters[0]))]
-        #fit_= np.zeros((len(modifiedCenters[0]),3))
         x_ = [[]for y in range(len(modifiedCenters[0]))]
         y_ = [[]for y in range(len(modifiedCenters[0]))]
         combined = [[]for y in range(len(modifiedCenters[0]))]
-
-        #x_1 = []
-        #y_1 = []
 
         # Identify window boundaries in x and y (and right and left)
         win_y_low = img.shape[0] - np.multiply(range(1,nwindows+1), window_height)
@@ -84,11 +82,9 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=10, margin_l=50, 
             win_x_low = int(x_current - margin_r)
             win_x_high = int(x_current + margin_l)
 
-            #print win_y_low[window], win_y_low, win_y_high_n[window], win_y_high
-
             # Identify the nonzero pixels in x and y within the window
             good_inds = ((nonzeroy >= win_y_low[window]) & (nonzeroy < win_y_high[window]) &
-            (nonzerox >= win_x_low) &  (nonzerox < win_x_high)).nonzero()[0]
+                        (nonzerox >= win_x_low) &  (nonzerox < win_x_high)).nonzero()[0]
 
             # If you found > minpix pixels, recenter next window on their mean position
             if len(good_inds) > minpix:
@@ -102,13 +98,12 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=10, margin_l=50, 
             k = l = 1
             percent_white_pixels_l = percent_white_pixels_r = 1.0
 
-            while (percent_white_pixels_l > 0.60) and (sw_x_low_l > 0) and (sw_x_high_l < img.shape[1]):
+            while (percent_white_pixels_l > 0.50) and (sw_x_low_l >= 0) and (sw_x_high_l < img.shape[1]):
                  sw_x_low_l = (x_current- increment*k) - margin_sw
                  sw_x_high_l = (x_current- increment*k) + margin_sw
 
-                  # cv2.fillPoly( template, combined, 255 )
-                  # dest_xor = cv2.bitwise_and(img, template, mask = None)
-                  # int cnz = cv::countNonZero(inside_roi);
+                 if sw_x_low_l<0:
+                     sw_x_low_l = 0
 
                  good_inds1 = ((nonzeroy >= win_y_low[window]) & (nonzeroy < win_y_high[window]) &
                  (nonzerox >= sw_x_low_l) & (nonzerox < sw_x_high_l)).nonzero()[0]
@@ -116,9 +111,12 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=10, margin_l=50, 
                  percent_white_pixels_l = float(cv2.countNonZero(good_inds1)/area)
                  k += 1
 
-            while (percent_white_pixels_r > 0.50) and (sw_x_low_r > 0) and (sw_x_high_r < img.shape[1]):
+            while (percent_white_pixels_r > 0.50) and (sw_x_low_r > 0) and (sw_x_high_r <= img.shape[1]):
                  sw_x_low_r = (x_current+ increment*l) - margin_sw
                  sw_x_high_r = (x_current+ increment*l) + margin_sw
+
+                 if sw_x_high_r>img.shape[1]:
+                     sw_x_high_r = img.shape[1]
 
                  good_inds2 = ((nonzeroy >= win_y_low[window]) & (nonzeroy<win_y_high[window]) &
                  (nonzerox >= sw_x_low_r) & (nonzerox < sw_x_high_r)).nonzero()[0]
@@ -135,18 +133,24 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=10, margin_l=50, 
             win_x_low = x_current - margin_ll
             win_x_high = x_current + margin_rr
 
-            if win_x_low < 0:
-                win_x_low = 0
+            # if win_x_low < 0:
+            #     win_x_low = 0
 
             # Identify the nonzero pixels in x and y within the window
             good_inds_n = ((nonzeroy>=win_y_low[window]) & (nonzeroy<win_y_high[window]) &
-            (nonzerox>=win_x_low) & (nonzerox<win_x_high)).nonzero()[0]
+                           (nonzerox>=win_x_low) & (nonzerox<win_x_high)).nonzero()[0]
+
+            # If you found > minpix pixels, recenter next window on their mean position
+            if len(good_inds_n) > minpix:
+                  x_current = np.int(np.mean(nonzerox[good_inds_n]))
 
             # Append these indices to the lists
             if len(good_inds_n):
                      lane_inds_n.append(good_inds_n)
                      if draw_windows == True:
                        cv2.rectangle(out_img,(win_x_low,win_y_low[window]),(win_x_high,win_y_high[window]), (0,255,0), 3)
+                       lineThickness = 2
+                       cv2.line(out_img, (0, win_y_low[window]), (img.shape[1], win_y_low[window]), (0,0,255), lineThickness)
 
             sw_end.append([p_in, x_current, margin_ll, margin_rr])
 
@@ -177,11 +181,11 @@ def sliding_window(img, modifiedCenters, kmeans=None, nwindows=10, margin_l=50, 
           out_img[nonzeroy[lane_inds_n], nonzerox[lane_inds_n]] = [255, 0, 0] #[255, 0, 100]
 
 
-        dest_xor = cv2.bitwise_xor(img, template, mask = None)
-        percent_white_pixels_f = float(cv2.countNonZero(dest_xor)/area_img)
-        matching_score = 1 - percent_white_pixels_f
+        # dest_xor = cv2.bitwise_xor(img, template, mask = None)
+        # percent_white_pixels_f = float(cv2.countNonZero(dest_xor)/area_img)
+        # matching_score = 1 - percent_white_pixels_f
 
-        print cv2.countNonZero(dest_xor), percent_white_pixels_f, matching_score
+        # print cv2.countNonZero(dest_xor), percent_white_pixels_f, matching_score
         # cv2.imshow('Bitwise XOR', dest_xor)
         # # De-allocate any associated memory usage
         # if cv2.waitKey(0) & 0xff == 27:

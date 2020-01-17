@@ -36,7 +36,6 @@ class lane_finder_post_predict():
        self.crop_ratio = 0.2 # Ratio to crop the background parts in the image from top
 
        self.src=np.float32([(0,0.3), (1,0.3), (-0.4,0.8), (1.4,0.8)])
-
        self.dst=np.float32([(0,0), (1,0), (0,1), (1,1)])
 
        self.margin_l = 35
@@ -144,7 +143,7 @@ class lane_finder_post_predict():
                peakidx_in = peakidx_in.astype(int)
                points[mc_in] = peakidx_in
 
-               cv2.circle(self.invwarp_img, (peakidx_in[0],peakidx_in[1]), 0, (0,0,255), thickness=25, lineType=8, shift=0)
+               cv2.circle(self.roi_img, (peakidx_in[0],peakidx_in[1]), 0, (0,0,255), thickness=25, lineType=8, shift=0)
 
            # print len(self.modifiedCenters[0]), points
            self.roi_img, self.curves, self.ploty, self.sw_end = sliding_window_approach.sliding_window(self.roi_img, points, self.kmeans, self.nwindows)
