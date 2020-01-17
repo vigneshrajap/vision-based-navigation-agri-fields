@@ -15,7 +15,8 @@ sys.path.insert(1, '../image-segmentation-keras')
 from keras_segmentation import predict
 import sliding_window_approach
 from geometry_msgs.msg import Pose, PoseArray
-import timeit
+import time
+start_time = time.time()
 
 def upscaling_warping_parameters(rgb_img, seg_arr, class_number, crop_ratio):
    # Reshaping the Lanes Class into binary array and Upscaling the image as input image
@@ -108,7 +109,7 @@ def visualize_segmentation(input_img, seg_arr, n_classes, class_number = 2, disp
     return upscaled_img_rgb #vis_img
 
 def visualization(input_img, seg_arr=None, lane_fit = None, evaluation = None, n_classes=None, visualize = None, display=False, output_file=None):
-    class_number = 1 # 1 for Crops, 2 for Lanes
+    class_number = 2 # 1 for Crops, 2 for Lanes
     crop_ratio = 0.2
 
     #visualize: None, "all" or one of, "segmentation", "lane_fit", "evaluation"
@@ -173,15 +174,20 @@ def main():
     for im in im_files:
         if args.output_folder:
             base = os.path.basename(im)
-            output_file = os.path.join(args.output_folder,os.path.splitext(base)[0])+"_crop_pred_img.png" #
+            output_file = os.path.join(args.output_folder,os.path.splitext(base)[0])+"_crop_pred.png" #
             print(output_file)
         else:
             output_file = None
+
         seg_arr, input_image, out_img, fit = predict_on_image(model,inp = im, lane_fit = False, evaluate = False, visualize = "segmentation", output_file = output_file, display=True)
         vis_img = visualization(input_image, seg_arr=seg_arr, lane_fit = None, evaluation = None, n_classes=3, visualize = "segmentation", display=False, output_file=output_file)
+        #
+        # print(timeit.timeit(stmt = "for_loop(seq)",
+        #                     setup="seq='Pylenin'",
+        #                     number=10000))
 
-        # t = timeit.Timer("predict_on_image()", "from __main__ import lane_predict")
-        # print t.timeit()
+        #print(timeit.timeit(predict_on_image(model,inp = im, lane_fit = False, evaluate = False, visualize = "segmentation", output_file = output_file, display=True)))
+        print("--- %s seconds ---" % (time.time() - start_time))
 
     cv2.destroyAllWindows()
 
