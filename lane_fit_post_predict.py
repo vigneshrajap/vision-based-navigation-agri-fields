@@ -19,6 +19,8 @@ import time
 
 start_time = time.time()
 
+DBASW = sliding_window_approach.sliding_window()
+
 class lane_finder_post_predict():
     '''
     A class to find fitted center of the lane points along the crop rows given an input RGB image.
@@ -118,7 +120,7 @@ class lane_finder_post_predict():
 
     def lane_fit_on_prediction(self, dst_size):
 
-       self.warp_img, self.M_t  = sliding_window_approach.perspective_warp(self.roi_img, dst_size, self.src, self.dst) # Perspective warp
+       self.warp_img, self.M_t  = DBASW.perspective_warp(self.roi_img, dst_size, self.src, self.dst) # Perspective warp
 
        # self.warp_img_skewing()
 
@@ -129,7 +131,8 @@ class lane_finder_post_predict():
     def visualize_lane_fit(self, dst_size):
 
        # Inverse Perspective warp
-       self.invwarp_img, self.M_tinv = sliding_window_approach.inv_perspective_warp(self.warp_img, (dst_size[1], dst_size[0]), self.dst, self.src) #self.polyfit_img
+       #self.invwarp_img, self.M_tinv = DBASW.inv_perspective_warp(self.warp_img, (dst_size[1], dst_size[0]), self.dst, self.src) #self.polyfit_img
+       self.invwarp_img, self.M_tinv = DBASW.perspective_warp(self.warp_img, (dst_size[1], dst_size[0]), self.dst, self.src) #self.polyfit_img
 
        #self.M_tinv = cv2.getPerspectiveTransform(self.dst, self.src)
        #self.invwarp_img = cv2.cvtColor(self.invwarp_img, cv2.COLOR_GRAY2RGB)
@@ -137,7 +140,7 @@ class lane_finder_post_predict():
        if len(self.modifiedCenters[0]):
            points= np.zeros((len(self.modifiedCenters[0]),2))
            for mc_in in range(len(self.modifiedCenters[0])):
-               point_wp = np.array([self.modifiedCenters[0][mc_in], self.warp_img.shape[0], 1])
+               point_wp = np.array([self.modifiedCenters[0][mc_in], self.image.shape[1], 1])
                peakidx_i = np.matmul(self.M_tinv, point_wp) # inverse-M*warp_pt
                peakidx_in = np.array([peakidx_i[0]/peakidx_i[2],peakidx_i[1]/peakidx_i[2]]) # divide by Z point
                peakidx_in = peakidx_in.astype(int)
@@ -146,7 +149,7 @@ class lane_finder_post_predict():
                cv2.circle(self.roi_img, (peakidx_in[0],peakidx_in[1]), 0, (0,0,255), thickness=25, lineType=8, shift=0)
 
            # print len(self.modifiedCenters[0]), points
-           self.roi_img, self.curves, self.ploty, self.sw_end = sliding_window_approach.sliding_window(self.roi_img, points, self.kmeans, self.nwindows)
+           self.roi_img, self.curves, self.ploty, self.sw_end = DBASW.sliding_window(self.roi_img, points, self.kmeans, self.nwindows)
 
        # Find the MidPoints using inverse distance weighting and plot the center line
        # self.MidPoints_IDW()
@@ -191,7 +194,7 @@ class lane_finder_post_predict():
        # Sliding Window Approach on Lanes Class from segmentation Array and fit the poly curves
        self.lane_fit_on_prediction(dst_size)
 
-       # Overlay the inverse warped image on input image
+           # Overlay the inverse warped image on input image
        self.visualize_lane_fit(dst_size)
 
     def visualization(self, display=False):

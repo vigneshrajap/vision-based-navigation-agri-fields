@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<opencv_storage>
+ <cam_model>
+  <elementType>CameraModel</elementType>
+  <className>OcamCalibCameraModel</className>
+  <ss0>459.58087158203125</ss0>
+  <ss1>0.</ss1>
+  <ss2>6.787348e-04</ss2>
+  <ss3>-5.466207e-07</ss3>
+  <ss4>5.612643e-10</ss4>
+  <yc>178.8630828857422</yc>
+  <xc>323.6895446777344</xc>
+  <c>9.99650e-01</c>
+  <d>5.9e-05</d>
+  <e>1.06e-04</e>
+  <width>640</width>
+  <height>480</height>
+  <imageCircleFOV>0.</imageCircleFOV>
+ </cam_model>
+</opencv_storage>
