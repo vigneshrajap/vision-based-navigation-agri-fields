@@ -174,7 +174,7 @@ def main():
     for im in im_files:
         if args.output_folder:
             base = os.path.basename(im)
-            output_file = os.path.join(args.output_folder,os.path.splitext(base)[0])+"_crop_pred.png" #
+            output_file = os.path.join(args.output_folder,os.path.splitext(base)[0])+"_lane_pred.png" #
             print(output_file)
         else:
             output_file = None
