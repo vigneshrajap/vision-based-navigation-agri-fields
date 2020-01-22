@@ -48,6 +48,8 @@ class sliding_window():
         self.margin_r=110
         self.draw_windows=True
 
+        self.mask_example = []
+
     def perspective_warp(self, img, dst_size, src, dst): # Choose the four vertices
         img_size = np.float32([(img.shape[1],img.shape[0])])
         src = src* img_size
@@ -102,10 +104,23 @@ class sliding_window():
              l += 1
 
            if (percent_white_pixels_el <= self.whitePixels_thers) and (percent_white_pixels_er <= self.whitePixels_thers):
+
+               #if (k>2) and (l>2):
                self.search_complete = True
+               # else:
+               #      percent_white_pixels_el = 1.0
+               #      percent_white_pixels_er = 1.0
 
             # cv2.rectangle(out_img,(sw_xleft_low,win_y_low),(sw_xleft_high,win_y_high), (0,0,255), 5)
             # cv2.rectangle(out_img,(sw_x_low,win_y_low),(sw_x_high,win_y_high), (0,0,255), 5)
+
+        self.mask_example = cv2.ellipse(self.mask_example, center_left, self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, 255, -1)
+        self.mask_example = cv2.ellipse(self.mask_example, center_right, self.axes, self.Rightangle, self.RightstartAngle, self.RightendAngle, 255, -1)
+
+        # cv2.imshow('Bitwise XOR', mask_right)
+        # # De-allocate any associated memory usage
+        # if cv2.waitKey(0) & 0xff == 27:
+        #    cv2.destroyAllWindows()
 
         # Update the Window Size based on New Margins
         margin_ll = abs(center_left[0]-x_current)
@@ -122,8 +137,8 @@ class sliding_window():
         if len(good_inds) > self.minpix:
               x_current = np.int(np.mean(nonzerox[good_inds]))
 
-        cv2.line(out_img, (win_x_low, self.win_y_low[window]), (win_x_high, self.win_y_low[window]), (0,255,0), self.thickness_ellipse)
-        cv2.line(out_img, (win_x_low, self.win_y_high[window]), (win_x_high, self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
+        cv2.line(out_img, (int(win_x_low), self.win_y_low[window]), (int(win_x_high), self.win_y_low[window]), (0,255,0), self.thickness_ellipse)
+        cv2.line(out_img, (int(win_x_low), self.win_y_high[window]), (int(win_x_high), self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
 
         cv2.ellipse(out_img, center_left, self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, self.color_ellipse, self.thickness_ellipse)
         cv2.ellipse(out_img, center_right, self.axes, self.Rightangle, self.RightstartAngle, self.RightendAngle, self.color_ellipse, self.thickness_ellipse)
@@ -137,6 +152,7 @@ class sliding_window():
         self.img = img
         out_img = np.dstack((img, img, img))*255
         ploty = np.linspace(0, img.shape[0]-1, img.shape[0])
+        self.mask_example = np.zeros_like(self.img)
 
         if len(modifiedCenters[0]):
 
@@ -156,6 +172,8 @@ class sliding_window():
             self.fitx_ = [[]for y in range(len(modifiedCenters[0]))]
             x_ = [[]for y in range(len(modifiedCenters[0]))]
             y_ = [[]for y in range(len(modifiedCenters[0]))]
+            total_xpoints = [[]for y in range(len(modifiedCenters[0]))]
+            total_ypoints = [[]for y in range(len(modifiedCenters[0]))]
             combined_rect = [[]for y in range(len(modifiedCenters[0]))]
 
             # Identify window boundaries in x and y (and right and left)
@@ -163,7 +181,7 @@ class sliding_window():
             self.win_y_high = img.shape[0] - np.multiply(range(0,self.nwindows), window_height)
 
             #area = float(window_height*self.margin_sw*2)
-            area_img = float(img.shape[0]*img.shape[1]*2)
+            area_img = float(img.shape[0]*img.shape[1])
             ############################ Parameters ############################
 
             for p_in in range(len(modifiedCenters)):
@@ -197,20 +215,25 @@ class sliding_window():
                       x_current = np.int(np.mean(nonzerox[good_inds]))
 
                 # Proposed Adaptive Sliding Window
-                good_inds, out_img = self.Adaptive_sliding_window(out_img, window, x_current, nonzeroy, nonzerox)
+                #good_inds, out_img = self.Adaptive_sliding_window(out_img, window, x_current, nonzeroy, nonzerox)
 
                 # Append these indices to the lists
                 if len(good_inds):
                      lane_inds_n.append(good_inds)
 
                 if len(self.result_left) and len(self.result_right):
-                     good_inds_el_n.append(cv2.findNonZero(self.result_left))
-                     good_inds_er_n.append(cv2.findNonZero(self.result_right))
+                     if cv2.countNonZero(self.result_left)>0:
+                         good_inds_el_n.append(cv2.findNonZero(self.result_left))
+                     if cv2.countNonZero(self.result_right)>0:
+                         good_inds_er_n.append(cv2.findNonZero(self.result_right))
 
                 if self.draw_windows == True:
-                    if len(self.result_left) and len(self.result_right):
+                #     if len(self.result_left) and len(self.result_right):
+                #         cv2.line(out_img, (win_x_low, self.win_y_low[window]), (win_x_high, self.win_y_low[window]), (0,255,0), self.thickness_ellipse)
+                #         cv2.line(out_img, (win_x_low, self.win_y_high[window]), (win_x_high, self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
+                #
                         cv2.line(out_img, (0, self.win_y_low[window]), (img.shape[1],  self.win_y_low[window]), (0,0,255), 2)
-                    else:
+                #     else:
                         cv2.rectangle(out_img,(win_x_low,self.win_y_low[window]),(win_x_high,self.win_y_high[window]), (0,255,0), 6)
 
                 # self.sw_end.append([p_in, x_current, margin_ll, margin_rr])
@@ -222,37 +245,48 @@ class sliding_window():
                   x_[p_in] = nonzerox[lane_inds_n]
                   y_[p_in] = nonzeroy[lane_inds_n]
 
-                  # Fit a first order straight line / second order polynomial
-                  fit_l = np.polyfit(y_[p_in], x_[p_in], 1, full=True)
-                  fit_p = np.polyfit(y_[p_in], x_[p_in], 2, full=True)
-
-                  # Generate x and y values for plotting
-                  if (np.argmin([fit_l[1], fit_p[1]])==0):
-                      self.fitx_[p_in] = fit_l[0][0]*ploty + fit_l[0][1]
-                  else:
-                      self.fitx_[p_in] = fit_p[0][0]*ploty**2 + fit_p[0][1]*ploty + fit_p[0][2]
-
                   out_img[nonzeroy[lane_inds_n], nonzerox[lane_inds_n]] = [255, 0, 0] #[255, 0, 100]
 
               if len(good_inds_el_n) and len(good_inds_er_n):
+                  # print good_inds_er_n, len(good_inds_el_n)
                   good_inds_el_n = np.concatenate(good_inds_el_n)
                   good_inds_er_n = np.concatenate(good_inds_er_n)
 
-                  out_img[good_inds_el_n[:,:,1], good_inds_el_n[:,:,0]] = [255, 0, 255] #[255, 0, 100]
-                  out_img[good_inds_er_n[:,:,1], good_inds_er_n[:,:,0]] = [255, 0, 255] #[255, 0, 100]
+                  out_img[good_inds_el_n[:,:,1], good_inds_el_n[:,:,0]] = [255, 0, 0] #[255, 0, 100]
+                  out_img[good_inds_er_n[:,:,1], good_inds_er_n[:,:,0]] = [255, 0, 0] #[255, 0, 255]
 
-                  # Obtain Matching Score
-                  # combined_rect[p_in] = np.array([np.vstack((x_[p_in], y_[p_in])).T]) # For the rectangle region
-                  # cv2.fillPoly( template, combined_rect[p_in], 255 )
-                  # cv2.fillPoly( template, good_inds_el_n, 255 )  # For the ellipse 1
-                  # cv2.fillPoly( template, good_inds_er_n, 255 )  # For the ellipse 2
+              # if len(lane_inds_n) and len(good_inds_el_n) and len(good_inds_er_n): # Concatenate the arrays of indices
 
+                  # total_xpoints1 = [nonzerox[lane_inds_n], good_inds_el_n[:,:,1].ravel(), good_inds_er_n[:,:,1].ravel()]
+                  # total_ypoints1 = [nonzeroy[lane_inds_n], good_inds_el_n[:,:,0].ravel(), good_inds_er_n[:,:,0].ravel()]
+                  # total_xpoints[p_in] = np.concatenate(total_xpoints1)
+                  # total_ypoints[p_in] = np.concatenate(total_ypoints1)
+                  # # total_xpoints[p_in] = -np.sort(-total_xpoints[p_in])
+                  # # total_ypoints[p_in] = np.sort(total_ypoints[p_in])
+                  # print total_xpoints[p_in], total_ypoints[p_in]
+
+              # Fit a first order straight line / second order polynomial
+              fit_l = np.polyfit(y_[p_in], x_[p_in], 1, full=True)
+              fit_p = np.polyfit(y_[p_in], x_[p_in], 2, full=True)
+
+              # Generate x and y values for plotting
+              if (np.argmin([fit_l[1], fit_p[1]])==0):
+                  self.fitx_[p_in] = fit_l[0][0]*ploty + fit_l[0][1]
+              else:
+                  self.fitx_[p_in] = fit_p[0][0]*ploty**2 + fit_p[0][1]*ploty + fit_p[0][2]
+
+              # Obtain Matching Score
+            #   combined_rect[p_in] = np.array([np.vstack((x_[p_in], y_[p_in])).T]) # For the rectangle region
+            #   cv2.fillPoly( template, combined_rect[p_in], 255 )
+            #   cv2.fillPoly( template, good_inds_el_n, 255 )  # For the ellipse 1
+            #   cv2.fillPoly( template, good_inds_er_n, 255 )  # For the ellipse 2
+            #
             # dest_xor = cv2.bitwise_xor(img, template, mask = None)
             # percent_white_pixels_f = float(cv2.countNonZero(dest_xor)/area_img)
             # matching_score = 1 - percent_white_pixels_f
-            #
+
             # print cv2.countNonZero(dest_xor), percent_white_pixels_f, matching_score
-            # cv2.imshow('Bitwise XOR', template)
+            # cv2.imshow('Bitwise XOR', self.mask_example )
             # # De-allocate any associated memory usage
             # if cv2.waitKey(0) & 0xff == 27:
             #    cv2.destroyAllWindows()

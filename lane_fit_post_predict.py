@@ -57,17 +57,18 @@ class lane_finder_post_predict():
        self.base = None
        self.end_points = []
        self.sw_end = []
-       self.weights = np.empty([1, 1])
+       self.weights = np.empty([2, 1])
 
     def MidPoints_IDW(self):
 
-       if len(self.modifiedCenters[0]):
+       if len(self.modifiedCenters):
            # Mid Lane for robot desired trajectory
-           self.weights = np.reshape(self.weights, (len(self.modifiedCenters[0]),1), order='F')
+           self.weights = np.reshape(self.weights, (len(self.modifiedCenters),1), order='F')
+
            dist_peaks = abs(self.modifiedCenters[0]-self.warp_img.shape[1]/2) # Distance to center of image
 
            # In IDW, weights are 1 / distance
-           if not dist_peaks: # Case where the peak aligned with center of the image
+           if not dist_peaks.all(): # Case where the peak aligned with center of the image
                peak_center = np.where(dist_peaks == 0)
                dist_peaks[peak_center] = 1
 
@@ -85,7 +86,8 @@ class lane_finder_post_predict():
            curves_m = np.sum(curves_idw, axis=0)
            midLane = np.array([np.transpose(np.vstack([curves_m, self.ploty]))])
            self.centerLine = midLane.astype(int)
-           cv2.polylines(self.polyfit_img, [self.centerLine], 0, (255,0,0), thickness=5, lineType=8, shift=0)
+           cv2.polylines(self.roi_img, [self.centerLine], 0, (255,0,0), thickness=5, lineType=8, shift=0)
+           print self.weights
 
     def warp_img_skewing(self):
         # loop over the rotation angles again, this time ensuring no part of the image is cut off
@@ -147,22 +149,21 @@ class lane_finder_post_predict():
                peakidx_in = peakidx_in.astype(int)
                self.modifiedCenters[mc_in] = peakidx_in
 
-
     def visualize_lane_fit(self, dst_size):
 
        self.roi_img, self.curves, self.ploty, self.sw_end = DBASW.sliding_window(self.roi_img, self.modifiedCenters)
 
+       # Visualize the fitted polygonals (One on each lane and on average curve)
+       # self.polyfit_img = DBASW.visualization_polyfit(self.roi_img, self.curves, self.ploty, self.modifiedCenters)
+
        # Find the MidPoints using inverse distance weighting and plot the center line
        # self.MidPoints_IDW()
-
-      # Visualize the fitted polygonals (One on each lane and on average curve)
-      # self.polyfit_img = sliding_window_approach_c.visualization_polyfit(self.polyfit_img, self.curves, self.ploty, self.modifiedCenters)
 
       #cv2.imwrite('/home/vignesh/dummy_folder/test.png',test)
 
        # Combine the result with the original image
        self.final_img = cv2.cvtColor(self.image,cv2.COLOR_GRAY2RGB)
-
+       #self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L1_N/"+os.path.splitext(self.base)[0][0:18]+".png")
        rheight, rwidth = self.final_img.shape[:2]
 
        self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted(self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth],
@@ -195,6 +196,7 @@ class lane_finder_post_predict():
        self.roi_img = self.image[int(self.crop_ratio*rheight):rheight,0:rwidth]
        dst_size = self.roi_img.shape[:2]
        #print self.image.shape[:2], dst_size
+       # cv2.imwrite("/home/vignesh/roi_img.png", self.roi_img )
 
        # Sliding Window Approach on Lanes Class from segmentation Array and fit the poly curves
        self.lane_fit_on_prediction(dst_size)
