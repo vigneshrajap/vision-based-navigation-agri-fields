@@ -172,8 +172,7 @@ class lane_finder_post_predict():
        if len(self.modifiedCenters[0]):
            for mc_in in range(len(self.modifiedCenters_local[0])):
                cv2.circle(self.final_img, (int(self.modifiedCenters[mc_in][0]),int(self.modifiedCenters[mc_in][1]+rheight*self.warp_ratio)),
-                                                                                                0, (0,0,255), thickness=25, lineType=8, shift=0)
-
+                                                                                                0, (255,0,0), thickness=25, lineType=8, shift=0)
        #x = 10
        #y = 100
        #self.final_img = cv2.rectangle(self.final_img, (x, 0), (y + 10, 0 + 250), (36,255,12), 1)
