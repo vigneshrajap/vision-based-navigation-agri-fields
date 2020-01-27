@@ -36,11 +36,11 @@ class lane_finder_post_predict():
        self.crop_img = Image()
 
        self.class_number = 2 # Extract Interesting Class (2 - Lanes in this case) from predictions
-       self.crop_ratio = 0.2 # Ratio to crop the background parts in the image from top
+       self.crop_ratio = 0.3 # Ratio to crop the background parts in the image from top
        self.warp_ratio = 0.8
 
-       self.src=np.float32([(0,0.3), (1,0.3), (-0.4,0.8), (1.4,0.8)])
-       self.dst=np.float32([(0,0), (1,0), (0,1), (1,1)])
+       self.src = np.float32([(0,0.3), (1,0.3), (-0.4,0.8), (1.4,0.8)])
+       self.dst = np.float32([(0,0), (1,0), (0,1), (1,1)])
 
        # self.margin_l = 35
        # self.margin_r = 35
@@ -154,7 +154,7 @@ class lane_finder_post_predict():
        self.roi_img, self.curves, self.ploty, self.sw_end = DBASW.sliding_window(self.roi_img, self.modifiedCenters)
 
        # Visualize the fitted polygonals (One on each lane and on average curve)
-       # self.polyfit_img = DBASW.visualization_polyfit(self.roi_img, self.curves, self.ploty, self.modifiedCenters)
+       self.roi_img = DBASW.visualization_polyfit(self.roi_img, self.curves, self.ploty, self.modifiedCenters)
 
        # Find the MidPoints using inverse distance weighting and plot the center line
        # self.MidPoints_IDW()
@@ -162,8 +162,8 @@ class lane_finder_post_predict():
       #cv2.imwrite('/home/vignesh/dummy_folder/test.png',test)
 
        # Combine the result with the original image
-       self.final_img = cv2.cvtColor(self.image,cv2.COLOR_GRAY2RGB)
-       #self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L1_N/"+os.path.splitext(self.base)[0][0:18]+".png")
+       #self.final_img = cv2.cvtColor(self.image,cv2.COLOR_GRAY2RGB)
+       self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L1_N/"+os.path.splitext(self.base)[0][0:18]+".png")
        rheight, rwidth = self.final_img.shape[:2]
 
        self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted(self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth],
@@ -172,7 +172,7 @@ class lane_finder_post_predict():
        if len(self.modifiedCenters[0]):
            for mc_in in range(len(self.modifiedCenters_local[0])):
                cv2.circle(self.final_img, (int(self.modifiedCenters[mc_in][0]),int(self.modifiedCenters[mc_in][1]+rheight*self.warp_ratio)),
-                                                                                                0, (255,0,0), thickness=25, lineType=8, shift=0)
+                                                                                                0, (255,0,255), thickness=25, lineType=8, shift=0)
        #x = 10
        #y = 100
        #self.final_img = cv2.rectangle(self.final_img, (x, 0), (y + 10, 0 + 250), (36,255,12), 1)
