@@ -37,7 +37,7 @@ class lane_finder_post_predict():
 
        self.class_number = 2 # Extract Interesting Class (2 - Lanes in this case) from predictions
        self.crop_ratio = 0.3 # Ratio to crop the background parts in the image from top
-       self.warp_ratio = 0.8
+       self.warp_ratio = 0.7
 
        self.src = np.float32([(0,0.3), (1,0.3), (-0.4,0.8), (1.4,0.8)])
        self.dst = np.float32([(0,0), (1,0), (0,1), (1,1)])
@@ -58,6 +58,7 @@ class lane_finder_post_predict():
        self.end_points = []
        self.sw_end = []
        self.weights = np.empty([2, 1])
+       self.fitting_score_avg = []
 
     def MidPoints_IDW(self):
 
@@ -151,7 +152,7 @@ class lane_finder_post_predict():
 
     def visualize_lane_fit(self, dst_size):
 
-       self.roi_img, self.curves, self.ploty, self.sw_end = DBASW.sliding_window(self.roi_img, self.modifiedCenters)
+       self.roi_img, self.curves, self.ploty, self.sw_end, self.fitting_score_avg = DBASW.sliding_window(self.roi_img, self.modifiedCenters)
 
        # Visualize the fitted polygonals (One on each lane and on average curve)
        self.roi_img = DBASW.visualization_polyfit(self.roi_img, self.curves, self.ploty, self.modifiedCenters)
@@ -163,7 +164,7 @@ class lane_finder_post_predict():
 
        # Combine the result with the original image
        #self.final_img = cv2.cvtColor(self.image,cv2.COLOR_GRAY2RGB)
-       self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L1_N/"+os.path.splitext(self.base)[0][0:18]+".png")
+       self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L2_N/"+os.path.splitext(self.base)[0][0:18]+".png")
        rheight, rwidth = self.final_img.shape[:2]
 
        self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted(self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth],
@@ -213,7 +214,7 @@ class lane_finder_post_predict():
 
         if lane_fit:
             self.run_lane_fit()
-            self.visualization()
+            # self.visualization()
             self.modifiedCenters = [] # reinitialize to zero
         else:
             self.final_img = None
@@ -246,6 +247,7 @@ if __name__ == '__main__':
 
         #t = timeit.Timer("d.lane_fit_on_predicted_image()", "from __main__ import lane_finder_post_predict; d = lane_finder_post_predict()")
         #print t.timeit()
+    print np.sum(lfp.fitting_score_avg)/len(lfp.fitting_score_avg)
     print("--- %s seconds ---" % (time.time() - start_time))
 
     cv2.destroyAllWindows()

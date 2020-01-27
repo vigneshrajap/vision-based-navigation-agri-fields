@@ -29,7 +29,7 @@ class sliding_window():
         self.minpix = 1
         self.whitePixels_thers = 0.50
         self.search_complete = False
-        self.set_AMR = True
+        self.set_AMR = False
 
         # Semicircle
         self.Leftangle = 0
@@ -47,14 +47,16 @@ class sliding_window():
         win_max = 1.0
         win_min = 0.5
         self.win_size = np.arange(win_max, win_min, -((win_max-win_min)/self.nwindows))
-        self.margin_l = 100 # Varies on each crop row
+        self.margin_l = 100 # (1,2: 100) (3: 140)# Varies on each crop row
         self.margin_r = 100
-        self.draw_windows=True
+        self.draw_windows= True
 
         self.prevx_current = 0
         self.prevcol_ind = 384
 
         self.mask_example = []
+        self.area_img = []
+        self.fitting_score_avg = []
 
     def perspective_warp(self, img, dst_size, src, dst): # Choose the four vertices
         img_size = np.float32([(img.shape[1],img.shape[0])])
@@ -68,6 +70,14 @@ class sliding_window():
         warped = cv2.warpPerspective(img, M, dst_size)
 
         return warped, M
+
+    def fitting_score(self, img, template):
+        dest_xor = cv2.bitwise_xor(img, template, mask = None)
+        percent_white_pixels_f = float(cv2.countNonZero(dest_xor)/self.area_img)
+        fitting_score = 1 - percent_white_pixels_f
+        self.fitting_score_avg.append(fitting_score)
+
+        print fitting_score
 
     def Adaptive_sliding_window(self, out_img, window, x_current,  nonzeroy, nonzerox):
 
@@ -164,8 +174,8 @@ class sliding_window():
         total_ypoints = np.concatenate(total_ypoints)
 
         out_img[nonzeroy[good_inds], nonzerox[good_inds]] = [255, 0, 0] #[255, 0, 100]
-        out_img[nonzeroy1[good_inds2], nonzerox1[good_inds2]] = [255, 0, 255] #[255, 0, 100]
-        out_img[nonzeroy2[good_inds3], nonzerox2[good_inds3]] = [255, 0, 255] #[255, 0, 100]
+        out_img[nonzeroy1[good_inds2], nonzerox1[good_inds2]] = [255, 0, 0] #[255, 0, 100]
+        out_img[nonzeroy2[good_inds3], nonzerox2[good_inds3]] = [255, 0, 0] #[255, 0, 100]
 
         # If you found > minpix pixels, recenter next window on their mean position
         if len(good_inds) > self.minpix:
@@ -213,7 +223,7 @@ class sliding_window():
             self.win_y_high = img.shape[0] - np.multiply(range(0,self.nwindows), window_height)
 
             #area = float(window_height*self.margin_sw*2)
-            area_img = float(img.shape[0]*img.shape[1])
+            self.area_img = float(img.shape[0]*img.shape[1])
             ############################ Parameters ############################
 
             for p_in in range(len(modifiedCenters)):
@@ -285,7 +295,10 @@ class sliding_window():
                 else:
                     if len(good_inds): # Append these indices to the lists
                          lane_inds_n.append(good_inds)
+                         out_img[nonzeroy[good_inds], nonzerox[good_inds]] = [255, 0, 0] #[255, 0, 100]
 
+                    # Plotting
+                    cv2.rectangle(out_img,(win_x_low,self.win_y_low[window]),(win_x_high,self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
 
                 if self.draw_windows == True:
                     # Plotting the X center of the windows
@@ -302,10 +315,6 @@ class sliding_window():
               else:
                   if len(lane_inds_n): # Concatenate the arrays of indices
                     lane_inds_n = np.concatenate(lane_inds_n)
-
-                    # Plotting
-                    cv2.rectangle(out_img,(win_x_low,self.win_y_low[window]),(win_x_high,self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
-                    out_img[nonzeroy[good_inds], nonzerox[good_inds]] = [255, 0, 0] #[255, 0, 100]
 
                   # Extract left and right line pixel positions
                   x_[p_in] = nonzerox[lane_inds_n]
@@ -328,17 +337,14 @@ class sliding_window():
               cv2.fillPoly( template, good_inds_el_n, 255 )  # For the ellipse 1
               cv2.fillPoly( template, good_inds_er_n, 255 )  # For the ellipse 2
 
-            dest_xor = cv2.bitwise_xor(img, template, mask = None)
-            percent_white_pixels_f = float(cv2.countNonZero(dest_xor)/area_img)
-            matching_score = 1 - percent_white_pixels_f
+            self.fitting_score(img, template)
 
-            print cv2.countNonZero(dest_xor), percent_white_pixels_f, matching_score
             # cv2.imshow('Bitwise XOR', self.mask_example )
             # # De-allocate any associated memory usage
             # if cv2.waitKey(0) & 0xff == 27:
             #    cv2.destroyAllWindows()
 
-        return out_img , self.fitx_, ploty, self.sw_end  #, right_fitx #, right_fit_
+        return out_img , self.fitx_, ploty, self.sw_end, self.fitting_score_avg  #, right_fitx #, right_fit_
 
     def visualization_polyfit(self, out_img, curves, ploty, modifiedCenters):
 
