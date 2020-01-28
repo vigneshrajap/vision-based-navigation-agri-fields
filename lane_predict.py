@@ -106,7 +106,7 @@ def visualize_segmentation(input_img, seg_arr, n_classes, class_number = 2, disp
                   upscaled_img_rgb)) # np.ones(overlay_img.shape,dtype=np.uint8)*128
     ))
 
-    return upscaled_img_rgb #vis_img
+    return vis_img #vis_img
 
 def visualization(input_img, seg_arr=None, lane_fit = None, evaluation = None, n_classes=None, visualize = None, display=False, output_file=None):
     class_number = 2 # 1 for Crops, 2 for Lanes
@@ -174,7 +174,7 @@ def main():
     for im in im_files:
         if args.output_folder:
             base = os.path.basename(im)
-            output_file = os.path.join(args.output_folder,os.path.splitext(base)[0])+"_crop_pred.png" #
+            output_file = os.path.join(args.output_folder,os.path.splitext(base)[0])+"_lane_pred.png" #
             print(output_file)
         else:
             output_file = None
