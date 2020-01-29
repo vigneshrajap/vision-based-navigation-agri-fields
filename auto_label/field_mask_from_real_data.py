@@ -48,14 +48,14 @@ if __name__ == "__main__":
     plt.imshow(image_mask[:,:,1])
 
     #Visualize on top of example image
-    camera_im = plt.imread(r'example_data/frame000000.png')
+    camera_im = plt.imread(r'/home/marianne/Data/2019-10-10-Frogn/dataset_10/images/frame000030.png')
     plt.figure(12)
     plt.imshow(camera_im)
 
     mask = np.uint8(np.zeros((image_mask.shape[0], image_mask.shape[1],3)))
-    mask[:,:,1]=image_mask[:,:,1]*3
+    mask[:,:,1]=image_mask[:,:,1]
     cropped_im = camera_im[camera_im.shape[0]/2-input_dim[0]/2:camera_im.shape[0]/2+input_dim[0]/2, camera_im.shape[1]/2-input_dim[1]/2:camera_im.shape[1]/2+input_dim[1]/2,:]
     #overlay_im = cv2.addWeighted(src1 = camera_im, alpha=1, src2=mask, beta=0.5, gamma =0, dst = camera_im)
-    overlay_im = cropped_im + mask
+    overlay_im = cropped_im + 0.2*mask
     plt.figure(13)
     plt.imshow(overlay_im)
