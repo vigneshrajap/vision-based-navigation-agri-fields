@@ -11,6 +11,7 @@ from keras_segmentation import metrics
 import numpy as np
 from tqdm import tqdm
 import argparse
+import time
 
 def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path=None, epoch = None, visualize = False, output_folder = ''):
     #Finished implementation of the evaluate function in keras_segmentation.predict
@@ -20,16 +21,21 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
 
     ious = []
     for inp , ann   in tqdm(zip( inp_images , annotations )):
+        t_start = time.time()
         pr = predict(model , inp )
+        t_end = time.time()
+        print('Prediction time: ', t_end-t_start)
         gt = get_segmentation_arr( ann , model.n_classes ,  model.output_width , model.output_height, no_reshape=True)
         gt = gt.argmax(-1)
         iou = metrics.get_iou( gt , pr , model.n_classes )
         ious.append( iou )
+        np.save('gt_array',gt)
+        np.save('pr_array',pr)
+        print(inp)
+        break
 
         if visualize:
             print(iou)
-            print('gt',np.min(gt),np.max(gt))
-            print('pr',np.min(pr),np.max(pr))
             fig = plt.figure()
             plt.title("IOU:"+str(iou))
             ax1 = fig.add_subplot(2,2,1)
@@ -62,7 +68,7 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
 
 def main():
     parser = argparse.ArgumentParser(description="Run evaluation of model on a set of images and annotations.")
-    parser.add_argument("--model_prefix", default = '', help = "Prefix of model filename")
+    parser.add_argument("--model_prefix", default = 'resnet50_segnet', help = "Prefix of model filename")
     parser.add_argument("--epoch", default = None, help = "Checkpoint epoch number")
     parser.add_argument("--data_folder", default = 'Frogn_Dataset', help = "Relative path of data folder")
     parser.add_argument("--model_folder", default = 'models', help = "Relative path of model folder")
