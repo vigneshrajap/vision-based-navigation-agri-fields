@@ -11,6 +11,7 @@ from itertools import imap
 import matplotlib.pyplot as plt
 import math
 from sensor_msgs.msg import Image
+import time
 
 class sliding_window():
 
@@ -29,7 +30,7 @@ class sliding_window():
         self.minpix = 1
         self.whitePixels_thers = 0.50
         self.search_complete = False
-        self.set_AMR = False
+        self.set_AMR = True
 
         # Semicircle
         self.Leftangle = 0
@@ -39,8 +40,9 @@ class sliding_window():
         self.RightstartAngle = 90 # Semicircle
         self.RightendAngle = 270
         self.color_ellipse = (0,255,0)
-        self.thickness_ellipse = 5
-        self.radius = [] # Change based on window height
+        self.thickness_ellipse = 4
+        self.semi_major = [] # Change based on window height
+        self.semi_minor = [] # Change based on window height
         self.axes = []
 
         # Decreasing Window Size
@@ -57,6 +59,7 @@ class sliding_window():
         self.mask_example = []
         self.area_img = []
         self.fitting_score_avg = []
+        self.rect_sub_ROI = True
 
     def perspective_warp(self, img, dst_size, src, dst): # Choose the four vertices
         img_size = np.float32([(img.shape[1],img.shape[0])])
@@ -81,26 +84,41 @@ class sliding_window():
 
     def Adaptive_sliding_window(self, out_img, window, x_current,  nonzeroy, nonzerox):
 
+        # Horizontal Strip
+        hori_strip = self.img[self.win_y_low[window]:self.win_y_high[window],0:out_img.shape[1]]
+
         # Create a Search Window
         k = l = 0
         percent_white_pixels_el = percent_white_pixels_er = 1.0
         self.search_complete = False
-        col_ind = np.int((self.win_y_low[window]+self.win_y_high[window])/2)
+
+        if self.rect_sub_ROI==True:
+            el_area = er_area = float(self.semi_major*self.semi_minor)
+            col_ind = np.int(self.win_y_high[window]-self.win_y_low[window])
+        else:
+            el_area = er_area = float(math.pi*self.semi_major*self.semi_minor/2)
+            col_ind = int((self.win_y_high[window]-self.win_y_low[window])/2)
+
         center_left = center_right = (x_current, col_ind)
-        el_area = er_area = float(math.pi*self.radius+10*self.radius/2)
 
         while (self.search_complete == False) and (center_left[0] >= 0) and (center_right[0] <= self.img.shape[1]):
 
            if (percent_white_pixels_el > self.whitePixels_thers):
 
              # create a white filled ellipse
-             mask_left = np.zeros_like(self.img)
+             mask_left = np.zeros_like(hori_strip)
+
              center_left = (np.int(x_current-self.increment*k), col_ind)
 
-             mask_left = cv2.ellipse(mask_left, center_left, self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, 255, -1)
+             if self.rect_sub_ROI==True:
+                 sw_xleft_low = center_left[0]- self.semi_major
+                 sw_xleft_high = center_left[0]
+                 mask_left = cv2.rectangle(mask_left, (sw_xleft_low, 0),(sw_xleft_high, col_ind), 255, -1)
+             else:
+                 mask_left = cv2.ellipse(mask_left, center_left, self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, 255, -1)
 
              # Bitwise AND operation to black out regions outside the mask
-             self.result_left = np.bitwise_and(self.img, mask_left)
+             self.result_left = np.bitwise_and(hori_strip, mask_left)
 
              percent_white_pixels_el = float(cv2.countNonZero(self.result_left)/el_area)
              k += 1
@@ -108,13 +126,19 @@ class sliding_window():
            if (percent_white_pixels_er > self.whitePixels_thers):
 
              # create a white filled ellipse
-             mask_right = np.zeros_like(self.img)
+             mask_right = np.zeros_like(hori_strip)
+
              center_right = (np.int(x_current + self.increment*l), col_ind)
 
-             mask_right = cv2.ellipse(mask_right, center_right, self.axes, self.Rightangle,  self.RightstartAngle, self.RightendAngle, 255, -1)
+             if self.rect_sub_ROI==True:
+                 sw_xright_low = center_right[0]
+                 sw_xright_high = center_right[0] + self.semi_major
+                 mask_right = cv2.rectangle(mask_right, (sw_xright_low,0),(sw_xright_high,col_ind), (255), -1)
+             else:
+                 mask_right = cv2.ellipse(mask_right, center_right, self.axes, self.Rightangle,  self.RightstartAngle, self.RightendAngle, 255, -1)
 
              # Bitwise AND operation to black out regions outside the mask
-             self.result_right = np.bitwise_and(self.img, mask_right)
+             self.result_right = np.bitwise_and(hori_strip, mask_right)
 
              percent_white_pixels_er = float(cv2.countNonZero(self.result_right)/er_area)
              l += 1
@@ -126,14 +150,13 @@ class sliding_window():
                # else:
                #      percent_white_pixels_el = 1.0
                #      percent_white_pixels_er = 1.0
-
-            # cv2.rectangle(out_img,(sw_xleft_low,win_y_low),(sw_xleft_high,win_y_high), (0,0,255), 5)
             # cv2.rectangle(out_img,(sw_x_low,win_y_low),(sw_x_high,win_y_high), (0,0,255), 5)
 
         # self.mask_example = cv2.ellipse(self.mask_example, center_left, self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, 255, -1)
         # self.mask_example = cv2.ellipse(self.mask_example, center_right, self.axes, self.Rightangle, self.RightstartAngle, self.RightendAngle, 255, -1)
+        # print window, k, l, self.semi_major, self.semi_minor
 
-        # cv2.imshow('Bitwise XOR', self.result_right)
+        # cv2.imshow('Bitwise XOR', mask_left)
         # # De-allocate any associated memory usage
         # if cv2.waitKey(0) & 0xff == 27:
         #    cv2.destroyAllWindows()
@@ -149,19 +172,35 @@ class sliding_window():
         good_inds1 = ((nonzeroy>=self.win_y_low[window]) & (nonzeroy<self.win_y_high[window]) &
                        (nonzerox>=win_x_low) & (nonzerox<win_x_high)).nonzero()[0]
 
+        mask_empty = np.zeros_like(self.img)
+        mask_empty[self.win_y_low[window]:self.win_y_high[window],0:out_img.shape[1]] = cv2.addWeighted(mask_empty[self.win_y_low[window]:self.win_y_high[window],0:out_img.shape[1]],
+                                                                                       0.1, self.result_left, 1.0, 0)
+
         # Identify the x and y positions of all nonzero pixels in the image
-        nonzero1 = self.result_left.nonzero()
+        nonzero1 = mask_empty.nonzero()
         nonzeroy1 = np.array(nonzero1[0])
         nonzerox1 = np.array(nonzero1[1])
-        good_inds2 = ((nonzeroy1>=self.win_y_low[window]) & (nonzeroy1<self.win_y_high[window])
-                        &(nonzerox1>=win_x_low-(self.radius+10)) & (nonzerox1<win_x_low)).nonzero()[0]
 
-        nonzero2 = self.result_right.nonzero()
+        if self.rect_sub_ROI==True:
+            good_inds2 = ((nonzeroy1>=self.win_y_low[window]) & (nonzeroy1<(self.win_y_high[window]))
+                            &(nonzerox1>=sw_xleft_low) & (nonzerox1<sw_xleft_high)).nonzero()[0]
+        else:
+            good_inds2 = ((nonzeroy1>=self.win_y_low[window]) & (nonzeroy1<self.win_y_high[window])
+                            &(nonzerox1>=win_x_low-(self.semi_major)) & (nonzerox1<win_x_low)).nonzero()[0]
+
+        mask_empty1 = np.zeros_like(self.img)
+        mask_empty1[self.win_y_low[window]:self.win_y_high[window],0:out_img.shape[1]] = cv2.addWeighted(mask_empty1[self.win_y_low[window]:self.win_y_high[window],0:out_img.shape[1]],
+                                                                                       0.1, self.result_right, 1.0, 0)
+
+        nonzero2 = mask_empty1.nonzero()
         nonzeroy2 = np.array(nonzero2[0])
         nonzerox2 = np.array(nonzero2[1])
-        good_inds3 = ((nonzeroy2>=self.win_y_low[window]) & (nonzeroy2<self.win_y_high[window])
-                        &(nonzerox2>=win_x_high) & (nonzerox2<win_x_high+self.radius+10)).nonzero()[0]
-        # ex = cv2.findNonZero(self.result_left)
+        if self.rect_sub_ROI==True:
+            good_inds3 = ((nonzeroy2>=self.win_y_low[window]) & (nonzeroy2<self.win_y_high[window])
+                            &(nonzerox2>=sw_xright_low) & (nonzerox2<sw_xright_high)).nonzero()[0]
+        else:
+            good_inds3 = ((nonzeroy2>=self.win_y_low[window]) & (nonzeroy2<self.win_y_high[window])
+                            &(nonzerox2>=win_x_high) & (nonzerox2<win_x_high+(self.semi_major))).nonzero()[0]
 
         good_inds = [good_inds1, good_inds2, good_inds3]
         good_inds = np.concatenate(good_inds)
@@ -173,21 +212,27 @@ class sliding_window():
         total_xpoints = np.concatenate(total_xpoints)
         total_ypoints = np.concatenate(total_ypoints)
 
-        out_img[nonzeroy[good_inds], nonzerox[good_inds]] = [255, 0, 0] #[255, 0, 100]
-        out_img[nonzeroy1[good_inds2], nonzerox1[good_inds2]] = [255, 0, 0] #[255, 0, 100]
-        out_img[nonzeroy2[good_inds3], nonzerox2[good_inds3]] = [255, 0, 0] #[255, 0, 100]
+        # out_img[nonzeroy[good_inds1], nonzerox[good_inds1]] = [255, 0, 0] #[255, 0, 100]
+        # out_img[nonzeroy1[good_inds2], nonzerox1[good_inds2]] = [255, 0, 0] #[255, 0, 100]
+        # out_img[nonzeroy2[good_inds3], nonzerox2[good_inds3]] = [255, 0, 0] #[255, 0, 100]
 
         # If you found > minpix pixels, recenter next window on their mean position
         if len(good_inds) > self.minpix:
               x_current = np.int(np.mean(total_xpoints)) #nonzerox[good_inds]
 
-
-        cv2.ellipse(out_img, center_left, self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, self.color_ellipse, self.thickness_ellipse)
-        cv2.ellipse(out_img, center_right, self.axes, self.Rightangle, self.RightstartAngle, self.RightendAngle, self.color_ellipse, self.thickness_ellipse)
+        # if self.rect_sub_ROI==True:
+        #     cv2.rectangle(out_img, (sw_xleft_low,self.win_y_low[window]),(sw_xleft_high,self.win_y_high[window]), (0,255,0), 5)
+        #     cv2.rectangle(out_img, (sw_xright_low,self.win_y_low[window]),(sw_xright_high,self.win_y_high[window]), (0,255,0), 5)
+        # else:
+        #     y_center = (self.win_y_low[window]+self.win_y_high[window])/2
+        #     cv2.ellipse(out_img, (center_left[0],y_center), self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, self.color_ellipse, self.thickness_ellipse)
+        #     cv2.ellipse(out_img, (center_right[0],y_center), self.axes, self.Rightangle, self.RightstartAngle, self.RightendAngle, self.color_ellipse, self.thickness_ellipse)
+        # # cv2.rectangle(out_img,(win_x_low, self.win_y_low[window]),(win_x_high, self.win_y_high[window]), (0,255,0), 5)
 
         return good_inds, out_img, total_ypoints, total_xpoints, x_current, (win_x_low, win_x_high)
 
     def sliding_window(self, img, modifiedCenters):
+        start_time = time.time()
 
         # Creates a list containing 3 lists, each of [] items, all set to 0
         self.img = img
@@ -202,8 +247,9 @@ class sliding_window():
             # Set height of windows
             window_height = np.int(img.shape[0]/self.nwindows)
 
-            self.radius = window_height-20
-            self.axes = (self.radius+10, self.radius)
+            self.semi_minor = window_height
+            self.semi_major = self.semi_minor*2
+            self.axes = (self.semi_major, self.semi_minor)
 
             # Identify the x and y positions of all nonzero pixels in the image
             nonzero = img.nonzero()
@@ -221,6 +267,9 @@ class sliding_window():
             # Identify window boundaries in x and y (and right and left)
             self.win_y_low = img.shape[0] - np.multiply(range(1,self.nwindows+1), window_height)
             self.win_y_high = img.shape[0] - np.multiply(range(0,self.nwindows), window_height)
+
+            if self.win_y_low[self.nwindows-1] != 0:
+                self.win_y_low[self.nwindows-1] = 0
 
             #area = float(window_height*self.margin_sw*2)
             self.area_img = float(img.shape[0]*img.shape[1])
@@ -250,9 +299,7 @@ class sliding_window():
                     x_current =  int(((x_current-self.prevx_current)*math.cos(heading))-((col_ind-self.prevcol_ind)*math.sin(heading)) + self.prevx_current)
 
                     # y_current_c =  int(((x_current-self.prevx_current)*math.sin(heading))+((col_ind-self.prevcol_ind)*math.cos(heading)) + col_ind)
-
                     # print window, x_current, self.prevx_current, col_ind, heading #, x_current_c
-
                     # cv2.circle(out_img, (x_current_c, col_ind),0, (0,255,255), thickness=25, lineType=8, shift=0) #+win_y_high[window])/2
                     #x_current = x_current_c
 
@@ -276,7 +323,6 @@ class sliding_window():
                 good_inds = ((nonzeroy >= self.win_y_low[window]) & (nonzeroy < self.win_y_high[window]) &
                             (nonzerox >= win_x_low) &  (nonzerox < win_x_high)).nonzero()[0]
 
-
                 # If you found > minpix pixels, recenter next window on their mean position
                 if len(good_inds) > self.minpix:
                       x_current = np.int(np.mean(nonzerox[good_inds]))
@@ -287,15 +333,15 @@ class sliding_window():
                     xpts.append(total_xpoints)
                     ypts.append(total_ypoints)
 
-                    cv2.line(out_img, (int(win_x[0]), self.win_y_low[window]), (int(win_x[1]), self.win_y_low[window]), (0,255,0), self.thickness_ellipse)
-                    cv2.line(out_img, (int(win_x[0]), self.win_y_high[window]), (int(win_x[1]), self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
+                    # cv2.line(out_img, (int(win_x[0]), self.win_y_low[window]), (int(win_x[1]), self.win_y_low[window]), (0,255,0), self.thickness_ellipse)
+                    # cv2.line(out_img, (int(win_x[0]), self.win_y_high[window]), (int(win_x[1]), self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
 
                     # print win_x[0]
 
                 else:
                     if len(good_inds): # Append these indices to the lists
                          lane_inds_n.append(good_inds)
-                         out_img[nonzeroy[good_inds], nonzerox[good_inds]] = [255, 0, 0] #[255, 0, 100]
+                         # out_img[nonzeroy[good_inds], nonzerox[good_inds]] = [255, 0, 0] #[255, 0, 100]
 
                     # Plotting
                     cv2.rectangle(out_img,(win_x_low,self.win_y_low[window]),(win_x_high,self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
@@ -304,7 +350,10 @@ class sliding_window():
                     # Plotting the X center of the windows
                     cv2.circle(out_img, (int(x_current), int(col_ind)), 0, (0,0,255), thickness=25, lineType=8, shift=0)
                     # Plotting the horizontal strips
-                    # cv2.line(out_img, (0, self.win_y_low[window]), (img.shape[1], self.win_y_low[window]), (0,0,255), 2)
+                    cv2.line(out_img, (0, self.win_y_low[window]), (img.shape[1], self.win_y_low[window]), (0,0,255), 2)
+                    # for ind in range(len(self.win_y_low)):
+                    #      hori_strip = img[self.win_y_low[ind]:self.win_y_high[ind],0:img.shape[1]]
+                    #      cv2.imwrite("/home/vignesh/dummy_folder/"+str(ind)+".png", hori_strip)
 
                 # self.sw_end.append([p_in, x_current, margin_ll, margin_rr])
 
@@ -332,17 +381,18 @@ class sliding_window():
                   self.fitx_[p_in] = fit_p[0][0]*ploty**2 + fit_p[0][1]*ploty + fit_p[0][2]
 
               # Obtain Matching Score
-              combined_rect[p_in] = np.array([np.vstack((x_[p_in], y_[p_in])).T]) # For the rectangle region
-              cv2.fillPoly( template, combined_rect[p_in], 255 )
-              cv2.fillPoly( template, good_inds_el_n, 255 )  # For the ellipse 1
-              cv2.fillPoly( template, good_inds_er_n, 255 )  # For the ellipse 2
-
-            self.fitting_score(img, template)
+            #   combined_rect[p_in] = np.array([np.vstack((x_[p_in], y_[p_in])).T]) # For the rectangle region
+            #   cv2.fillPoly( template, combined_rect[p_in], 255 )
+            #   cv2.fillPoly( template, good_inds_el_n, 255 )  # For the ellipse 1
+            #   cv2.fillPoly( template, good_inds_er_n, 255 )  # For the ellipse 2
+            #
+            # self.fitting_score(img, template)
 
             # cv2.imshow('Bitwise XOR', self.mask_example )
             # # De-allocate any associated memory usage
             # if cv2.waitKey(0) & 0xff == 27:
             #    cv2.destroyAllWindows()
+        print("--- %s seconds ---" % (time.time() - start_time))
 
         return out_img , self.fitx_, ploty, self.sw_end, self.fitting_score_avg  #, right_fitx #, right_fit_
 
