@@ -37,7 +37,7 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
 
     print("Class wise IoU "  ,  np.mean(ious , axis=0 ))
     print("Total  IoU "  ,  np.mean(ious ))
-    print("Mean prediction time:", np.mean(pred_time))
+    print("Median prediction time:", np.median(pred_time))
 
 
 def main():
@@ -52,6 +52,7 @@ def main():
     ann_files = glob.glob(os.path.join(data_folder,annotations_folder , '*.png'))
 
     print('Running evaluation on ',len(im_files),'images, and',len(ann_files),'annotations:')
+    print(model_path)
     evaluate(model=None , inp_images= im_files , annotations= ann_files, checkpoints_path=model_path,epoch = epoch)
 
 if __name__ == "__main__":
