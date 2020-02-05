@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <arg name="save_joy_button" default="1"/>
+  <arg name="field_name" default="skp_fields"/>
+  <arg name="filename" default="$(find auto_nav)/config/waypoints_$(arg field_name).yaml"/>
+  <arg name="world_frame" default="map"/>
+  <arg name="robot_frame" default="base_link"/>
+  <arg name="use_waypoint_nav" default="true"/>
+  <arg name="tmap" default="frogn_fields"/>
+
+  <node name="waypoint_saver" pkg="auto_nav" type="waypoint_saver" output="screen" unless="$(arg use_waypoint_nav)">
+    <param name="world_frame" value="$(arg world_frame)"/>
+    <param name="robot_frame" value="$(arg robot_frame)"/>
+    <param name="save_joy_button" value="$(arg save_joy_button)"/>
+    <param name="filename" value="$(arg filename)"/>
+  </node>
+
+  <node name="waypoints_nav" pkg="auto_nav" type="waypoints_nav" output="screen" if="$(arg use_waypoint_nav)">
+    <param name="world_frame" value="$(arg world_frame)"/>
+    <param name="robot_frame" value="$(arg robot_frame)"/>
+    <param name="filename" value="$(arg filename)"/>
+  </node>
+
+  <include file="$(find auto_nav)/launch/move_base.launch" if="$(arg use_waypoint_nav)"/>
+  
+  <include file="$(find topological_navigation)/launch/topological_navigation.launch" if="$(arg use_waypoint_nav)">
+    <arg name="map" default="$(arg tmap)"/> 
+  </include>
+
+</launch>

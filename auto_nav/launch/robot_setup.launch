@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <!-- Setting the Initial Parameters.  -->
+  <arg name="x" default="19.1153816961"/> #19.1153816961
+  <arg name="y" default="-1.5781824245"/> #-1.5781824245
+  <arg name="z" default="0"/>
+  <arg name="roll" default="0"/>
+  <arg name="pitch" default="0"/>
+  <arg name="yaw" default="0"/>
+
+  <!-- Choose the environment.  -->
+  <arg name="simple_sim" default= "True" />
+  <arg name="with_teleoperation" default="false" />
+  <arg name="use_amcl" default="false"/>
+  <arg name="robot_name" default="" />
+  <arg name="tf_prefix" default="" />
+  <arg name="robot_model" default="$(find auto_nav)/config/robot_frogn.yaml"/>
+  <arg name="model_extras" default="$(find auto_nav)/urdf/sensors_sim.xacro"/>
+  <arg name="enable_odom_tf" default="" />
+
+  <!-- Set the maps, joystick, gui -->
+  <arg name="with_gui" default="False"/>
+  <arg name="db_path" default="$(env HOME)/mongodb"/>
+  <arg name="topo_map" default="track" />
+  <arg name="joy_dev" default="/dev/input/js0" />
+  <!--param name="use_sim_time" default="false" /-->
+  <arg name="map_file" default="$(find auto_nav)/maps/white_image.yaml"/>
+  <arg name="world_name" value="$(find auto_nav)/worlds/tracks_world.world"/>
+  <rosparam command="load" file="$(find auto_nav)/config/waypoints_topo.yaml" />
+
+  <!-- model bringup -->
+  <include file="$(find auto_nav)/launch/world.launch">
+
+    <arg name="simple_sim" value="$(arg simple_sim)" />
+    <arg name="x" value="$(arg x)" if="$(arg simple_sim)" />
+    <arg name="y" value="$(arg y)" if="$(arg simple_sim)" />
+    <arg name="z" value="$(arg z)" if="$(arg simple_sim)" />
+    <arg name="roll" value="$(arg roll)" if="$(arg simple_sim)" />
+    <arg name="pitch" value="$(arg pitch)" if="$(arg simple_sim)" />
+    <arg name="yaw" value="$(arg yaw)" if="$(arg simple_sim)" />
+
+    <arg name="with_teleoperation" value="$(arg with_teleoperation)"/>
+    <arg name="robot_name" value="$(arg robot_name)" />
+    <arg name="tf_prefix" value="$(arg tf_prefix)" />
+    <arg name="robot_model" value="$(arg robot_model)"/>
+    <arg name="model_extras" value="$(arg model_extras)"/>
+    <arg name="enable_odom_tf" value="$(arg enable_odom_tf)" />
+
+    <arg name="with_gui" value="$(arg with_gui)" if="$(arg simple_sim)" />
+    <arg name="joy_dev" value="$(arg joy_dev)" />
+    <arg name="world_name" value="$(arg world_name)" if="$(arg simple_sim)" />
+
+  </include>
+
+</launch>

@@ -12,6 +12,8 @@ import numpy as np
 import sys
 sys.path.insert(1, '../image-segmentation-keras')
 from keras_segmentation import predict
+import sliding_window_approach
+
 
 
 def main():
@@ -27,7 +29,7 @@ def main():
     args = parser.parse_args()
 
     #Load model
-    model = predict.model_from_checkpoint_path(args.model_prefix) #, args.epoch
+    model = predict.model_from_checkpoint_path(args.model_prefix, args.epoch)
 
     #Initialize video capture
     cap = cv2.VideoCapture(args.input_video_file)
@@ -54,32 +56,75 @@ def main():
         if ret == True:
            print('Frame ',frame_count)
            #Run prediction on video frame
-           pr = predict.predict_fast(model,rgb_img) #predict_fast
-           seg_img = predict.segmented_image_from_prediction(pr, n_classes = model.n_classes, output_width = model.output_width, output_height = model.output_height,input_shape = rgb_img.shape)
-           overlay_img = cv2.addWeighted(rgb_img,0.7,seg_img,0.3,0)
+           seg_arr,inp = predict.predict_fast(model,rgb_img)
+           #seg_img = predict.segmented_image_from_prediction(seg_arr, n_classes = model.n_classes,input_shape = rgb_img.shape)
+           #overlay_img = cv2.addWeighted(rgb_img,0.7,seg_img,0.3,0)
+
            # Stack input and segmentation in one video
 
-           vis_img = np.vstack((
-                   np.hstack((rgb_img,
-                              seg_img)),
-                   np.hstack((overlay_img,
-                              np.ones(overlay_img.shape,dtype=np.uint8)*128))
-           ))
+           # Reshaping the Lanes Class into binary array and Upscaling the image as input image
+           grey_img = seg_arr
+           dummy_img = np.zeros((model.output_height, model.output_width))
+           dummy_img += ((grey_img[:,: ] == 2)*(255)).astype('uint8') # Class Number 2 belongs to Lanes
+           original_h, original_w = rgb_img.shape[0:2]
+           dummy_img = cv2.resize(dummy_img, (original_w,original_h)).astype('uint8')
+
+           # Perspective warp
+           rheight, rwidth = dummy_img.shape[:2]
+           Roi_g = dummy_img[int(0.3*rheight):rheight,0:rwidth]
+           roiheight, roiwidth = Roi_g.shape[:2]
+           src=np.float32([(0.1,0), (0.8,0), (0,1), (1,1)])
+           dst=np.float32([(0,0), (1,0), (0,1), (1,1)])
+           warped_img, M  = sliding_window_approach.perspective_warp(Roi_g, (roiheight, roiwidth), src, dst)
+
+           # InitialPoints Estimation using K-Means clustering
+           modifiedCenters = sliding_window_approach.initialPoints(warped_img)
+
+           # Sliding Window Search
+           out_img, curves, lanes, ploty = sliding_window_approach.sliding_window(warped_img, modifiedCenters)
+
+           # Visualize the fitted polygonals (One on each lane and on average curve)
+           out_img, midLane_i = sliding_window_approach.visualization_polyfit(out_img, curves, lanes, ploty, modifiedCenters)
+           # Inverse Perspective warp
+           invwarp, Minv = sliding_window_approach.inv_perspective_warp(out_img, (roiwidth, roiheight), dst, src)
+
+           midPoints = []
+           for i in midLane_i:
+             point_wp = np.array([i[0],i[1],1])
+             midLane_io = np.matmul(Minv, point_wp) # inverse-M*warp_pt
+             midLane_n = np.array([midLane_io[0]/midLane_io[2],midLane_io[1]/midLane_io[2]]) # divide by Z point
+             midLane_n = midLane_n.astype(int)
+             midPoints.append(midLane_n)
+
+           print midPoints.shape
+
+           # Combine the result with the original image
+           rgb_img[int(rheight*0.3):rheight,0:rwidth] = cv2.addWeighted(rgb_img[int(rheight*0.3):int(rheight),0:rwidth],
+                                                                           1, invwarp, 0.9, 0)
+           result = rgb_img
+
+           # vis_img = np.vstack((
+           #         np.hstack((rgb_img,
+           #                    seg_img)),
+           #         np.hstack((overlay_img,
+           #                    np.zeros(overlay_img.shape)*128))
+           # ))
 
            #vis_img = np.vstack((np.hstack((rgb_img, seg_img)),np.hstack((overlay_img,np.zeros(overlay_img.shape)))))
 
            #Write video
-           if args.output_video_file:
-               if wr is None: #if writer is not set up yet
-                   (out_h,out_w) = vis_img.shape[:2]
-                   wr = cv2.VideoWriter(args.output_video_file,fourcc,fps,(out_w,out_h),isColor)
-               wr.write(vis_img)
+           # if args.output_video_file:
+           #     if wr is None: #if writer is not set up yet
+           #         (out_h,out_w) = result.shape[:2]
+           #         wr = cv2.VideoWriter(args.output_video_file,fourcc,fps,(out_w,out_h),isColor)
+           #     wr.write(result)
+
            #Display on screen
            if args.display:
                cv2.startWindowThread()
                cv2.namedWindow('preview', cv2.WINDOW_NORMAL)
                cv2.resizeWindow('preview', 800,800)
-               cv2.imshow('preview', vis_img)
+               cv2.imshow('preview', result)
 
            # Press Q on keyboard to  exit
            if cv2.waitKey(25) & 0xFF == ord('q'):
@@ -98,47 +143,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# parser = argparse.ArgumentParser(description="Run evaluation of model on a set of images and annotations.")
-# parser.add_argument("--model_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/pre-trained_weights/segnet_weights/segnet", help = "Prefix of model filename")
-# parser.add_argument("--train_images_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/Frogn_Dataset/images_prepped_train/")
-# parser.add_argument("--train_annotations_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/Frogn_Dataset/annotations_prepped_train/")
-# parser.add_argument("--inp_dir_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/Frogn_Dataset/images_prepped_test/")
-# parser.add_argument("--out_dir_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/predicted_outputs_segnet/")
-# parser.add_argument("--inp_path", default = os.path.expanduser('~')+"/Third_Paper/Datasets/Frogn_Dataset/images_prepped_test/frogn_10000.png")
-# parser.add_argument("--pre_trained", default = "True", type=bool)
-# parser.add_argument("--predict_multiple_images", default = "False", type=bool)
-# args = parser.parse_args()
-#
-# model = keras_segmentation.models.segnet.segnet(n_classes=4,  input_height=320 , input_width=640)
-# #pre_trained = True
-# #predict_multiple_images = False
-#
-# if args.pre_trained:
-#     model = model_from_checkpoint_path(args.model_path)
-#
-# else:
-#     model.train(
-#         train_images =  args.train_images_path,
-#         train_annotations = args.train_annotations_path,
-#         checkpoints_path = args.model_path, epochs=5
-#     )
-#
-# if args.predict_multiple_images:
-#     out = model.predict_multiple(
-#           inp_dir = args.inp_dir_path,
-#           checkpoints_path = args.model_path,
-#           out_dir = args.out_dir_path
-#      )
-#
-# else:
-#     out = model.predict_segmentation(
-#         inp= args.inp_path,
-#         checkpoints_path = args.model_path,
-#         out_fname=os.path.expanduser('~')+"/out.png"
-#     )
-
-# import matplotlib.pyplot as plt
-# plt.imshow(out)
-# plt.show()

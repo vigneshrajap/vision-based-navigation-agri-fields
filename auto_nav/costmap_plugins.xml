@@ -1,0 +1,7 @@
+<class_libraries>
+  <library path="lib/libagri_costmap_layer_v2">
+    <class type="custom_layer::AgriCostmapLayer_v2" base_class_type="costmap_2d::Layer">
+      <description>Agri-Costmap-Layer creates layer around the directional vector</description>
+    </class>
+  </library>
+</class_libraries>

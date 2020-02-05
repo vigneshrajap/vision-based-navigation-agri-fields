@@ -1,0 +1,28 @@
+Open_Fields:
+ Total_Layers: 3
+ FirstLayer: 253.0
+ SecondLayer: 252.0
+ ThirdLayer: 224.0
+ FourthLayer: 156.0
+ CostmapHeight: 1.5
+ CostPropagationArea: 0.7
+ CostmapRadius: 0.15
+ TotalSegmentPts: 10
+
+Tramways:
+ FirstLayer: 224.0 #244.0 #156.0
+ SecondLayer: 216.0 #224.0 #112.0
+ ThirdLayer: 156.0 #216.0 #86.0
+ FourthLayer: 124.0 #156.0
+ FifthLayer: 96.0 #32.0
+ costmap_height: 4.0
+ cost_propagation_area: 0.9
+
+Polytunnels:
+ FirstLayer: 253.0 #244.0
+ SecondLayer: 251.0 #224.0
+ ThirdLayer: 246.0 #216.0
+ FourthLayer: 224.0 #156.0
+ FifthLayer: 212.0 #32.0
+ costmap_height: 4.0
+ cost_propagation_area: 0.9

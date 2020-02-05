@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <arg name="robot_model" />
+  <arg name="model_extras" default=""/>
+  <arg name="simple_sim" default= "" />
+  <arg name="enable_odom_tf" default= "False" />
+  <arg name="odom_frame_id" default="odom" />
+
+  <arg name="robot_name" default="thorvald" />
+  <arg name="tf_prefix" default="" />
+  <arg name="with_teleoperation" default="false" />
+
+  <!-- Robot starting pose arguments for simulation  -->
+  <arg name="x" default="0" if="$(arg simple_sim)"/>
+  <arg name="y" default="0" if="$(arg simple_sim)"/>
+  <arg name="z" default="0" if="$(arg simple_sim)"/>
+  <arg name="roll" default="0" if="$(arg simple_sim)"/>
+  <arg name="pitch" default="0" if="$(arg simple_sim)"/>
+  <arg name="yaw" default="0" if="$(arg simple_sim)"/>
+
+  <arg name="world_name" default="$(find auto_nav)/worlds/riseholme.world" if="$(arg simple_sim)"/>
+  <arg name="with_gui" default="true" if="$(arg simple_sim)" />
+
+  <!-- Twist mux args
+       twist and lock topics to be used by twist_mux, command multiplexer -->
+  <arg name="twist_mux_topics" value="$(find thorvald_twist_mux)/config/twist_mux_topics.yaml" />
+  <arg name="twist_mux_locks" value="$(find thorvald_twist_mux)/config/twist_mux_locks.yaml" />
+
+  <!-- Teleop args
+       The teleop node can be used with different hardware, and can also be configured to call any number of std_srvs/Trigger services.
+       You can use xbox.yaml from thorvald_teleop as an example when configuring your own controller -->
+  <arg name="joy_dev" default="/dev/input/js0" />
+  <arg name="joy_autorepeat_rate" value="20" />
+  <arg name="joy_deadzone" value="0.2" />
+  <arg name="teleop_controller" value="$(find thorvald_teleop)/config/xbox.yaml" />
+
+
+  <!-- Launch the Gazebo world.  -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch" if="$(arg simple_sim)">
+    <arg name="world_name" value="$(arg world_name)"/>
+    <arg name="gui" value="$(arg with_gui)" />
+  </include>
+
+  <!-- spawn robot in gazebo -->
+  <node pkg="gazebo_ros" type="spawn_model" name="spawner" args="-urdf -param robot_description -model thorvald_ii -x $(arg x) -y $(arg y) -z $(arg z)
+  -R $(arg roll) -P $(arg pitch) -Y $(arg yaw)" if="$(arg simple_sim)" />
+
+    <!-- model bringup -->
+  <!--include file="$(find thorvald_model)/launch/model.launch">
+      <arg name="robot_model" value="$(arg robot_model)" />
+      <arg name="model_extras" value="$(arg model_extras)" />
+  </include-->
+
+  <!-- base bringup-->
+  <!--include file="$(find thorvald_base)/launch/base_bringup.launch">
+    <arg name="robot_model" value="$(arg robot_model)" />
+    <arg name="simple_sim" value="True" />
+    <arg name="enable_odom_tf" value="$(arg enable_odom_tf)" />
+    <arg name="odom_frame_id" value="odom" />
+  </include-->
+
+  <!-- Thorvald bringup -->
+  <include file="$(find thorvald_bringup)/launch/thorvald_bringup.launch">
+    <arg name="robot_name" value="$(arg robot_name)" />
+    <arg name="tf_prefix" value="$(arg tf_prefix)" />
+    <arg name="robot_model" value="$(arg robot_model)" />
+    <arg name="model_extras" value="$(arg model_extras)" />
+    <arg name="simple_sim" value="$(arg simple_sim)" />
+    <arg name="enable_odom_tf" default="$(arg enable_odom_tf)" />
+    <arg name="odom_frame_id" value="$(arg odom_frame_id)" />
+  </include>
+
+
+  <!-- teleop bringup -->
+  <!--include file="$(find thorvald_teleop)/launch/teleop_xbox.launch" if="$(arg with_teleoperation)">
+    <arg name="joy_dev" value="$(arg joy_dev)" />
+  </include-->
+
+  <!-- twist mux bringup -->
+  <!--include file="$(find thorvald_twist_mux)/launch/twist_mux.launch" /-->
+
+  <!-- Twist mux bringup -->
+  <include file="$(find thorvald_twist_mux)/launch/twist_mux.launch">
+    <arg name="config_topics" value="$(arg twist_mux_topics)" />
+    <arg name="config_locks" value="$(arg twist_mux_locks)" />
+  </include>
+
+
+  <!-- Teleop bringup -->
+  <include file="$(find thorvald_teleop)/launch/teleop.launch">
+    <arg name="joy_dev" value="$(arg joy_dev)" />
+    <arg name="joy_autorepeat_rate" value="$(arg joy_autorepeat_rate)" />
+    <arg name="joy_deadzone" value="$(arg joy_deadzone)" />
+    <arg name="teleop_controller" value="$(arg teleop_controller)" />
+  </include>
+
+</launch>

@@ -1,0 +1,245 @@
+#C++ code from Richard for vector to pixel conversion
+
+
+This is the function for converting vectors to pixels (CmPoint is just a double[3]). The vector functions should be named such that you can simply re-implement them (e.g. vec3normalise). You can ignore _validPixel().
+
+ 
+
+bool OcamCalibCameraModel::vectorToPixel(
+
+                const CmPoint &point, CmReal& x, CmReal& y) const
+
+{
+
+                const CmReal forward[3] = {0,0,1};
+
+                CmReal r[3] = {point[0], point[1], point[2]};
+
+                vec3normalise(r);
+
+                CmReal alpha = acos(vec3dot(r,forward));
+
+                CmReal R = _alphaToR(alpha);
+
+                if (R < 0) {
+
+                               // Uh oh, undefined
+
+                               x = -1.0;
+
+                               y = -1.0;
+
+                               return false;
+
+                }
+
+                CmReal mag = sqrt(r[0]*r[0] + r[1]*r[1]);
+
+                if (mag != 0)
+
+                               mag = R / mag;
+
+                // NOTE: model (x,y) is (height,width) so we swap
+
+                CmReal px = r[1] * mag;
+
+                CmReal py = r[0] * mag;
+                
+                #non ideal fisheye:
+
+                y = _M[0]*px + _M[1]*py + _xc;
+
+                x = _M[2]*px + _M[3]*py + _yc;
+
+                return _validPixel(x, y, R*R);
+
+}
+
+ 
+
+This is the definition for the _alphaToR() function (this solves the polynomial):
+
+ 
+
+CmReal OcamCalibCameraModel::_alphaToR(CmReal alpha) const
+
+{
+
+                // Newton-Raphson search for the solution
+
+                CmReal newFx3 = _fx[3] - tan(alpha - CM_PI_2);
+
+                CmReal fx[5] = {_fx[0], _fx[1], _fx[2], newFx3, _fx[4]};
+
+                CmReal dfdx[4] = {_dfdx[0], _dfdx[1], _dfdx[2], newFx3};
+
+                CmReal px, x=_initial_x;
+
+                do {
+
+                               px = x;
+
+                               x -= eval_poly4(fx,x) / eval_poly3(dfdx,x);
+
+                } while (fabs(x - px) > 1e-3);
+
+                return x;
+
+}
+
+ 
+
+These are the definitions for the various member variables (from camera model params):
+
+ 
+
+                _fx[0] = ss4;
+
+                _fx[1] = ss3;
+
+                _fx[2] = ss2;
+
+                _fx[3] = ss1;
+
+                _fx[4] = ss0;
+
+                _dfdx[0] = 4 * _fx[0];
+
+                _dfdx[1] = 3 * _fx[1];
+
+                _dfdx[2] = 2 * _fx[2];
+
+                _dfdx[3] = _fx[3];
+
+                _M[0] = c;
+
+                _M[1] = d;
+
+                _M[2] = e;
+
+                _M[3] = 1.0;
+
+                invertMatrix2d(_M, _invM);
+
+                _xc = xc;
+
+                _yc = yc;
+
+ 
+
+Here are the helper polynomial functions:
+
+ 
+
+// cubic
+
+static inline CmReal eval_poly3(const CmReal poly[4], CmReal x)
+
+{
+
+                return ((poly[0]*x + poly[1])*x + poly[2])*x + poly[3];
+
+}
+
+ 
+
+// quartic
+
+static inline CmReal eval_poly4(const CmReal poly[5], CmReal x)
+
+{
+
+                return (((poly[0]*x + poly[1])*x + poly[2])*x + poly[3])*x + poly[4];
+
+}
+
+ 
+
+The two options I mentioned:
+
+    Compute the 3D view ray for each pixel from the (virtual) camera image directly. There is code for this below.
+    Map the (virtual) camera image to a new virtual rectilinear image, then compute the 3D view ray for each pixel in the rectilinear image using standard projection matrix.
+
+ 
+
+For computing 3D view rays directly from (virtual) camera image using OcamCalib model params:
+
+ 
+
+Parameter mapping (xml names to internal variable names):
+
+_fx[0] = ss4;
+
+_fx[1] = ss3;
+
+_fx[2] = ss2;111111111111111111111111111
+
+_fx[3] = ss1;
+
+_fx[4] = ss0;
+
+_dfdx[0] = 4 * _fx[0];
+
+_dfdx[1] = 3 * _fx[1];
+
+_dfdx[2] = 2 * _fx[2];
+
+_dfdx[3] = _fx[3];
+
+_M[0] = c;
+
+_M[1] = d;
+
+_M[2] = e;
+
+_M[3] = 1.0;
+
+invertMatrix2d(_M, _invM);
+
+_xc = xc;
+
+_yc = yc;
+
+ 
+
+Converting from pixel coords to vector (XYZ in camera coordinate frame):
+
+bool OcamCalibCameraModel::pixelToVector(CmReal x, CmReal y, CmPoint &direction) const
+
+{
+
+                // NOTE: model (x,y) is (height,width) so we swap
+
+                CmReal dx = y - _xc;
+
+                CmReal dy = x - _yc;
+
+                CmReal px = _invM[0]*dx + _invM[1]*dy;
+
+                CmReal py = _invM[2]*dx + _invM[3]*dy;
+
+                CmReal R2 = px*px + py*py;
+
+                direction[0] = py;
+
+                direction[1] = px;
+
+                direction[2] = -eval_poly4(_fx, sqrt(R2));
+
+                return _validPixel(x, y, R2);         // this just checks whether the pixel coords that were given are within the image bounds
+
+}
+
+ 
+
+// quartic
+
+static inline CmReal eval_poly4(const CmReal poly[5], CmReal x)
+
+{
+
+                return (((poly[0]*x + poly[1])*x + poly[2])*x + poly[3])*x + poly[4];
+
+}
+
+ 

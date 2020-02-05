@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+
+<launch>
+
+	<!-- move_base -->
+	<node name="move_base" pkg="move_base" type="move_base" output="screen">
+
+	    <remap from="odom" to="/odometry/gazebo" />
+	    <remap from="cmd_vel" to="/nav_vel" />
+
+	  <rosparam file="$(find auto_nav)/config/dwa/dwa_planner_ros.yaml" command="load"/>
+	  <rosparam file="$(find auto_nav)/config/dwa/dwa_move_base_params.yaml" command="load"/>
+	  <rosparam file="$(find auto_nav)/config/global_costmap_params.yaml" command="load"/>
+	  <rosparam file="$(find auto_nav)/config/nav_fn_ros.yaml" command="load" />
+
+	  <rosparam file="$(find auto_nav)/config/costmap_common_params.yaml" command="load" ns="global_costmap"/> <!-- FOOTPRINT -->
+	  <rosparam file="$(find auto_nav)/config/costmap_common_params.yaml" command="load" ns="local_costmap"/> <!-- FOOTPRINT -->
+          <rosparam file="$(find auto_nav)/config/local_costmap_params_agri_layer.yaml" command="load"/>
+	  <rosparam file="$(find auto_nav)/config/costmap_layer_costs.yaml"/>
+
+	</node>
+
+</launch>
