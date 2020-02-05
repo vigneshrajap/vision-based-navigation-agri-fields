@@ -38,7 +38,7 @@ def vis_pred_vs_gt_overlay(inp, pr, gt):
     
     return fig
 
-def vis_pred_vs_gt_separately(inp,pr,gt):
+def vis_pred_vs_gt_separate(inp,pr,gt):
               
     fig = plt.figure()
     ax1 = fig.add_subplot(2,2,1)
@@ -80,11 +80,9 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
         gt = gt.argmax(-1)
         iou = metrics.get_iou( gt , pr , model.n_classes )
         ious.append( iou )
-        np.save('gt_array',gt)
-        np.save('pr_array',pr)
 
         if visualize:
-            fig = vis_pred_vs_gt_overlay(inp,pr,gt)
+            fig = vis_pred_vs_gt_separate(inp,pr,gt)
             plt.title("Predicted mask and errors. " "IOU (bg, crop, lane):"+str(iou))
             if not output_folder:
                 if epoch is None:
