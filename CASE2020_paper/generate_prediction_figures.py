@@ -33,10 +33,9 @@ def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm):
     alpha = 0.4
     vis_img = np.uint8((1-alpha)*im_resized + alpha*mask)
     
-    fig = plt.figure(111,figsize = (figure_width_mm/25.4,figure_width_mm/25.4))
+    fig = plt.figure(111)#figsize = (figure_width_mm/25.4,figure_width_mm/25.4))
     plt.imshow(vis_img)
-    plt.axis('off')
-    
+    plt.axis('off')    
     return fig
 
 
@@ -67,10 +66,11 @@ for fname in inp_names:
     iou = metrics.get_iou( gt , pr , model.n_classes )
 
     #--Make overlay image
-    fig1 = vis_pred_vs_gt_overlay(inp,pr,gt,figure_width_mm = 40) #check column widht for CASE
+    fig1 = vis_pred_vs_gt_overlay(inp,pr,gt,figure_width_mm = 85) #check column widht for CASE
     fig1.canvas.set_window_title("Predicted mask and errors")
     output_name1 = 'prediction_overlay_'+os.path.basename(inp)
-    fig1.savefig(output_name1, dpi = figure_dpi)
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    fig1.savefig(output_name1, dpi = figure_dpi,bbox_inches='tight',pad_inches=0)
     print('Saving to: ', output_name1)
     
-
