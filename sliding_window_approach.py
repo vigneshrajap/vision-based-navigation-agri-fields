@@ -1,16 +1,14 @@
 #!/usr/bin/env python
 """
 Created on Sat Jan 18 16:31:13 2020
-@author: vignesh raja
+@author: Vignesh Raja
 @description: This node handles the adaptive sliding window functions
 """
 import numpy as np
 import cv2
 from sklearn.cluster import KMeans
-from itertools import imap
 import matplotlib.pyplot as plt
 import math
-from sensor_msgs.msg import Image
 import time
 
 class sliding_window():
@@ -59,7 +57,9 @@ class sliding_window():
         self.mask_example = []
         self.area_img = []
         self.fitting_score_avg = []
-        self.rect_sub_ROI = True
+        self.rect_sub_ROI = False
+        self.curr_xpts = []
+        self.curr_ypts = []
 
     def perspective_warp(self, img, dst_size, src, dst): # Choose the four vertices
         img_size = np.float32([(img.shape[1],img.shape[0])])
@@ -80,7 +80,7 @@ class sliding_window():
         fitting_score = 1 - percent_white_pixels_f
         self.fitting_score_avg.append(fitting_score)
 
-        print fitting_score
+        # print fitting_score
 
     def Adaptive_sliding_window(self, out_img, window, x_current,  nonzeroy, nonzerox):
 
@@ -220,14 +220,18 @@ class sliding_window():
         if len(good_inds) > self.minpix:
               x_current = np.int(np.mean(total_xpoints)) #nonzerox[good_inds]
 
-        # if self.rect_sub_ROI==True:
-        #     cv2.rectangle(out_img, (sw_xleft_low,self.win_y_low[window]),(sw_xleft_high,self.win_y_high[window]), (0,255,0), 5)
-        #     cv2.rectangle(out_img, (sw_xright_low,self.win_y_low[window]),(sw_xright_high,self.win_y_high[window]), (0,255,0), 5)
-        # else:
-        #     y_center = (self.win_y_low[window]+self.win_y_high[window])/2
-        #     cv2.ellipse(out_img, (center_left[0],y_center), self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, self.color_ellipse, self.thickness_ellipse)
-        #     cv2.ellipse(out_img, (center_right[0],y_center), self.axes, self.Rightangle, self.RightstartAngle, self.RightendAngle, self.color_ellipse, self.thickness_ellipse)
-        # # cv2.rectangle(out_img,(win_x_low, self.win_y_low[window]),(win_x_high, self.win_y_high[window]), (0,255,0), 5)
+        if self.rect_sub_ROI==True:
+            cv2.rectangle(out_img, (sw_xleft_low,self.win_y_low[window]),(sw_xleft_high,self.win_y_high[window]), (0,255,0), 5)
+            cv2.rectangle(out_img, (sw_xright_low,self.win_y_low[window]),(sw_xright_high,self.win_y_high[window]), (0,255,0), 5)
+        else:
+            y_center = (self.win_y_low[window]+self.win_y_high[window])/2
+            # cv2.ellipse(out_img, (center_left[0],y_center), self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, self.color_ellipse, self.thickness_ellipse)
+            # cv2.ellipse(out_img, (center_right[0],y_center), self.axes, self.Rightangle, self.RightstartAngle, self.RightendAngle, self.color_ellipse, self.thickness_ellipse)
+        # cv2.rectangle(out_img,(win_x_low, self.win_y_low[window]),(win_x_high, self.win_y_high[window]), (0,255,0), 5)
+            # cv2.line(out_img, (center_left[0], self.win_y_low[window]), (center_left[0], self.win_y_high[window]), (0,255,0), 5)
+            # cv2.line(out_img, (center_right[0], self.win_y_low[window]), (center_right[0], self.win_y_high[window]), (0,255,0), 5)
+            # cv2.arrowedLine(out_img, (x_current, y_center), (center_left[0], y_center), (255, 0, 0), 5, 8, 0, 0.3)
+            # cv2.arrowedLine(out_img, (x_current, y_center), (center_right[0], y_center), (255, 0, 0), 5, 8, 0, 0.3)
 
         return good_inds, out_img, total_ypoints, total_xpoints, x_current, (win_x_low, win_x_high)
 
@@ -247,7 +251,7 @@ class sliding_window():
             # Set height of windows
             window_height = np.int(img.shape[0]/self.nwindows)
 
-            self.semi_minor = window_height
+            self.semi_minor = window_height-15
             self.semi_major = self.semi_minor*2
             self.axes = (self.semi_major, self.semi_minor)
 
@@ -263,6 +267,7 @@ class sliding_window():
             total_xpoints = [[]for y in range(len(modifiedCenters[0]))]
             total_ypoints = [[]for y in range(len(modifiedCenters[0]))]
             combined_rect = [[]for y in range(len(modifiedCenters[0]))]
+            total_pts = []
 
             # Identify window boundaries in x and y (and right and left)
             self.win_y_low = img.shape[0] - np.multiply(range(1,self.nwindows+1), window_height)
@@ -333,6 +338,9 @@ class sliding_window():
                     xpts.append(total_xpoints)
                     ypts.append(total_ypoints)
 
+                    self.curr_xpts.append(x_current)
+                    self.curr_ypts.append(col_ind)
+
                     # cv2.line(out_img, (int(win_x[0]), self.win_y_low[window]), (int(win_x[1]), self.win_y_low[window]), (0,255,0), self.thickness_ellipse)
                     # cv2.line(out_img, (int(win_x[0]), self.win_y_high[window]), (int(win_x[1]), self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
 
@@ -380,6 +388,16 @@ class sliding_window():
               else:
                   self.fitx_[p_in] = fit_p[0][0]*ploty**2 + fit_p[0][1]*ploty + fit_p[0][2]
 
+              #Lane = np.array([np.transpose(np.vstack([self.curr_xpts]))])
+              Lane = np.array([np.transpose(np.vstack([self.curr_xpts, self.curr_ypts]))])
+
+              Lane_i = Lane[0].astype(int)
+
+              #print  Lane_i
+              total_pts.append(Lane_i)
+              self.curr_xpts = []
+              self.curr_ypts = []
+
               # Obtain Matching Score
             #   combined_rect[p_in] = np.array([np.vstack((x_[p_in], y_[p_in])).T]) # For the rectangle region
             #   cv2.fillPoly( template, combined_rect[p_in], 255 )
@@ -388,31 +406,44 @@ class sliding_window():
             #
             # self.fitting_score(img, template)
 
+            #cv2.polylines(out_img, [Lane_i[0,:],Lane_i[1,:]], 0, (0,255,255), thickness=5, lineType=8, shift=0)
+
+            # cv2.polylines(out_img, [self.curr_pts], 0, (0,255,255), thickness=5, lineType=8, shift=0)
+
+
             # cv2.imshow('Bitwise XOR', self.mask_example )
             # # De-allocate any associated memory usage
             # if cv2.waitKey(0) & 0xff == 27:
             #    cv2.destroyAllWindows()
-        print("--- %s seconds ---" % (time.time() - start_time))
+        # print("--- %s seconds ---" % (time.time() - start_time))
 
-        return out_img , self.fitx_, ploty, self.sw_end, self.fitting_score_avg  #, right_fitx #, right_fit_
+        return out_img , self.fitx_, ploty, self.sw_end, self.fitting_score_avg, total_pts  #, right_fitx #, right_fit_
 
-    def visualization_polyfit(self, out_img, curves, ploty, modifiedCenters):
+    def visualization_polyfit(self, out_img, curves, ploty, modifiedCenters, current_Pts):
 
        #cv2.circle(out_img, (modifiedCenters[1][1], modifiedCenters[1][0]), 8, (0, 255, 0), -1)
-       Lane_i = []
+       # Lane_i = []
+       if len(current_Pts)>1:
+        for c_in in range(len(current_Pts)): #
+            cv2.polylines(out_img, [current_Pts[c_in]], 0, (0,255,255), thickness=5, lineType=8, shift=0)
 
-       if len(curves):
-         for c_in in range(len(curves)): #
+        curves_m = (current_Pts[0]+current_Pts[1])/2
+        #midLane = np.array([np.transpose(np.vstack([curves_m, ploty]))])
+        midLane_i = curves_m.astype(int)
+        cv2.polylines(out_img, [midLane_i], 0, (255,0,255), thickness=5, lineType=8, shift=0)
 
-           # Fitted curves as points
-           Lane = np.array([np.transpose(np.vstack([curves[c_in], ploty]))])
-           Lane_i = Lane[0].astype(int)
+       # if len(curves):
+       #   for c_in in range(len(curves)): #
 
-           cv2.polylines(out_img, [Lane_i], 0, (0,255,255), thickness=5, lineType=8, shift=0)
-
-         curves_m = (curves[0]+curves[1])/2
-         midLane = np.array([np.transpose(np.vstack([curves_m, ploty]))])
-         midLane_i = midLane[0].astype(int)
-         cv2.polylines(out_img, [midLane_i], 0, (255,0,255), thickness=5, lineType=8, shift=0)
+       #     # Fitted curves as points
+       #     Lane = np.array([np.transpose(np.vstack([curves[c_in], ploty]))])
+       #     Lane_i = Lane[0].astype(int)
+       #     print Lane_i
+       #     cv2.polylines(out_img, [Lane_i], 0, (0,255,255), thickness=5, lineType=8, shift=0)
+       #
+       #   curves_m = (curves[0]+curves[1])/2
+       #   midLane = np.array([np.transpose(np.vstack([curves_m, ploty]))])
+       #   midLane_i = midLane[0].astype(int)
+       #   cv2.polylines(out_img, [midLane_i], 0, (255,0,255), thickness=5, lineType=8, shift=0)
 
        return out_img

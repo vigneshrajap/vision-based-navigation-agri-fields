@@ -106,7 +106,7 @@ def visualize_segmentation(input_img, seg_arr, n_classes, class_number = 2, disp
                   upscaled_img_rgb)) # np.ones(overlay_img.shape,dtype=np.uint8)*128
     ))
 
-    return vis_img #vis_img
+    return upscaled_img #vis_img #vis_img
 
 def visualization(input_img, seg_arr=None, lane_fit = None, evaluation = None, n_classes=None, visualize = None, display=False, output_file=None):
     class_number = 2 # 1 for Crops, 2 for Lanes
@@ -121,10 +121,10 @@ def visualization(input_img, seg_arr=None, lane_fit = None, evaluation = None, n
         warp_img, vis_img, centerLine = run_lane_fit(input_img, seg_arr, class_number, crop_ratio)
         return vis_img, centerLine ##fixme
 
-    if display:
-        cv2.imshow('Prediction', vis_img)
-    if not output_file is None:
-        cv2.imwrite(output_file, vis_img )
+    # if display:
+    #     cv2.imshow('Prediction', vis_img)
+    # if not output_file is None:
+    #     cv2.imwrite(output_file, vis_img )
     return vis_img
 
 def predict_on_image(model, inp, lane_fit = False, evaluate = False, visualize = None, output_file = None, display=False):
