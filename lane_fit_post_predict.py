@@ -10,7 +10,7 @@ from sensor_msgs.msg import Image
 from sklearn.cluster import KMeans
 
 import sliding_window_approach
-from geometry_msgs.msg import Pose, PoseArray
+# from geometry_msgs.msg import Pose, PoseArray
 import scipy.signal as signal
 import math
 
@@ -60,6 +60,7 @@ class lane_finder_post_predict():
        self.sw_end = []
        self.weights = np.empty([2, 1])
        self.fitting_score_avg = []
+       self.current_Pts = []
 
     def MidPoints_IDW(self):
 
@@ -172,10 +173,10 @@ class lane_finder_post_predict():
 
     def visualize_lane_fit(self, dst_size):
 
-       self.roi_img, self.curves, self.ploty, self.sw_end, self.fitting_score_avg = DBASW.sliding_window(self.roi_img, self.modifiedCenters)
+       self.roi_img, self.curves, self.ploty, self.sw_end, self.fitting_score_avg, self.current_Pts = DBASW.sliding_window(self.roi_img, self.modifiedCenters)
 
        # Visualize the fitted polygonals (One on each lane and on average curve)
-       # self.roi_img = DBASW.visualization_polyfit(self.roi_img, self.curves, self.ploty, self.modifiedCenters)
+       self.roi_img = DBASW.visualization_polyfit(self.roi_img, self.curves, self.ploty, self.modifiedCenters, self.current_Pts)
 
        # Find the MidPoints using inverse distance weighting and plot the center line
        # self.MidPoints_IDW()
@@ -187,8 +188,8 @@ class lane_finder_post_predict():
        # self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L1_N/"+os.path.splitext(self.base)[0][0:18]+".png")
        rheight, rwidth = self.final_img.shape[:2]
 
-       self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted(self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth],
-                                                                                       0.8, self.roi_img, 1.0, 0)
+       self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted( self.roi_img, 1.0,self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth],
+                                                                                       0.2, 0)
        # print rheight*self.crop_ratio
        if len(self.modifiedCenters[0]):
            for mc_in in range(len(self.modifiedCenters_local[0])):
@@ -233,7 +234,13 @@ class lane_finder_post_predict():
     def lane_fit_on_predicted_image(self, lane_fit = False, display=False): #visualize = None
 
         if lane_fit:
+            t_start = time.time()
+
             self.run_lane_fit()
+
+            t_end = time.time()
+            print 'Prediction time: ', t_end-t_start
+
             self.visualization()
             self.modifiedCenters = [] # reinitialize to zero
         else:
