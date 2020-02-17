@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import division
 import os
 import glob
 import matplotlib.pyplot as plt
@@ -15,6 +16,7 @@ import argparse
 import time
 from PIL import Image
 
+'''
 def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm):
     #Visualize segmentation prediction and false positives/negatives
     
@@ -37,6 +39,36 @@ def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm):
     plt.imshow(vis_img)
     plt.axis('off')    
     return fig
+'''
+
+def blend_color_and_image(image,mask,color_code,alpha):
+    #Blend colored mask and input image
+    #Assuming 3-channel image, one-channel mask
+    mask = np.tile(mask[:,:,np.newaxis],[1,1,3])
+    return np.uint8(mask * (1-alpha) * color_code + mask * alpha * image + np.logical_not(mask) * image)
+
+def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm):
+    input_image = Image.open(inp)
+
+    #Make overlay image
+    im_resized = np.array(input_image.resize((gt.shape[1],gt.shape[0])))
+    
+    error_mask = pr-gt
+    #Make non-overlapping masks
+    fp_mask = np.uint8(error_mask > 0)  
+    fn_mask = np.uint8(error_mask < 0) #False negatives for class 1
+    gt_mask = (gt-1)*np.uint8(error_mask == 0) #class 1 in ground truth encoded green
+    
+    #Blending
+    alpha = 0.4
+    fp_color_code = np.array([1,0,1])*255 #magenta
+    fn_color_code = np.array([0,0,1])*255 #blue
+    gt_color_code = np.array([0,1,0])*255 #green
+    
+    im_vis = blend_color_and_image(im_resized,fp_mask,fp_color_code,alpha)
+    im_vis= blend_color_and_image(im_vis,fn_mask,fn_color_code,alpha)
+    im_vis= blend_color_and_image(im_vis,gt_mask,gt_color_code,alpha)
+    return im_vis
 
 
 #%% Script for generating prediction mask figures for CASE 2020 paper
@@ -45,17 +77,30 @@ def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm):
 #input images
 image_folder = os.path.join('../Frogn_Dataset','images_prepped_test')
 annotations_folder = os.path.join('../Frogn_Dataset','annotations_prepped_test')
-inp_names = ['20190703_LR_N_0785.png','20190913_LR1_S_0965.png']
+inp_names = ['20190703_LR_N_0785.png',
+             '20190913_LR1_S_0965.png',
+             '20190609_LR_N_0000.png',
+             '20190913_LR2_N_1760.png',
+             '20190913_LR3_N_0950.png',
+             '20190913_LR4_S_2275.png']
+
+output_name= 'prediction_overlay'
 #model
 checkpoints_path = os.path.join('../models','resnet50_segnet')
 epoch = 20
 
 figure_dpi = 300
+figure_width_mm = 88.57
+image_spacing_mm = figure_width_mm*0.05
+print(len(inp_names))
+figure_height_mm = ((176*len(inp_names)*1.25)/(320*2*1.05))*figure_width_mm #Adjusting height to get a tight fit
 
 #Load model first
 model = model_from_checkpoint_path(checkpoints_path,epoch)
 
-for fname in inp_names:
+fig,ax = plt.subplots(nrows=len(inp_names),ncols=2,figsize=(figure_width_mm/25.4,figure_height_mm/25.4))
+
+for ind,fname in enumerate(inp_names):
     #Load images
     inp = os.path.join(image_folder,fname)
     ann = os.path.join(annotations_folder,fname)
@@ -66,11 +111,19 @@ for fname in inp_names:
     iou = metrics.get_iou( gt , pr , model.n_classes )
 
     #--Make overlay image
-    fig1 = vis_pred_vs_gt_overlay(inp,pr,gt,figure_width_mm = 85) #check column widht for CASE
-    fig1.canvas.set_window_title("Predicted mask and errors")
-    output_name1 = 'prediction_overlay_'+os.path.basename(inp)
-    plt.gca().xaxis.set_major_locator(plt.NullLocator())
-    plt.gca().yaxis.set_major_locator(plt.NullLocator())
-    fig1.savefig(output_name1, dpi = figure_dpi,bbox_inches='tight',pad_inches=0)
-    print('Saving to: ', output_name1)
+    im_overlay = vis_pred_vs_gt_overlay(inp,pr,gt,figure_width_mm = 85) #check column widht for CASE
     
+    #Put in subplots
+    
+    ax[ind][0].axis('off')
+    ax[ind][0].imshow(Image.open(inp))
+    ax[ind][0].xaxis.set_major_locator(plt.NullLocator())
+    ax[ind][0].yaxis.set_major_locator(plt.NullLocator())
+    
+    ax[ind][1].axis('off')
+    ax[ind][1].imshow(im_overlay)
+    ax[ind][1].xaxis.set_major_locator(plt.NullLocator())
+    ax[ind][1].yaxis.set_major_locator(plt.NullLocator())
+
+fig.set_constrained_layout_pads(w_pad=0, h_pad = 0, hspace=0., wspace=0.)
+fig.savefig(output_name, dpi = figure_dpi,bbox_inches='tight',pad_inches=0)
