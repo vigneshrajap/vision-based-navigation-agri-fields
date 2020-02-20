@@ -62,66 +62,8 @@ class lane_finder_post_predict():
        self.fitting_score_avg = []
        self.current_Pts = []
        self.total_time = 0
+       self.matching_score = []
 
-    # def MidPoints_IDW(self):
-    #
-    #    if len(self.modifiedCenters):
-    #        # Mid Lane for robot desired trajectory
-    #        self.weights = np.reshape(self.weights, (len(self.modifiedCenters),1), order='F')
-    #
-    #        dist_peaks = abs(self.modifiedCenters[0]-self.warp_img.shape[1]/2) # Distance to center of image
-    #
-    #        # In IDW, weights are 1 / distance
-    #        if not dist_peaks.all(): # Case where the peak aligned with center of the image
-    #            peak_center = np.where(dist_peaks == 0)
-    #            dist_peaks[peak_center] = 1
-    #
-    #        self.weights = 1.0 / dist_peaks
-    #
-    #        # Make weights sum to one
-    #        self.weights /= np.sum(self.weights, axis=0)
-    #
-    #        # Multiply the weights for each interpolated point by all observed Z-values
-    #        curves_idw = [[]for y in range(len(self.curves))]
-    #
-    #        for c_in in range(0, len(self.modifiedCenters[0])):
-    #            curves_idw[c_in] =  (self.weights[c_in]*self.curves[c_in])
-    #
-    #        curves_m = np.sum(curves_idw, axis=0)
-    #        midLane = np.array([np.transpose(np.vstack([curves_m, self.ploty]))])
-    #        self.centerLine = midLane.astype(int)
-    #        cv2.polylines(self.roi_img, [self.centerLine], 0, (255,0,0), thickness=5, lineType=8, shift=0)
-    #        print self.weights
-
-    # def warp_img_skewing(self):
-    #     # loop over the rotation angles again, this time ensuring no part of the image is cut off
-    #     var_arr = []
-    #     ang_arr = []
-    #     min_angle = -5
-    #     max_angle = 5
-    #     increment = 0.25
-    #     for angle in np.arange(min_angle, max_angle, increment):
-    #     	rotated = imutils.rotate_bound(self.warp_img, angle)
-    #     	img_col_sum = rotated.sum(axis=0)
-    #     	var_arr.append(np.var(img_col_sum))
-    #     	ang_arr.append(angle)
-    #
-    #     angle_index = var_arr.index(max(var_arr))
-    #     final_skew_angle = ang_arr[int(angle_index)]
-    #
-    #     (h, w) = self.warp_img.shape[:2]
-    #     (cX, cY) = (w // 2, h // 2)
-    #
-    #     #self.warp_img = imutils.rotate_bound(self.warp_img, final_skew_angle)
-    #
-    #     # Perform the rotation holding at the center
-    #     # get image height, width
-    #     (h, w) = self.warp_img.shape[:2]
-    #     scale = 1.0
-    #     M = cv2.getRotationMatrix2D((cX, cY), final_skew_angle, scale)
-    #     self.warp_img = cv2.warpAffine(self.warp_img, M, (h, w))
-    #
-    #     # print ang_arr[int(angle_index)]
 
     def peaks_estimation(self):
        coldata = np.sum(self.warp_img, axis=0)/255 # Sum the columns of warped image to determine peaks
@@ -161,12 +103,9 @@ class lane_finder_post_predict():
 
        self.warp_img, self.M_t  = DBASW.perspective_warp(self.crop_img, (dst_size[1], dst_size[1]), self.src, self.dst) # Perspective warp
 
-       # self.warp_img_skewing()
-
        self.peaks_estimation()
 
        # Inverse Perspective warp
-       #self.invwarp_img, self.M_tinv = DBASW.inv_perspective_warp(self.warp_img, (dst_size[1], dst_size[0]), self.dst, self.src) #self.polyfit_img
        self.invwarp_img, self.M_tinv = DBASW.perspective_warp(self.warp_img, (dst_size[1], dst_size[1]), self.dst, self.src) #self.polyfit_img
 
        #self.M_tinv = cv2.getPerspectiveTransform(self.dst, self.src)
@@ -193,38 +132,44 @@ class lane_finder_post_predict():
        # Visualize the fitted polygonals (One on each lane and on average curve)
        self.roi_img, self.centerLine = DBASW.visualization_polyfit(self.roi_img, self.curves, self.ploty, self.modifiedCenters, self.current_Pts)
 
-       # import csv
-       # gt_row = []
-       # with open('/home/vignesh/dummy_folder/test_cases/results/'+os.path.splitext(self.base)[0][0:18]+'.csv') as csvfile:
-       #       spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
-       #       for row in spamreader:
-       #           #print(', '.join(row))
-       #           gt_row.append(row[0])
-       #
-       # matching_score = []
-       # for mid_in in range(len(self.centerLine)):
-       #     # print self.centerLine[mid_in][1]+(self.image.shape[0]-self.roi_img.shape[0])
-       #     # print self.centerLine[mid_in][0]
-       #     # print self.centerLine[mid_in][0], gt_row[mid_in],
-       #     ms = (self.centerLine[mid_in][0]-int(gt_row[mid_in]))
-       #     ms_1 = np.float(ms)/np.float(0.4*120)
-       #
-       #     matching_score.append(math.pow(ms_1,2))
-       #
-       # print np.sum(matching_score)/len(self.centerLine), 1 - np.sum(matching_score)/len(self.centerLine)
-        # self.centerLine
+       import csv
+       gt_row = []
+       base_name = os.path.splitext(self.base)[0][0:18]
+
+       # with open('/home/vignesh/dummy_folder/test_cases/inclined_terrains/ground_truth/'+os.path.splitext(self.base)[0][0:11]+'.csv') as csvfile:
+       if (os.path.splitext(self.base)[0][11] != str('_')):
+           base_name = os.path.splitext(self.base)[0][0:19]
+
+
+       with open('/home/vignesh/dummy_folder/test_cases/inclined_terrains/ground_truth/'+base_name+'.csv') as csvfile:
+             spamreader = csv.reader(csvfile, delimiter='\t', quotechar='|')
+             for row in spamreader:
+                 gt_row.append(row[1])
+
+       ms_temp = 0
+
+       for mid_in in range(len(self.centerLine)):
+           #print np.float(np.float(1)/np.float(mid_in+1))
+           ms = self.centerLine[mid_in][0]-int(gt_row[mid_in])
+           # print math.pow((np.float(ms)/np.float(0.25*self.image.shape[1])),2)
+           ms_lite = abs(np.float(ms)/np.float(140-(5*mid_in))) #0.25*self.image.shape[1]
+           ms_temp = ms_temp + ms_lite
+           # print gt_row[mid_in], self.centerLine[mid_in][0], ms_lite
+
+       self.matching_score.append((1 - (math.pow(ms_temp,2))/len(self.centerLine)))
+
+       # print self.matching_score #, 1 - np.sum(matching_score)/len(self.centerLine)
+
        # Find the MidPoints using inverse distance weighting and plot the center line
        # self.MidPoints_IDW()
 
        # cv2.imwrite('/home/vignesh/dummy_folder/test.png',test)
 
        # Combine the result with the original image
-       # self.final_img = cv2.cvtColor(self.image, cv2.COLOR_GRAY2RGB)
+       self.final_img = cv2.cvtColor(self.image, cv2.COLOR_GRAY2RGB)
        # self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L1_N/"+os.path.splitext(self.base)[0][0:18]+".png")
-       self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/"+os.path.splitext(self.base)[0][0:18]+".png")
+       # self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/"+os.path.splitext(self.base)[0][0:18]+".png")
        rheight, rwidth = self.final_img.shape[:2]
-
-
 
 
        self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted( self.roi_img, 0.6,self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth],
@@ -232,7 +177,7 @@ class lane_finder_post_predict():
 
        if len(self.modifiedCenters[0]):
            for mc_in in range(len(self.modifiedCenters_local[0])):
-               # print self.modifiedCenters[mc_in][0], self.modifiedCenters[mc_in][1], self.final_img.shape[0]-100
+               #print self.modifiedCenters[mc_in][0], self.modifiedCenters[mc_in][1], self.final_img.shape[0]-100
 
                cv2.circle(self.final_img, (int(self.modifiedCenters[mc_in][0]),int(self.final_img.shape[0]-20)), #+rheight*self.warp_ratio
                                                                                                 0, (255,0,255), thickness=25, lineType=8, shift=0)
@@ -259,7 +204,7 @@ class lane_finder_post_predict():
        rheight, rwidth = self.image.shape[:2]
        self.roi_img = self.image[int(self.crop_ratio*rheight):rheight,0:rwidth]
        dst_size = self.roi_img.shape[:2]
-       # print self.image.shape[:2], dst_size
+       # print int(self.crop_ratio*rheight)
        # cv2.imwrite("/home/vignesh/roi_img.png", self.roi_img )
 
        # Sliding Window Approach on Lanes Class from segmentation Array and fit the poly curves
@@ -280,7 +225,7 @@ class lane_finder_post_predict():
 
             self.run_lane_fit()
 
-            self.visualization()
+            # self.visualization()
             self.modifiedCenters = [] # reinitialize to zero
         else:
             self.final_img = None
@@ -313,11 +258,10 @@ if __name__ == '__main__':
 
         lfp.lane_fit_on_predicted_image(lane_fit = True, display=False) #visualize = "segmentation"
 
-#    print lfp.total_time
-
-        #t = timeit.Timer("d.lane_fit_on_predicted_image()", "from __main__ import lane_finder_post_predict; d = lane_finder_post_predict()")
-        #print t.timeit()
-#     print np.sum(lfp.fitting_score_avg)/len(lfp.fitting_score_avg)
+        # t = timeit.Timer("d.lane_fit_on_predicted_image()", "from __main__ import lane_finder_post_predict; d = lane_finder_post_predict()")
+        # print t.timeit()
+    print np.sum(lfp.matching_score)/len(lfp.matching_score), np.mean(lfp.matching_score), np.std(lfp.matching_score)
+    # print np.sum(lfp.fitting_score_avg)/len(lfp.fitting_score_avg)
     # print("--- %s seconds ---" % (time.time() - start_time))
 
     cv2.destroyAllWindows()

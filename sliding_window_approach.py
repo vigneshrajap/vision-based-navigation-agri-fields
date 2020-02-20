@@ -2,7 +2,7 @@
 """
 Created on Sat Jan 18 16:31:13 2020
 @author: Vignesh Raja
-@description: This node handles the adaptive sliding window functions
+@description: This node handles the adaptive multi-ROI functions
 """
 import numpy as np
 import cv2
@@ -75,10 +75,25 @@ class sliding_window():
         return warped, M
 
     def fitting_score(self, img, template):
-        dest_xor = cv2.bitwise_xor(img, template, mask = None)
-        percent_white_pixels_f = float(cv2.countNonZero(dest_xor)/self.area_img)
-        fitting_score = 1 - percent_white_pixels_f
-        self.fitting_score_avg.append(fitting_score)
+        # dest_xor = cv2.bitwise_xor(img, template, mask = None)
+        # percent_white_pixels_f = float(cv2.countNonZero(dest_xor)/self.area_img)
+        # fitting_score = 1 - percent_white_pixels_f
+        # self.fitting_score_avg.append(fitting_score)
+
+        # Compute Fitting IoU
+        EPS = 1e-12
+        intersection = (cv2.bitwise_and(img, template)).sum()
+     	union = np.sum(np.maximum(img,template))
+        iou = float(intersection)/(union+EPS)
+
+        self.fitting_score_avg.append(iou)
+
+        # cv2.imshow('resultant', cv2.bitwise_and(img, template))
+        # # De-allocate any associated memory usage
+        # if cv2.waitKey(0) & 0xff == 27:
+        #    cv2.destroyAllWindows()
+
+        # print iou # 2. * intersection.sum() / (img.sum() + template.sum())
 
         # print fitting_score
 
@@ -168,10 +183,6 @@ class sliding_window():
         good_inds1 = ((nonzeroy>=self.win_y_low[window]) & (nonzeroy<self.win_y_high[window]) &
                        (nonzerox>=win_x_low) & (nonzerox<win_x_high)).nonzero()[0]
 
-        #mask_empty = np.zeros_like(self.img)
-        #mask_empty[self.win_y_low[window]:self.win_y_high[window],0:out_img.shape[1]] = cv2.addWeighted(mask_empty[self.win_y_low[window]:self.win_y_high[window],0:out_img.shape[1]],
-                                                                                       # 0.1, self.result_left, 1.0, 0)
-
         # Identify the x and y positions of all nonzero pixels in the image
         nonzero1 = self.result_left.nonzero()
         nonzeroy1 = np.array(nonzero1[0])
@@ -186,10 +197,6 @@ class sliding_window():
                             &(nonzerox1>=win_x_low-(self.semi_major)) & (nonzerox1<win_x_low)).nonzero()[0]
             good_inds2 = ((nonzeroy1>=0) & (nonzeroy1<col_ind)
                             &(nonzerox1>=win_x_low-(self.semi_major)) & (nonzerox1<win_x_low)).nonzero()[0]
-
-        # mask_empty1 = np.zeros_like(self.img)
-        # mask_empty1[self.win_y_low[window]:self.win_y_high[window],0:out_img.shape[1]] = cv2.addWeighted(mask_empty1[self.win_y_low[window]:self.win_y_high[window],0:out_img.shape[1]],
-        #                                                                                0.1, self.result_right, 1.0, 0)
 
         nonzero2 = self.result_right.nonzero()
         nonzeroy2 = np.array(nonzero2[0])
@@ -284,6 +291,7 @@ class sliding_window():
             # Identify window boundaries in x and y (and right and left)
             self.win_y_low = img.shape[0] - np.multiply(range(1,self.nwindows+1), window_height)
             self.win_y_high = img.shape[0] - np.multiply(range(0,self.nwindows), window_height)
+            # print window_height, (img.shape[0]- np.multiply(range(1,self.nwindows+1), window_height))+108 #, self.win_y_high[window] + 108
 
             if self.win_y_low[self.nwindows-1] != 0:
                 self.win_y_low[self.nwindows-1] = 0
@@ -355,7 +363,7 @@ class sliding_window():
 
                     cv2.line(out_img, (int(win_x[0]), self.win_y_low[window]), (int(win_x[1]), self.win_y_low[window]), (0,255,0), self.thickness_ellipse)
                     cv2.line(out_img, (int(win_x[0]), self.win_y_high[window]), (int(win_x[1]), self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
-
+                    # print self.win_y_high[window] + 108
                     # print win_x[0]
 
                 else:
@@ -423,10 +431,10 @@ class sliding_window():
 
             self.fitting_score(img, template)
 
-            cv2.imshow('Bitwise XOR', self.mask_example_r)
-            # De-allocate any associated memory usage
-            if cv2.waitKey(0) & 0xff == 27:
-                cv2.destroyAllWindows()
+            # cv2.imshow('Template', template)
+            # # De-allocate any associated memory usage
+            # if cv2.waitKey(0) & 0xff == 27:
+            #     cv2.destroyAllWindows()
 
             # cv2.polylines(out_img, [Lane_i[0,:],Lane_i[1,:]], 0, (0,255,255), thickness=5, lineType=8, shift=0)
             # cv2.polylines(out_img, [self.curr_pts], 0, (0,255,255), thickness=5, lineType=8, shift=0)
