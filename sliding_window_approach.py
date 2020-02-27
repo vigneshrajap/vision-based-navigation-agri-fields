@@ -38,7 +38,7 @@ class sliding_window():
         self.RightstartAngle = 90 # Semicircle
         self.RightendAngle = 270
         self.color_ellipse = (0,255,0)
-        self.thickness_ellipse = 4
+        self.thickness_ellipse = 3
         self.semi_major = [] # Change based on window height
         self.semi_minor = [] # Change based on window height
         self.axes = []
@@ -248,13 +248,13 @@ class sliding_window():
             if self.rect_sub_ROI==True:
                 # cv2.rectangle(out_img, (sw_xleft_low,self.win_y_low[window]),(sw_xleft_high,self.win_y_high[window]), (0,255,0), 5)
                 # cv2.rectangle(out_img, (sw_xright_low,self.win_y_low[window]),(sw_xright_high,self.win_y_high[window]), (0,255,0), 5)
-                cv2.line(out_img, (sw_xleft_low, self.win_y_low[window]), (sw_xleft_high, self.win_y_low[window]), (0,255,0), 5)
-                cv2.line(out_img, (sw_xleft_low, self.win_y_high[window]), (sw_xleft_high, self.win_y_high[window]), (0,255,0), 5)
-                cv2.line(out_img, (sw_xleft_low, self.win_y_low[window]), (sw_xleft_low, self.win_y_high[window]), (0,255,0), 5)
+                cv2.line(out_img, (sw_xleft_low, self.win_y_low[window]), (sw_xleft_high, self.win_y_low[window]), (0,255,0), 3)
+                cv2.line(out_img, (sw_xleft_low, self.win_y_high[window]), (sw_xleft_high, self.win_y_high[window]), (0,255,0), 3)
+                cv2.line(out_img, (sw_xleft_low, self.win_y_low[window]), (sw_xleft_low, self.win_y_high[window]), (0,255,0), 3)
 
-                cv2.line(out_img, (sw_xright_low, self.win_y_low[window]), (sw_xright_high, self.win_y_low[window]), (0,255,0), 5)
-                cv2.line(out_img, (sw_xright_low, self.win_y_high[window]), (sw_xright_high, self.win_y_high[window]), (0,255,0), 5)
-                cv2.line(out_img, (sw_xright_high, self.win_y_low[window]), (sw_xright_high, self.win_y_high[window]), (0,255,0), 5)
+                cv2.line(out_img, (sw_xright_low, self.win_y_low[window]), (sw_xright_high, self.win_y_low[window]), (0,255,0), 3)
+                cv2.line(out_img, (sw_xright_low, self.win_y_high[window]), (sw_xright_high, self.win_y_high[window]), (0,255,0), 3)
+                cv2.line(out_img, (sw_xright_high, self.win_y_low[window]), (sw_xright_high, self.win_y_high[window]), (0,255,0), 3)
             else:
                 y_center = (self.win_y_low[window]+self.win_y_high[window])/2
                 #print center_left[0],center_right[0], y_center
@@ -398,7 +398,7 @@ class sliding_window():
                 if self.draw_windows == True:
                     # print x_current, col_ind
                     # Plotting the X center of the windows
-                    cv2.circle(out_img, (int(x_current), int(col_ind)), 0, (0,0,255), thickness=25, lineType=8, shift=0)
+                    cv2.circle(out_img, (int(x_current), int(col_ind)), 0, (0,0,255), thickness=20, lineType=8, shift=0)
                     # cv2.circle(self.mask_example_r, (int(x_current), int(col_ind)), 0, (0,0,255), thickness=25, lineType=8, shift=0)
                     # Plotting the horizontal strips
                     # cv2.line(out_img, (0, self.win_y_low[window]), (img.shape[1], self.win_y_low[window]), (0,0,255), 2)
@@ -490,6 +490,7 @@ class sliding_window():
         curves_m = current_Pts[0]
 
        midLane_i = curves_m.astype(int)
+
         # x_i = np.zeros(10,1)
         # y_i = np.zeros(10,1)
         # for p_in in range(1,len(midLane_i)-1):
