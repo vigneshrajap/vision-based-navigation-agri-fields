@@ -57,7 +57,7 @@ class sliding_window():
         self.mask_example = []
         self.area_img = []
         self.fitting_score_avg = []
-        self.rect_sub_ROI = False
+        self.rect_sub_ROI = True
         self.curr_xpts = []
         self.curr_ypts = []
 
@@ -100,6 +100,8 @@ class sliding_window():
             col_ind = int((self.win_y_high[window]-self.win_y_low[window])/2)
 
         center_left = center_right = (x_current, col_ind)
+        self.mask_example_r = cv2.rectangle(self.mask_example_r, (center_left[0]- self.semi_major,self.win_y_low[window]),(center_left[0],self.win_y_high[window]), (255,255,255), -1)
+        self.mask_example_r = cv2.rectangle(self.mask_example_r, (center_right[0],self.win_y_low[window]),(center_right[0] + self.semi_major,self.win_y_high[window]), (255,255,255), -1)
 
         while (self.search_complete == False) and (center_left[0] >= 0) and (center_right[0] <= self.img.shape[1]):
 
@@ -154,8 +156,13 @@ class sliding_window():
 
         # print window, k, l, self.semi_major, self.semi_minor
 
-        self.mask_example_r = cv2.ellipse(self.mask_example_r, (center_left[0],(self.win_y_low[window]+self.win_y_high[window])/2), self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, (255,255,255), -1)
-        self.mask_example_r = cv2.ellipse(self.mask_example_r, (center_right[0],(self.win_y_low[window]+self.win_y_high[window])/2), self.axes, self.Rightangle, self.RightstartAngle, self.RightendAngle, (255,255,255), -1)
+
+        # if self.rect_sub_ROI==True:
+        #     self.mask_example_r = cv2.rectangle(self.mask_example_r, (sw_xleft_low,self.win_y_low[window]),(sw_xleft_high,self.win_y_high[window]), (255,255,255), -1)
+        #     self.mask_example_r = cv2.rectangle(self.mask_example_r, (sw_xright_low,self.win_y_low[window]),(sw_xright_high,self.win_y_high[window]), (255,255,255), -1)
+        # else:
+        #     self.mask_example_r = cv2.ellipse(self.mask_example_r, (center_left[0],(self.win_y_low[window]+self.win_y_high[window])/2), self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, (255,255,255), -1)
+        #     self.mask_example_r = cv2.ellipse(self.mask_example_r, (center_right[0],(self.win_y_low[window]+self.win_y_high[window])/2), self.axes, self.Rightangle, self.RightstartAngle, self.RightendAngle, (255,255,255), -1)
 
         # Update the Window Size based on New Margins
         margin_ll = abs(center_left[0]-x_current)
@@ -179,6 +186,8 @@ class sliding_window():
         nonzerox1 = np.array(nonzero1[1])
 
         if self.rect_sub_ROI==True:
+            good_inds2_n = (((nonzeroy1+self.win_y_low[window])>=self.win_y_low[window]) & ((nonzeroy1+self.win_y_low[window])<self.win_y_high[window])
+                            &(nonzerox1>=win_x_low-(self.semi_major)) & (nonzerox1<win_x_low)).nonzero()[0]
             good_inds2 = ((nonzeroy1>=self.win_y_low[window]) & (nonzeroy1<(self.win_y_high[window]))
                             &(nonzerox1>=sw_xleft_low) & (nonzerox1<sw_xleft_high)).nonzero()[0]
         else:
@@ -196,6 +205,8 @@ class sliding_window():
         nonzeroy2_n = np.array(nonzero2[0]+self.win_y_low[window])
         nonzerox2 = np.array(nonzero2[1])
         if self.rect_sub_ROI==True:
+            good_inds3_n = (((nonzeroy2+self.win_y_low[window])>=self.win_y_low[window]) & ((nonzeroy2+self.win_y_low[window])<self.win_y_high[window])
+                            &(nonzerox2>=win_x_high) & (nonzerox2<win_x_high+(self.semi_major))).nonzero()[0]
             good_inds3 = ((nonzeroy2>=self.win_y_low[window]) & (nonzeroy2<self.win_y_high[window])
                             &(nonzerox2>=sw_xright_low) & (nonzerox2<sw_xright_high)).nonzero()[0]
         else:

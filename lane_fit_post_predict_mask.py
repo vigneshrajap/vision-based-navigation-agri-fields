@@ -10,6 +10,7 @@ from sensor_msgs.msg import Image
 from sklearn.cluster import KMeans
 
 import sliding_window_approach
+import sliding_window_approach_mask
 # from geometry_msgs.msg import Pose, PoseArray
 import scipy.signal as signal
 import math
@@ -19,7 +20,7 @@ import time
 
 start_time = time.time()
 
-DBASW = sliding_window_approach.sliding_window()
+DBASW = sliding_window_approach_mask.sliding_window()
 
 class lane_finder_post_predict():
     '''
