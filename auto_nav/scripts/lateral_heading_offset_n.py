@@ -19,6 +19,7 @@ import timeit
 import shapely.geometry as geom
 import rospkg
 from std_msgs.msg import Header
+import csv
 
 class automated_labelling():
     '''
@@ -31,7 +32,7 @@ class automated_labelling():
         rospack = rospkg.RosPack()
         self.book = pe.get_book(file_name=rospack.get_path('auto_nav')+"/config/ground_truth_coordinates.xls", start_row=1)
 
-        self.lane_number = str(1) #rospy.set_param('lane_number', 1)
+        self.lane_number = str(4) #rospy.set_param('lane_number', 1)
         self.gt_utm = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
         self.gt_map = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
 
@@ -73,9 +74,12 @@ class automated_labelling():
         self.imu_NewTime = []
         self.img_oldTime = []
         self.img_NewTime = []
+        self.img_oldSeq = []
+        self.img_NewSeq = []
         self.dt_gps = 0
         self.dt_imu = 0
         self.dt_img = 0
+        self.dt_imgSeq = 0
         self.oneshot = 0
 
         self.listener = tf.TransformListener()
@@ -106,7 +110,7 @@ class automated_labelling():
     def recv_image_msg(self, ros_data): #"passthrough"):
         try:
             self.image = self.bridge.imgmsg_to_cv2(ros_data,"bgr8")
-            # self.img_timestamp = ros_data.header
+            self.img_timestamp = ros_data.header
         except CvBridgeError as e:
           print(e)
 
@@ -219,23 +223,38 @@ if __name__ == '__main__':
         # Function to obtain the ground truth values in Map frame
         auto_label.ground_truth_utm2map()
 
+        myfile = open('offset_values.txt', 'a')
+        myfile.truncate(0)
+        myfile.write("dt(GPS)")
+        myfile.write("\t")
+        myfile.write("frame")
+        myfile.write("\t")
+        myfile.write("LO")
+        myfile.write("\t")
+        myfile.write("AO")
+        myfile.write("\n")
+
         while not rospy.is_shutdown():
 
-           if auto_label.receive_gps_fix== True:
+           if auto_label.img_receive == True and auto_label.receive_gps_fix== True:
 
-               # if (auto_label.oneshot==0): # Set the Start time
-               #    auto_label.gps_oldTime = auto_label.gps_fix.header.stamp.to_sec()
-               #    auto_label.imu_oldTime = auto_label.imu_data.header.stamp.to_sec()
-               #    # auto_label.img_oldTime = auto_label.img_timestamp.header.stamp.to_sec()
-               #    auto_label.oneshot = 1
-               #
+               if (auto_label.oneshot==0): # Set the Start time
+                  auto_label.gps_oldTime = auto_label.gps_fix.header.stamp.to_sec()
+                  # auto_label.imu_oldTime = auto_label.imu_data.header.stamp.to_sec()
+                  auto_label.img_oldTime = auto_label.img_timestamp.stamp.to_sec()
+                  auto_label.img_oldSeq = auto_label.img_timestamp.seq
+                  auto_label.oneshot = 1
+
                # # Current Time and Relative Time "dt"
-               # auto_label.gps_NewTime = auto_label.gps_fix.header.stamp.to_sec()
+               auto_label.gps_NewTime = auto_label.gps_fix.header.stamp.to_sec()
                # auto_label.imu_NewTime = auto_label.imu_data.header.stamp.to_sec()
-               # # auto_label.img_NewTime = auto_label.img_timestamp.header.stamp.to_sec()
-               # auto_label.dt_gps = auto_label.dt_gps + (auto_label.gps_NewTime - auto_label.gps_oldTime)
+               auto_label.img_NewTime = auto_label.img_timestamp.stamp.to_sec()
+               auto_label.img_NewSeq = auto_label.img_timestamp.seq
+
+               auto_label.dt_gps = auto_label.dt_gps + (auto_label.gps_NewTime - auto_label.gps_oldTime)
                # auto_label.dt_imu = auto_label.dt_imu + (auto_label.imu_NewTime - auto_label.imu_oldTime)
-               # # auto_label.dt_img = auto_label.dt_img + (auto_label.img_NewTime - auto_label.img_oldTime)
+               auto_label.dt_img = auto_label.dt_img + (auto_label.img_NewTime - auto_label.img_oldTime)
+               auto_label.dt_imgSeq = auto_label.dt_imgSeq + (auto_label.img_NewSeq - auto_label.img_oldSeq)
 
                # RTK Fix from UTM Frame to Robot Frame
                auto_label.GNSS_WorldToRobot()
@@ -243,15 +262,25 @@ if __name__ == '__main__':
                # Offset Estimation
                auto_label.offset_estimation()
 
-               # auto_label.gps_oldTime = auto_label.gps_NewTime
+               auto_label.gps_oldTime = auto_label.gps_NewTime
                # auto_label.imu_oldTime = auto_label.imu_NewTime
-               # auto_label.img_oldTime = auto_label.img_NewTime
+               auto_label.img_oldTime = auto_label.img_NewTime
+               auto_label.img_oldSeq = auto_label.img_NewSeq
 
-               auto_label.receive_gps_fix = False
+               myfile.write(str( "%.4f" % auto_label.dt_gps))
+               myfile.write("\t")
+               myfile.write(str(auto_label.dt_imgSeq))
+               myfile.write("\t")
+               myfile.write(str("%.4f" % auto_label.lateral_offset))
+               myfile.write("\t")
+               myfile.write(str("%.4f" % auto_label.angular_offset))
+               myfile.write("\n")
+
+               # auto_label.receive_gps_fix = False
                auto_label.img_receive = False
                auto_label.receive_imu_fix = False
 
-               # print auto_label.dt_gps, auto_label.dt_imu #, auto_label.dt_img #, auto_label.gps_oldTime, newTime
+               # print auto_label.dt_img  # auto_label.dt_gps, auto_label.dt_imu
 
     except rospy.ROSInterruptException:
          cv2.destroyAllWindows() # Closes all the frames
