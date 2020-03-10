@@ -2,7 +2,7 @@
 """
 Created on Sat Jan 18 16:31:13 2020
 @author: Vignesh Raja
-@description: This node handles the adaptive multi-ROI functions
+@description: This node handles the adaptive sliding window functions
 """
 import numpy as np
 import cv2
@@ -38,7 +38,7 @@ class sliding_window():
         self.RightstartAngle = 90 # Semicircle
         self.RightendAngle = 270
         self.color_ellipse = (0,255,0)
-        self.thickness_ellipse = 3
+        self.thickness_ellipse = 4
         self.semi_major = [] # Change based on window height
         self.semi_minor = [] # Change based on window height
         self.axes = []
@@ -47,8 +47,8 @@ class sliding_window():
         win_max = 1.0
         win_min = 0.5
         self.win_size = np.arange(win_max, win_min, -((win_max-win_min)/self.nwindows))
-        self.margin_l = 90 # (1,2: 100) (3: 140)# Varies on each crop row
-        self.margin_r = 90
+        self.margin_l = 110 # (1,2: 100) (3: 140)# Varies on each crop row
+        self.margin_r = 110
         self.draw_windows= True
 
         self.prevx_current = 0
@@ -75,25 +75,10 @@ class sliding_window():
         return warped, M
 
     def fitting_score(self, img, template):
-        # dest_xor = cv2.bitwise_xor(img, template, mask = None)
-        # percent_white_pixels_f = float(cv2.countNonZero(dest_xor)/self.area_img)
-        # fitting_score = 1 - percent_white_pixels_f
-        # self.fitting_score_avg.append(fitting_score)
-
-        # Compute Fitting IoU
-        EPS = 1e-12
-        intersection = (cv2.bitwise_and(img, template)).sum()
-     	union = np.sum(np.maximum(img,template))
-        iou = float(intersection)/(union+EPS)
-
-        self.fitting_score_avg.append(iou)
-
-        # cv2.imshow('resultant', cv2.bitwise_and(img, template))
-        # # De-allocate any associated memory usage
-        # if cv2.waitKey(0) & 0xff == 27:
-        #    cv2.destroyAllWindows()
-
-        # print iou # 2. * intersection.sum() / (img.sum() + template.sum())
+        dest_xor = cv2.bitwise_xor(img, template, mask = None)
+        percent_white_pixels_f = float(cv2.countNonZero(dest_xor)/self.area_img)
+        fitting_score = 1 - percent_white_pixels_f
+        self.fitting_score_avg.append(fitting_score)
 
         # print fitting_score
 
@@ -115,6 +100,8 @@ class sliding_window():
             col_ind = int((self.win_y_high[window]-self.win_y_low[window])/2)
 
         center_left = center_right = (x_current, col_ind)
+        self.mask_example_r = cv2.rectangle(self.mask_example_r, (center_left[0]- self.semi_major,self.win_y_low[window]),(center_left[0],self.win_y_high[window]), (255,255,255), -1)
+        self.mask_example_r = cv2.rectangle(self.mask_example_r, (center_right[0],self.win_y_low[window]),(center_right[0] + self.semi_major,self.win_y_high[window]), (255,255,255), -1)
 
         while (self.search_complete == False) and (center_left[0] >= 0) and (center_right[0] <= self.img.shape[1]):
 
@@ -169,8 +156,13 @@ class sliding_window():
 
         # print window, k, l, self.semi_major, self.semi_minor
 
-        # self.mask_example_r = cv2.ellipse(self.mask_example_r, (center_left[0],(self.win_y_low[window]+self.win_y_high[window])/2), self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, (255,255,255), -1)
-        # self.mask_example_r = cv2.ellipse(self.mask_example_r, (center_right[0],(self.win_y_low[window]+self.win_y_high[window])/2), self.axes, self.Rightangle, self.RightstartAngle, self.RightendAngle, (255,255,255), -1)
+
+        # if self.rect_sub_ROI==True:
+        #     self.mask_example_r = cv2.rectangle(self.mask_example_r, (sw_xleft_low,self.win_y_low[window]),(sw_xleft_high,self.win_y_high[window]), (255,255,255), -1)
+        #     self.mask_example_r = cv2.rectangle(self.mask_example_r, (sw_xright_low,self.win_y_low[window]),(sw_xright_high,self.win_y_high[window]), (255,255,255), -1)
+        # else:
+        #     self.mask_example_r = cv2.ellipse(self.mask_example_r, (center_left[0],(self.win_y_low[window]+self.win_y_high[window])/2), self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, (255,255,255), -1)
+        #     self.mask_example_r = cv2.ellipse(self.mask_example_r, (center_right[0],(self.win_y_low[window]+self.win_y_high[window])/2), self.axes, self.Rightangle, self.RightstartAngle, self.RightendAngle, (255,255,255), -1)
 
         # Update the Window Size based on New Margins
         margin_ll = abs(center_left[0]-x_current)
@@ -183,89 +175,84 @@ class sliding_window():
         good_inds1 = ((nonzeroy>=self.win_y_low[window]) & (nonzeroy<self.win_y_high[window]) &
                        (nonzerox>=win_x_low) & (nonzerox<win_x_high)).nonzero()[0]
 
+        #mask_empty = np.zeros_like(self.img)
+        #mask_empty[self.win_y_low[window]:self.win_y_high[window],0:out_img.shape[1]] = cv2.addWeighted(mask_empty[self.win_y_low[window]:self.win_y_high[window],0:out_img.shape[1]],
+                                                                                       # 0.1, self.result_left, 1.0, 0)
+
         # Identify the x and y positions of all nonzero pixels in the image
-        if len(self.result_left):
-            nonzero1 = self.result_left.nonzero()
-            nonzeroy1 = np.array(nonzero1[0])
-            nonzeroy1_n = np.array(nonzero1[0]+self.win_y_low[window])
-            nonzerox1 = np.array(nonzero1[1])
+        nonzero1 = self.result_left.nonzero()
+        nonzeroy1 = np.array(nonzero1[0])
+        nonzeroy1_n = np.array(nonzero1[0]+self.win_y_low[window])
+        nonzerox1 = np.array(nonzero1[1])
 
-            if self.rect_sub_ROI==True:
-                good_inds2_n = (((nonzeroy1+self.win_y_low[window])>=self.win_y_low[window]) & ((nonzeroy1+self.win_y_low[window])<self.win_y_high[window])
-                                &(nonzerox1>=win_x_low-(self.semi_major)) & (nonzerox1<win_x_low)).nonzero()[0]
-                good_inds2 = ((nonzeroy1>=self.win_y_low[window]) & (nonzeroy1<(self.win_y_high[window]))
-                                &(nonzerox1>=sw_xleft_low) & (nonzerox1<sw_xleft_high)).nonzero()[0]
-            else:
-                good_inds2_n = (((nonzeroy1+self.win_y_low[window])>=self.win_y_low[window]) & ((nonzeroy1+self.win_y_low[window])<self.win_y_high[window])
-                                &(nonzerox1>=win_x_low-(self.semi_major)) & (nonzerox1<win_x_low)).nonzero()[0]
-                good_inds2 = ((nonzeroy1>=0) & (nonzeroy1<col_ind)
-                                &(nonzerox1>=win_x_low-(self.semi_major)) & (nonzerox1<win_x_low)).nonzero()[0]
+        if self.rect_sub_ROI==True:
+            good_inds2_n = (((nonzeroy1+self.win_y_low[window])>=self.win_y_low[window]) & ((nonzeroy1+self.win_y_low[window])<self.win_y_high[window])
+                            &(nonzerox1>=win_x_low-(self.semi_major)) & (nonzerox1<win_x_low)).nonzero()[0]
+            good_inds2 = ((nonzeroy1>=self.win_y_low[window]) & (nonzeroy1<(self.win_y_high[window]))
+                            &(nonzerox1>=sw_xleft_low) & (nonzerox1<sw_xleft_high)).nonzero()[0]
+        else:
+            good_inds2_n = (((nonzeroy1+self.win_y_low[window])>=self.win_y_low[window]) & ((nonzeroy1+self.win_y_low[window])<self.win_y_high[window])
+                            &(nonzerox1>=win_x_low-(self.semi_major)) & (nonzerox1<win_x_low)).nonzero()[0]
+            good_inds2 = ((nonzeroy1>=0) & (nonzeroy1<col_ind)
+                            &(nonzerox1>=win_x_low-(self.semi_major)) & (nonzerox1<win_x_low)).nonzero()[0]
 
-        if len(self.result_right):
+        # mask_empty1 = np.zeros_like(self.img)
+        # mask_empty1[self.win_y_low[window]:self.win_y_high[window],0:out_img.shape[1]] = cv2.addWeighted(mask_empty1[self.win_y_low[window]:self.win_y_high[window],0:out_img.shape[1]],
+        #                                                                                0.1, self.result_right, 1.0, 0)
 
-            nonzero2 = self.result_right.nonzero()
-            nonzeroy2 = np.array(nonzero2[0])
-            nonzeroy2_n = np.array(nonzero2[0]+self.win_y_low[window])
-            nonzerox2 = np.array(nonzero2[1])
-            if self.rect_sub_ROI==True:
-                good_inds3_n = (((nonzeroy2+self.win_y_low[window])>=self.win_y_low[window]) & ((nonzeroy2+self.win_y_low[window])<self.win_y_high[window])
-                                &(nonzerox2>=win_x_high) & (nonzerox2<win_x_high+(self.semi_major))).nonzero()[0]
-                good_inds3 = ((nonzeroy2>=self.win_y_low[window]) & (nonzeroy2<self.win_y_high[window])
-                                &(nonzerox2>=sw_xright_low) & (nonzerox2<sw_xright_high)).nonzero()[0]
-            else:
-                good_inds3_n = (((nonzeroy2+self.win_y_low[window])>=self.win_y_low[window]) & ((nonzeroy2+self.win_y_low[window])<self.win_y_high[window])
-                                &(nonzerox2>=win_x_high) & (nonzerox2<win_x_high+(self.semi_major))).nonzero()[0]
-                good_inds3 = ((nonzeroy2>=0) & (nonzeroy2<col_ind)
-                                &(nonzerox2>=win_x_high) & (nonzerox2<win_x_high+(self.semi_major))).nonzero()[0]
+        nonzero2 = self.result_right.nonzero()
+        nonzeroy2 = np.array(nonzero2[0])
+        nonzeroy2_n = np.array(nonzero2[0]+self.win_y_low[window])
+        nonzerox2 = np.array(nonzero2[1])
+        if self.rect_sub_ROI==True:
+            good_inds3_n = (((nonzeroy2+self.win_y_low[window])>=self.win_y_low[window]) & ((nonzeroy2+self.win_y_low[window])<self.win_y_high[window])
+                            &(nonzerox2>=win_x_high) & (nonzerox2<win_x_high+(self.semi_major))).nonzero()[0]
+            good_inds3 = ((nonzeroy2>=self.win_y_low[window]) & (nonzeroy2<self.win_y_high[window])
+                            &(nonzerox2>=sw_xright_low) & (nonzerox2<sw_xright_high)).nonzero()[0]
+        else:
+            good_inds3_n = (((nonzeroy2+self.win_y_low[window])>=self.win_y_low[window]) & ((nonzeroy2+self.win_y_low[window])<self.win_y_high[window])
+                            &(nonzerox2>=win_x_high) & (nonzerox2<win_x_high+(self.semi_major))).nonzero()[0]
+            good_inds3 = ((nonzeroy2>=0) & (nonzeroy2<col_ind)
+                            &(nonzerox2>=win_x_high) & (nonzerox2<win_x_high+(self.semi_major))).nonzero()[0]
 
         # good_inds = [good_inds1, good_inds2, good_inds3]
         # good_inds = np.concatenate(good_inds)
         #print good_inds
-        total_ypoints = []
-        total_xpoints = []
-        if len(self.result_left) and len(self.result_right):
 
-            total_ypoints = [nonzeroy1_n[good_inds2_n], nonzeroy[good_inds1], nonzeroy2_n[good_inds3_n]]
-            total_xpoints = [nonzerox1[good_inds2_n], nonzerox[good_inds1], nonzerox2[good_inds3_n]]
+        total_ypoints = [nonzeroy1_n[good_inds2_n], nonzeroy[good_inds1], nonzeroy2_n[good_inds3_n]]
+        total_xpoints = [nonzerox1[good_inds2_n], nonzerox[good_inds1], nonzerox2[good_inds3_n]]
 
-            total_xpoints = np.concatenate(total_xpoints)
-            total_ypoints = np.concatenate(total_ypoints)
+        total_xpoints = np.concatenate(total_xpoints)
+        total_ypoints = np.concatenate(total_ypoints)
 
 
-            out_img[nonzeroy[good_inds1], nonzerox[good_inds1]] = [255, 0, 0] #[255, 0, 100]
-            # # print nonzeroy2+self.win_y_high[window]
-            # # out_img[nonzeroy1[good_inds2]+self.win_y_low[window], nonzerox1[good_inds2]] = [255, 0, 0] #[255, 0, 100]
-            # # out_img[nonzeroy1[good_inds3]+self.win_y_low[window], nonzerox1[good_inds3]] = [255, 0, 0] #[255, 0, 100]
-            out_img[nonzeroy1_n[good_inds2_n], nonzerox1[good_inds2_n]] = [255, 0, 0] #[255, 0, 100]
-            out_img[nonzeroy2_n[good_inds3_n], nonzerox2[good_inds3_n]] = [255, 0, 0] #[255, 0, 100]
+        out_img[nonzeroy[good_inds1], nonzerox[good_inds1]] = [255, 0, 0] #[255, 0, 100]
+        # # print nonzeroy2+self.win_y_high[window]
+        # # out_img[nonzeroy1[good_inds2]+self.win_y_low[window], nonzerox1[good_inds2]] = [255, 0, 0] #[255, 0, 100]
+        # # out_img[nonzeroy1[good_inds3]+self.win_y_low[window], nonzerox1[good_inds3]] = [255, 0, 0] #[255, 0, 100]
+        out_img[nonzeroy1_n[good_inds2_n], nonzerox1[good_inds2_n]] = [255, 0, 0] #[255, 0, 100]
+        out_img[nonzeroy2_n[good_inds3_n], nonzerox2[good_inds3_n]] = [255, 0, 0] #[255, 0, 100]
 
-            # print nonzeroy1[good_inds2], self.win_y_high[window], (self.win_y_high[window]-1)-nonzeroy1[good_inds2]
+        # print nonzeroy1[good_inds2], self.win_y_high[window], (self.win_y_high[window]-1)-nonzeroy1[good_inds2]
 
-            # If you found > minpix pixels, recenter next window on their mean position
-            if len(total_xpoints) > self.minpix:
-                  x_current = np.int(np.mean(total_xpoints)) #nonzerox[good_inds]
+        # If you found > minpix pixels, recenter next window on their mean position
+        if len(total_xpoints) > self.minpix:
+              x_current = np.int(np.mean(total_xpoints)) #nonzerox[good_inds]
 
-            if self.rect_sub_ROI==True:
-                # cv2.rectangle(out_img, (sw_xleft_low,self.win_y_low[window]),(sw_xleft_high,self.win_y_high[window]), (0,255,0), 5)
-                # cv2.rectangle(out_img, (sw_xright_low,self.win_y_low[window]),(sw_xright_high,self.win_y_high[window]), (0,255,0), 5)
-                cv2.line(out_img, (sw_xleft_low, self.win_y_low[window]), (sw_xleft_high, self.win_y_low[window]), (0,255,0), 3)
-                cv2.line(out_img, (sw_xleft_low, self.win_y_high[window]), (sw_xleft_high, self.win_y_high[window]), (0,255,0), 3)
-                cv2.line(out_img, (sw_xleft_low, self.win_y_low[window]), (sw_xleft_low, self.win_y_high[window]), (0,255,0), 3)
+        if self.rect_sub_ROI==True:
+            cv2.rectangle(out_img, (sw_xleft_low,self.win_y_low[window]),(sw_xleft_high,self.win_y_high[window]), (0,255,0), 5)
+            cv2.rectangle(out_img, (sw_xright_low,self.win_y_low[window]),(sw_xright_high,self.win_y_high[window]), (0,255,0), 5)
+        else:
+            y_center = (self.win_y_low[window]+self.win_y_high[window])/2
+            #print center_left[0],center_right[0], y_center
+            cv2.ellipse(out_img, (int(center_left[0]),y_center), self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, self.color_ellipse, self.thickness_ellipse)
+            cv2.ellipse(out_img, (int(center_right[0]),y_center), self.axes, self.Rightangle, self.RightstartAngle, self.RightendAngle, self.color_ellipse, self.thickness_ellipse)
 
-                cv2.line(out_img, (sw_xright_low, self.win_y_low[window]), (sw_xright_high, self.win_y_low[window]), (0,255,0), 3)
-                cv2.line(out_img, (sw_xright_low, self.win_y_high[window]), (sw_xright_high, self.win_y_high[window]), (0,255,0), 3)
-                cv2.line(out_img, (sw_xright_high, self.win_y_low[window]), (sw_xright_high, self.win_y_high[window]), (0,255,0), 3)
-            else:
-                y_center = (self.win_y_low[window]+self.win_y_high[window])/2
-                #print center_left[0],center_right[0], y_center
-                cv2.ellipse(out_img, (int(center_left[0]),y_center), self.axes, self.Leftangle, self.LeftstartAngle, self.LeftendAngle, self.color_ellipse, self.thickness_ellipse)
-                cv2.ellipse(out_img, (int(center_right[0]),y_center), self.axes, self.Rightangle, self.RightstartAngle, self.RightendAngle, self.color_ellipse, self.thickness_ellipse)
-
-                # cv2.rectangle(out_img,(win_x_low, self.win_y_low[window]),(win_x_high, self.win_y_high[window]), (0,255,0), 5)
-                # cv2.line(out_img, (center_left[0], self.win_y_low[window]), (center_left[0], self.win_y_high[window]), (0,255,0), 5)
-                # cv2.line(out_img, (center_right[0], self.win_y_low[window]), (center_right[0], self.win_y_high[window]), (0,255,0), 5)
-                # cv2.arrowedLine(out_img, (x_current, y_center), (center_left[0], y_center), (255, 0, 0), 5, 8, 0, 0.3)
-                # cv2.arrowedLine(out_img, (x_current, y_center), (center_right[0], y_center), (255, 0, 0), 5, 8, 0, 0.3)
+            # cv2.rectangle(out_img,(win_x_low, self.win_y_low[window]),(win_x_high, self.win_y_high[window]), (0,255,0), 5)
+            # cv2.line(out_img, (center_left[0], self.win_y_low[window]), (center_left[0], self.win_y_high[window]), (0,255,0), 5)
+            # cv2.line(out_img, (center_right[0], self.win_y_low[window]), (center_right[0], self.win_y_high[window]), (0,255,0), 5)
+            # cv2.arrowedLine(out_img, (x_current, y_center), (center_left[0], y_center), (255, 0, 0), 5, 8, 0, 0.3)
+            # cv2.arrowedLine(out_img, (x_current, y_center), (center_right[0], y_center), (255, 0, 0), 5, 8, 0, 0.3)
 
         return out_img, x_current, (win_x_low, win_x_high), total_ypoints, total_xpoints #out_img, good_inds, total_ypoints, total_xpoints
 
@@ -280,9 +267,8 @@ class sliding_window():
         self.mask_example_r = cv2.cvtColor(self.mask_example, cv2.COLOR_GRAY2RGB)
 
         self.prevcol_ind = img.shape[1]
-        total_pts = []
 
-        if len(modifiedCenters):
+        if len(modifiedCenters[0]):
 
             ############################ Initialize Paramters ############################
             # Set height of windows
@@ -298,19 +284,17 @@ class sliding_window():
             nonzerox = np.array(nonzero[1])
 
             template = np.zeros([img.shape[0],img.shape[1]],dtype=np.uint8)
-            self.fitx_ = [[]for y in range(len(modifiedCenters))]
-            x_ = [[]for y in range(len(modifiedCenters))]
-            y_ = [[]for y in range(len(modifiedCenters))]
-            total_xpoints = [[]for y in range(len(modifiedCenters))]
-            total_ypoints = [[]for y in range(len(modifiedCenters))]
-            combined_rect = [[]for y in range(len(modifiedCenters))]
+            self.fitx_ = [[]for y in range(len(modifiedCenters[0]))]
+            x_ = [[]for y in range(len(modifiedCenters[0]))]
+            y_ = [[]for y in range(len(modifiedCenters[0]))]
+            total_xpoints = [[]for y in range(len(modifiedCenters[0]))]
+            total_ypoints = [[]for y in range(len(modifiedCenters[0]))]
+            combined_rect = [[]for y in range(len(modifiedCenters[0]))]
             total_pts = []
-
 
             # Identify window boundaries in x and y (and right and left)
             self.win_y_low = img.shape[0] - np.multiply(range(1,self.nwindows+1), window_height)
             self.win_y_high = img.shape[0] - np.multiply(range(0,self.nwindows), window_height)
-            # print window_height, (img.shape[0]- np.multiply(range(1,self.nwindows+1), window_height))+108 #, self.win_y_high[window] + 108
 
             if self.win_y_low[self.nwindows-1] != 0:
                 self.win_y_low[self.nwindows-1] = 0
@@ -382,28 +366,25 @@ class sliding_window():
 
                     cv2.line(out_img, (int(win_x[0]), self.win_y_low[window]), (int(win_x[1]), self.win_y_low[window]), (0,255,0), self.thickness_ellipse)
                     cv2.line(out_img, (int(win_x[0]), self.win_y_high[window]), (int(win_x[1]), self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
-                    # print self.win_y_high[window] + 108
+
                     # print win_x[0]
 
                 else:
                     if len(good_inds): # Append these indices to the lists
                          lane_inds_n.append(good_inds)
                          # out_img[nonzeroy[good_inds], nonzerox[good_inds]] = [255, 0, 0] #[255, 0, 100]
-                         # print x_current
-                         self.curr_xpts.append(x_current)
-                         self.curr_ypts.append(col_ind)
+
                     # Plotting
                     cv2.rectangle(out_img,(win_x_low,self.win_y_low[window]),(win_x_high,self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
 
                 if self.draw_windows == True:
-                    # print x_current, col_ind
                     # Plotting the X center of the windows
-                    cv2.circle(out_img, (int(x_current), int(col_ind)), 0, (0,0,255), thickness=20, lineType=8, shift=0)
-                    # cv2.circle(self.mask_example_r, (int(x_current), int(col_ind)), 0, (0,0,255), thickness=25, lineType=8, shift=0)
+                    cv2.circle(out_img, (int(x_current), int(col_ind)), 0, (0,0,255), thickness=25, lineType=8, shift=0)
+                    cv2.circle(self.mask_example_r, (int(x_current), int(col_ind)), 0, (0,0,255), thickness=25, lineType=8, shift=0)
                     # Plotting the horizontal strips
                     # cv2.line(out_img, (0, self.win_y_low[window]), (img.shape[1], self.win_y_low[window]), (0,0,255), 2)
 
-                    # cv2.line(self.mask_example_r, (0, self.win_y_low[window]), (img.shape[1], self.win_y_low[window]), (0,0,255), 2)
+                    cv2.line(self.mask_example_r, (0, self.win_y_low[window]), (img.shape[1], self.win_y_low[window]), (0,0,255), 2)
                     # for ind in range(len(self.win_y_low)):
                     #      hori_strip = img[self.win_y_low[ind]:self.win_y_high[ind],0:img.shape[1]]
                     #      cv2.imwrite("/home/vignesh/dummy_folder/"+str(ind)+".png", hori_strip)
@@ -414,16 +395,15 @@ class sliding_window():
                   x_[p_in] = np.concatenate(xpts)
                   y_[p_in] = np.concatenate(ypts)
 
+
               else:
                   if len(lane_inds_n): # Concatenate the arrays of indices
                     lane_inds_n = np.concatenate(lane_inds_n)
-                    # print p_in, x_[p_in]
-                    # Extract left and right line pixel positions
-                    x_[p_in] = nonzerox[lane_inds_n]
-                    y_[p_in] = nonzeroy[lane_inds_n]
-                    out_img[nonzeroy[lane_inds_n], nonzerox[lane_inds_n]] = [255, 0, 0]
-                    for i in range(len(self.curr_xpts)):
-                        cv2.circle(out_img, (int(self.curr_xpts[i]), int(self.curr_ypts[i])), 0, (0,0,255), thickness=25, lineType=8, shift=0)
+
+                  # Extract left and right line pixel positions
+                  x_[p_in] = nonzerox[lane_inds_n]
+                  y_[p_in] = nonzeroy[lane_inds_n]
+                  out_img[nonzeroy[lane_inds_n], nonzerox[lane_inds_n]] = [255, 0, 0]
 
 
               # Fit a first order straight line / second order polynomial
@@ -438,6 +418,7 @@ class sliding_window():
 
               #Lane = np.array([np.transpose(np.vstack([self.curr_xpts]))])
               Lane = np.array([np.transpose(np.vstack([self.curr_xpts, self.curr_ypts]))])
+
               Lane_i = Lane[0].astype(int)
 
               #print  Lane_i
@@ -445,18 +426,18 @@ class sliding_window():
               self.curr_xpts = []
               self.curr_ypts = []
 
-            #   # Obtain Matching Score
-            #   combined_rect[p_in] = np.array([np.vstack((x_[p_in], y_[p_in])).T]) # For the rectangle region
-            #   cv2.fillPoly( template, combined_rect[p_in], 255 )
-            #   #cv2.fillPoly( template, good_inds_el_n, 255 )  # For the ellipse 1
-            #   #cv2.fillPoly( template, good_inds_er_n, 255 )  # For the ellipse 2
-            #
-            # self.fitting_score(img, template)
+              # Obtain Matching Score
+              combined_rect[p_in] = np.array([np.vstack((x_[p_in], y_[p_in])).T]) # For the rectangle region
+              cv2.fillPoly( template, combined_rect[p_in], 255 )
+              #cv2.fillPoly( template, good_inds_el_n, 255 )  # For the ellipse 1
+              #cv2.fillPoly( template, good_inds_er_n, 255 )  # For the ellipse 2
 
-            # cv2.imshow('Template', template)
-            # # De-allocate any associated memory usage
-            # if cv2.waitKey(0) & 0xff == 27:
-            #     cv2.destroyAllWindows()
+            self.fitting_score(img, template)
+
+            cv2.imshow('Bitwise XOR', self.mask_example_r)
+            # De-allocate any associated memory usage
+            if cv2.waitKey(0) & 0xff == 27:
+                cv2.destroyAllWindows()
 
             # cv2.polylines(out_img, [Lane_i[0,:],Lane_i[1,:]], 0, (0,255,255), thickness=5, lineType=8, shift=0)
             # cv2.polylines(out_img, [self.curr_pts], 0, (0,255,255), thickness=5, lineType=8, shift=0)
@@ -471,35 +452,16 @@ class sliding_window():
     def visualization_polyfit(self, out_img, curves, ploty, modifiedCenters, current_Pts):
 
        #cv2.circle(out_img, (modifiedCenters[1][1], modifiedCenters[1][0]), 8, (0, 255, 0), -1)
-       midLane_i = []
-       curves_m = []
-
-       if len(current_Pts)>0:
+       # Lane_i = []
+       if len(current_Pts)>1:
         for c_in in range(len(current_Pts)): #
             cv2.polylines(out_img, [current_Pts[c_in]], 0, (0,255,255), thickness=5, lineType=8, shift=0)
             #cv2.circle(out_img, (current_Pts[c_in][0],current_Pts[c_in][1]), 0, (0,0,255), thickness=25, lineType=8, shift=0)
 
-       if len(current_Pts)>2:
-        # print len(current_Pts)
-        curves_m = (current_Pts[0]+current_Pts[1]+current_Pts[2])/3
-        #midLane = np.array([np.transpose(np.vstack([curves_m, ploty]))])
-       elif len(current_Pts)>1:
         curves_m = (current_Pts[0]+current_Pts[1])/2
-
-       else:
-        curves_m = current_Pts[0]
-
-       midLane_i = curves_m.astype(int)
-
-        # x_i = np.zeros(10,1)
-        # y_i = np.zeros(10,1)
-        # for p_in in range(1,len(midLane_i)-1):
-        #     x_i[p_in] = midLane_i[p_in,0]
-        #     y_i[p_in] = midLane_i[0,p_in]
-        #
-        # print midLane_i[0,1:5], midLane_i[1:5,0]
-
-        # cv2.polylines(out_img, [midLane_i], 0, (255,0,255), thickness=5, lineType=8, shift=0)
+        #midLane = np.array([np.transpose(np.vstack([curves_m, ploty]))])
+        midLane_i = curves_m.astype(int)
+        cv2.polylines(out_img, [midLane_i], 0, (255,0,255), thickness=5, lineType=8, shift=0)
 
        # if len(curves):
        #   for c_in in range(len(curves)): #
