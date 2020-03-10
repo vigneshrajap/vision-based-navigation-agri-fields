@@ -12,7 +12,8 @@ from ocam_camera_model_tools import OcamCalibCameraModel,vec3_normalise
 import os
 from tqdm import tqdm
 from field_mask import *
-import cv2
+from PIL import Image
+#import cv2
 
 if __name__ == "__main__":
     #%% Demo code: Hot to make an image field mask
@@ -38,6 +39,7 @@ if __name__ == "__main__":
     robot_xyz = [0,0,0]
     T_robot_to_world = set_up_robot_to_world_transform(rpy = robot_rpy, xyz = robot_xyz)
     
+    '''
     input_dim = [700,1000]
     T_cam_to_world = camera_to_world_transform(T_camera_to_robot, T_robot_to_world)
     image_mask = make_image_mask_from_polygons(cam_model, polygon_field_mask, T_cam_to_world, cropped_dims = input_dim)
@@ -46,9 +48,11 @@ if __name__ == "__main__":
     plt.imshow(image_mask[:,:,0])  
     plt.figure(11)          
     plt.imshow(image_mask[:,:,1])
-
+    '''
     #Visualize on top of example image
-    camera_im = plt.imread(r'/home/marianne/Data/2019-10-10-Frogn/dataset_10/images/frame000030.png')
+    camera_im = Image.open(os.path.join('..','Frogn_Dataset','images_prepped_train'))
+    camera_im = Image.toarray(camera_im)
+    #camera_im = plt.imread(os.path.join('..','Frogn_Dataset','images_prepped_train'))
     plt.figure(12)
     plt.imshow(camera_im)
 
@@ -59,3 +63,4 @@ if __name__ == "__main__":
     overlay_im = cropped_im + 0.2*mask
     plt.figure(13)
     plt.imshow(overlay_im)
+    plt.show()

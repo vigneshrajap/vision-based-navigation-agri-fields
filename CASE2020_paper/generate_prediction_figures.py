@@ -80,9 +80,7 @@ annotations_folder = os.path.join('../Frogn_Dataset','annotations_prepped_test')
 inp_names = ['20190703_LR_N_0785.png',
              '20190913_LR1_S_0965.png',
              '20190609_LR_N_0000.png',
-             '20190913_LR2_N_1760.png',
-             '20190913_LR3_N_0950.png',
-             '20190913_LR4_S_2275.png']
+             '20190913_LR2_N_1760.png']
 
 output_name= 'prediction_overlay'
 #model
@@ -98,8 +96,26 @@ figure_height_mm = ((176*len(inp_names)*1.25)/(320*2*1.05))*figure_width_mm #Adj
 #Load model first
 model = model_from_checkpoint_path(checkpoints_path,epoch)
 
-fig,ax = plt.subplots(nrows=len(inp_names),ncols=2,figsize=(figure_width_mm/25.4,figure_height_mm/25.4))
+#Save one at a time as image
 
+for ind,fname in enumerate(inp_names):
+    #Load images
+    inp = os.path.join(image_folder,fname)
+    ann = os.path.join(annotations_folder,fname)
+    #Run prediction
+    pr = predict_fast(model , inp )
+    gt = get_segmentation_arr( ann , model.n_classes ,  model.output_width , model.output_height, no_reshape=True)
+    gt = gt.argmax(-1)
+    iou = metrics.get_iou( gt , pr , model.n_classes )
+
+    #--Make overlay image
+    im_overlay = vis_pred_vs_gt_overlay(inp,pr,gt,figure_width_mm = 85) #check column widht for CASE
+    plt.imsave(output_name + '_' + os.path.basename(inp), im_overlay)
+    np.savetxt('IOU_'+os.path.basename(inp)+'.txt',iou)
+    
+#All in one figure
+'''
+fig,ax = plt.subplots(nrows=len(inp_names),ncols=2,figsize=(figure_width_mm/25.4,figure_height_mm/25.4))
 for ind,fname in enumerate(inp_names):
     #Load images
     inp = os.path.join(image_folder,fname)
@@ -127,3 +143,5 @@ for ind,fname in enumerate(inp_names):
 
 fig.set_constrained_layout_pads(w_pad=0, h_pad = 0, hspace=0., wspace=0.)
 fig.savefig(output_name, dpi = figure_dpi,bbox_inches='tight',pad_inches=0)
+
+'''
