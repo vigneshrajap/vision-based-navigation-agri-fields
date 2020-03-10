@@ -59,3 +59,4 @@ if __name__ == "__main__":
     overlay_im = cropped_im + 0.2*mask
     plt.figure(13)
     plt.imshow(overlay_im)
+    plt.show()
