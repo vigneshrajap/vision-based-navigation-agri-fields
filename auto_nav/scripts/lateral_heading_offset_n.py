@@ -32,7 +32,7 @@ class automated_labelling():
         rospack = rospkg.RosPack()
         self.book = pe.get_book(file_name=rospack.get_path('auto_nav')+"/config/ground_truth_coordinates.xls", start_row=1)
 
-        self.lane_number = str(4) #rospy.set_param('lane_number', 1)
+        self.lane_number = str(1) #rospy.set_param('lane_number', 1)
         self.gt_utm = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
         self.gt_map = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
 
@@ -199,6 +199,11 @@ class automated_labelling():
        # Min Lateral Offset and its line segement index
        self.lateral_offset = np.min(dist_0)
        segment_index = np.where(dist_0 == np.min(dist_0))
+       aX, aY, bX, bY = multilines[0][segment_index[0][0]].bounds
+       cX, cY = (self.pose_map_r.pose.position.x, self.pose_map_r.pose.position.y)
+       if ((bX - aX)*(cY - aY) - (bY - aY)*(cX - aX)) < 0:
+           self.lateral_offset = -self.lateral_offset
+
        print "lateral_offset:", self.lateral_offset
 
        radius_of_curvature = multilines[0][segment_index[0][0]].length # Total Length of the line segment (min lateral offset)
