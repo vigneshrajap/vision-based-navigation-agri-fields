@@ -143,6 +143,39 @@ Assumptions:
     Camera coordinate system: X right, Y down, Z into the image
 '''
 
+def make_field_mask(labels = [1,0,1], lane_spacing = None, lane_duty_cycle = None, widths = None, extent=5):
+    #Create adjacent rectangles with row/crop labels and save as polygons
+    #Origo is at x = 0 and y = w/2 (in the middle of the center row)
+    # label = 1 is lane = 0 is crop
+    #x ahead, y to the left
+
+    position = np.array([0,0])
+    list_of_polygons = []
+    h = extent
+    #shift to get the desired origo
+    if widths is None:
+        total_width = lane_spacing*(np.sum(labels) * lane_duty_cycle + np.sum(np.logical_not(labels)) * (1-lane_duty_cycle))
+    else:
+        total_width = np.sum(widths)
+    shift = -np.array([0,total_width/2])
+
+    for ind,label in enumerate(labels):
+        if widths is None:
+            w = lane_spacing*(lane_duty_cycle*label + (1-lane_duty_cycle)*int(not(label)))
+        else:
+            w = widths[ind]
+        
+        points = np.array([position + shift,
+                           position + shift + np.array([h,0]),
+                           position + shift + np.array([h,w]),
+                           position + shift + np.array([0,w])
+                           ])
+        list_of_polygons.append(Polygon(points,label))
+        position = position + np.array([0,w]) #position of next rectangle
+    
+    return list_of_polygons
+
+'''
 def make_field_mask(widths,labels,extent):
     #Create adjacent rectangles with row/crop labels and save as polygons
     #Origo is at x = 0 and y = w/2 (in the middle of the center row)
@@ -164,7 +197,7 @@ def make_field_mask(widths,labels,extent):
         position = position + np.array([0,w]) #position of next rectangle
     
     return list_of_polygons
-
+'''
 def camera_to_world_transform(T_camera_to_robot = np.eye(4), T_robot_to_world = np.eye(4)):
     return T_robot_to_world.dot(T_camera_to_robot)
 
@@ -193,6 +226,10 @@ def set_up_camera_to_robot_transform(rpy = [0,0,0], xyz = [0,0,0]):
 def make_image_mask_from_polygons(cam_model,polygon_mask,T_cam_to_world,cropped_dims = None):
     ''' 
     Make an image mask from a polygon_mask in world coordinates, based on camera model and camera to world transform
+    Cropped dims is height, width
+    Output: 
+        channel 0: polygon index
+        channel 1: label
     '''
     if cropped_dims is None:
         cropped_dims = [cam_model.height,cam_model.width]
@@ -214,7 +251,9 @@ def make_image_mask_from_polygons(cam_model,polygon_mask,T_cam_to_world,cropped_
     
 def check_if_pixel_inside_mask(polygon_mask,cam_model,pixel_yx, T_cam_to_world,camera_origo):
     '''
-    For a given camera model, check if pixel y,x is inside 
+    For a given camera model, check if pixel y,x is inside a set of polygon shapes
+    Return polygon index and polygon label
+    If not, return NaN
     '''
     v = cam_model.pixel_to_vector(pixel_yx[1],pixel_yx[0])
     v_world = transform_xyz_point(T_cam_to_world,v)

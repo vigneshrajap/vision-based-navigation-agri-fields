@@ -4,10 +4,10 @@
   <elementType>CameraModel</elementType>
   <className>RectilinearCameraModel</className>
   <centreX>324.919</centreX>
-  <centreY>238.484</centreY>
+  <centreY>110.484</centreY>
   <width>640</width>
-  <height>480</height>
-  <verticalFOV>0.746782217</verticalFOV>
+  <height>352</height>
+  <verticalFOV>0.5627</verticalFOV>
   <imageCircleFOV>6.2831853071795864769</imageCircleFOV>
  </cam_model>
 </opencv_storage>
