@@ -2,6 +2,10 @@
 /models
 /predicted_outputs
 /videos
+/auto_label/output
+/CASE2020_paper/prediction_overlay
 **.pyc
 **.pyc
 **.swp
+**.npy
+**.vscode
