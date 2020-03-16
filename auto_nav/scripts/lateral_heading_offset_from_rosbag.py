@@ -32,8 +32,8 @@ class automated_labelling():
     '''
     def __init__(self):
         self.datum = [-6614855.745, -594362.895, 0.0] # Manual Datum (NEGATE if UTM is the child frame)
-        self.gps_robot = [0.425, -0.62, 1.05] # Fixed Static Transform
-        self.imu_robot = [0.310, 0.00, 0.80] # Fixed Static Transform
+        self.gps_robot = [-0.425, 0.62, 1.05] # Fixed Static Transform
+        self.imu_robot = [-0.310, 0.00, 0.80] # Fixed Static Transform
 
         rospack = rospkg.RosPack()
         self.book = pe.get_book(file_name=rospack.get_path('auto_nav')+"/config/ground_truth_coordinates.xls", start_row=1)
@@ -102,7 +102,7 @@ class automated_labelling():
         self.imu_trans.header.stamp = rospy.Time.now()
         self.imu_trans.header.frame_id = self.robot_frame
         self.imu_trans.child_frame_id = self.imu_frame
-        self.imu_trans.transform.translation = Vector3(self.imu_robot[0], self.imu_robot[1], self.imu_robot[2]);
+        self.imu_trans.transform.translation = Vector3(self.imu_robot[0], self.imu_robot[1], 0);
         self.imu_trans.transform.rotation = Quaternion(0,0,0,1) # Set to identity
 
     def ground_truth_utm2map(self):
@@ -155,7 +155,7 @@ class automated_labelling():
         gps_trans.header.stamp = rospy.Time.now()
         gps_trans.header.frame_id = self.robot_frame
         gps_trans.child_frame_id = self.gps_frame
-        gps_trans.transform.translation = Vector3(self.rot_vec[0], self.rot_vec[1], 0.0) #(auto_label.rot_vec[0], auto_label.rot_vec[1], auto_label.rot_vec[2])
+        gps_trans.transform.translation = Vector3(self.gps_robot[0],self.gps_robot[1], 0.0) #self.rot_vec[0], self.rot_vec[1](auto_label.rot_vec[0], auto_label.rot_vec[1], auto_label.rot_vec[2])
         gps_trans.transform.rotation = Quaternion(0,0,0,1) # Set to identity
 
         # Transform RTK values w.r.t to "Map" frame
@@ -192,8 +192,8 @@ class automated_labelling():
        # radius_of_curvature = multilines[0][segment_index[0][0]].length # Total Length of the line segment (min lateral offset)
        # print segment_index, aX, aY, bX, bY, math.atan2(bY-aY,bX-aX)
 
-       self.gt_yaw = self.normalizeangle(math.atan2(bX-aX,bY-aY)) #1/radius_of_curvature
-
+       self.gt_yaw = self.normalizeangle(math.atan2(bY-aY,bX-aX)) #1/radius_of_curvature
+       # print self.gt_yaw
        # Angular Offset => IMU with GT yaw (line segement index)
        if self.receive_imu_fix==True:
            self.angular_offset = self.normalizeangle(self.gt_yaw - self.yaw_imu)
@@ -225,7 +225,7 @@ if __name__ == '__main__':
         myfile.write("AO")
         myfile.write("\n")
 
-        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L4_N/bag_files/")
+        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L4_S/bag_files/")
 
         for bag_file in sorted(glob.glob(osp.join(input_dir, '*.bag'))):
             print(bag_file)
@@ -256,7 +256,11 @@ if __name__ == '__main__':
                      t0_imu = t_imu.to_sec()
                      auto_label.oneshot_imu = 1
                      auto_label.receive_imu_fix = True
-
+                     prev_yaw_map_imu = 0
+                     auto_label.first_line = geom.LineString(auto_label.gt_map[0:auto_label.increment,:])
+                     first_aX, first_aY, first_bX, first_bY = auto_label.first_line.bounds
+                     delta_yaw_map_imu = auto_label.normalizeangle(math.atan2(first_bY-first_aY,first_bX-first_aX)) # Set Initial Yaw
+                     # print delta_yaw_map_imu
                  auto_label.dt_imu = auto_label.dt_imu + (t_imu.to_sec()-t0_imu)
 
                  imu_data = imu_msg
@@ -275,11 +279,13 @@ if __name__ == '__main__':
                  orientation_map_imu = [pose_map_imu.pose.orientation.x, pose_map_imu.pose.orientation.y, pose_map_imu.pose.orientation.z, pose_map_imu.pose.orientation.w]
 
                  (roll_map_imu, pitch_map_imu, yaw_map_imu) = euler_from_quaternion(orientation_map_imu)
-                 # print yaw_imu, yaw_map_imu
+                 delta_yaw_map_imu = delta_yaw_map_imu + (yaw_map_imu-prev_yaw_map_imu) # Rate of change of IMU yaw
+                 # print yaw_imu, yaw_map_imu, delta_yaw_map_imu
 
                  auto_label.dt_imu_fix_.append(auto_label.dt_imu)
-                 auto_label.imu_fix_.append(yaw_map_imu)
+                 auto_label.imu_fix_.append(delta_yaw_map_imu)
                  t0_imu = t_imu.to_sec()
+                 prev_yaw_map_imu = yaw_map_imu
 
             # Image data
             auto_label.img_ = []
