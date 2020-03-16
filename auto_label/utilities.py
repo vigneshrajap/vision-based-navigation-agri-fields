@@ -42,3 +42,18 @@ def read_robot_offset_from_file(filename,row_ind = None):
         row_ind = a[:,1]
         
     return lateral_offset, angular_offset, row_ind
+
+def read_row_spec_from_file(row_spec_file,row_prefix):
+    #Read one set of row parameters from file
+    with open(row_spec_file) as f:
+        #lane_duty_cycle = np.array(list(csv.reader(f)))
+        a = np.array(list(csv.reader(f, delimiter = '\t')))
+        #lane_duty_cycle = np.array(list(csv.reader(f, delimiter = '\t')))[1:]
+        a = a[1:] #remove headers
+    for ind,row in enumerate(a):
+        print(row[0])
+        if row[0] == row_prefix:
+            lane_duty_cycle = float(a[ind,1])
+            lane_spacing = float(a[ind,2])
+            break
+    return lane_duty_cycle, lane_spacing
