@@ -1,0 +1,3 @@
+row_id	lane_duty_cycle	lane_spacing
+20191010_L2_N	0.6	1.25
+20191010_L4_N	0.7	1.25
