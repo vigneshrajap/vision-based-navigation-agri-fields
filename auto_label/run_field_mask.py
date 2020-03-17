@@ -45,7 +45,7 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
 
             #Camera setup #fixme read from urdf
             #camera_xyz = np.array([0.749, 0.033, 1.242])
-            camera_xyz = np.array([0.749, 0.033, 1.0])
+            camera_xyz = np.array([0.749, 0.033, 1.1])
             #camera_rpy = np.array([0.000, -0.332, 0.000]) 
             camera_rpy = np.array([0.000, -0.4, 0.000]) 
             
