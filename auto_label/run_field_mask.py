@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 from rectilinear_camera_model_tools import RectiLinearCameraModel
 from utilities import read_robot_offset_from_file, read_row_spec_from_file, blend_color_and_image
 import os
-from tqdm import tqdm
 from field_mask import *
 import csv
 import glob
@@ -32,13 +31,14 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
     #Set up field mask
     for robot_offset_file in glob.iglob(robot_offset_dir):
         rec_prefix = os.path.basename(robot_offset_file)[:13]
-
+        print('Processing ', rec_prefix)
         crop_duty_cycle, lane_spacing = read_row_spec_from_file(row_spec_file,rec_prefix)
         #Define field mask
         polygon_field_mask = make_field_mask(lane_spacing = lane_spacing, crop_duty_cycle = crop_duty_cycle, labels = [0,1,0,1,0], extent = 5) #read from file?
 
         #--- For each image in the specified folder
         for im_path in glob.iglob(os.path.join(image_dir,rec_prefix+'*')):
+            print(im_path)
             im_name = os.path.splitext(os.path.basename(im_path))[0]
             frame_ind = im_name[-4:]
             lateral_offset, angular_offset,_ = read_robot_offset_from_file(robot_offset_file,frame_ind)
@@ -64,7 +64,10 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
             
             #Make image mask
             mask_with_index_and_label = make_image_mask_from_polygons(cam_model, polygon_field_mask, T_cam_to_world)
-            label_mask = mask_with_index_and_label [:,:,1]
+            #prepare label mask for saving and visualization
+            label_mask = mask_with_index_and_label[:,:,1] #extract second channel
+            label_mask = label_mask + 1 #shift from 0 and 1 to 1 and 2
+            label_mask = np.nan_to_num(label_mask).astype(int)
             #fixme replace nan values with "no_value" class
 
             #Visualize on top of example image
@@ -73,16 +76,16 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
 
             #Save visualization and numpy array
             vis_dir = os.path.join(output_dir,'visualisation')
-            os.makedirs(vis_dir, exist_ok = True)
+            #os.makedirs(vis_dir, exist_ok = True)
             plt.imsave(os.path.join(output_dir,'visualisation',im_name) + '.png', overlay_im)
 
             ann_dir =  os.path.join(output_dir,'annotations')
-            os.makedirs(ann_dir,exist_ok = True)
+            #os.makedirs(ann_dir,exist_ok = True)
             plt.imsave(os.path.join(output_dir,'annotations',im_name)+'.png',label_mask)
 
             arr_dir = os.path.join(output_dir,'arrays')
-            os.makedirs(arr_dir,exist_ok = True)
-            np.save(os.path.join(output_dir,'arrays',im_name),mask_with_index_and_label)
+            #os.makedirs(arr_dir,exist_ok = True)
+            np.save(os.path.join(output_dir,'arrays',im_name),label_mask)
 
 if __name__ == "__main__":
     #Make image mask for a folder of images and their robot position data

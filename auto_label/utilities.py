@@ -53,7 +53,6 @@ def read_row_spec_from_file(row_spec_file,row_prefix):
     crop_duty_cycle = None
     lane_spacing = None
     for ind,row in enumerate(a):
-        print(row[0])
         if row[0] == row_prefix:
             crop_duty_cycle = float(a[ind,1])
             lane_spacing = float(a[ind,2])
