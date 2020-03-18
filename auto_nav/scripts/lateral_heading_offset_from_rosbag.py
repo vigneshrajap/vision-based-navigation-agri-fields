@@ -38,7 +38,7 @@ class automated_labelling():
         rospack = rospkg.RosPack()
         self.book = pe.get_book(file_name=rospack.get_path('auto_nav')+"/config/ground_truth_coordinates.xls", start_row=1)
 
-        self.lane_number = str(3) #rospy.set_param('lane_number', 1)
+        self.lane_number = str(2) #rospy.set_param('lane_number', 1)
         self.gt_utm = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
         self.gt_map = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
 
@@ -70,9 +70,13 @@ class automated_labelling():
         self.angular_offset = 0.0
         self.rot_vec = []
         self.pose_map_r = PoseStamped()
-        self.increment = 70 # Fit Line segments over increment values
+        self.prev_pose_map_r = PoseStamped()
+        self.increment = 5 # Fit Line segments over increment values
         self.line = geom.LineString()
         self.gt_yaw = 0
+        self.prev_pose_map_r.pose.position.x = 0
+        self.prev_pose_map_r.pose.position.y = 0
+        self.robot_yaw = []
 
         self.gps_oldTime = []
         self.gps_NewTime = []
@@ -163,21 +167,22 @@ class automated_labelling():
 
     def offset_estimation(self):
 
+       # Initialize Parameters
        dist_0 = np.empty([np.int(len(self.gt_utm)/self.increment),1])
        lines = geom.MultiLineString()
        multilines = []
        lines = []
 
-       # Increment by parameter for multiple line segments along GT points
-       for ind in range(self.increment+1,len(self.gt_utm),self.increment):
-
-            self.line = geom.LineString(self.gt_map[ind-self.increment:ind,:])
+       # Increment by parameter for multiple line segments along ground truth points
+       for ind in range((self.increment/2),len(self.gt_utm),self.increment):
+            self.line = geom.LineString(self.gt_map[ind-(self.increment/2):ind+(self.increment/2),:])
             point = geom.Point(self.pose_map_r.pose.position.x, self.pose_map_r.pose.position.y) # x, y
             dist_0[np.int(ind/self.increment)-1] = self.line.distance(point)
             lines.append(self.line)
 
        multilines.append(geom.MultiLineString(lines))
 
+       ############################## LATERAL OFFSET ###########################
        # Min Lateral Offset and its line segement index
        self.lateral_offset = np.min(dist_0)
        segment_index = np.where(dist_0 == np.min(dist_0))
@@ -188,25 +193,31 @@ class automated_labelling():
            self.lateral_offset = -self.lateral_offset
        # print "lateral_offset:", self.lateral_offset
 
+       ############################## ANGULAR OFFSET ###########################
+
        # Estimate slope and perpendicular slope of the nearest line segement
        gt_slope = (bY-aY)/(bX-aX)
-       gt_slope_normal = -1/gt_slope
-       # gt_yaw_normal = self.normalizeangle(math.atan(gt_slope_normal))
-       gt_yaw_normal = self.normalizeangle(math.atan2(aX-bX,bY-aY))
+       gt_yaw = self.normalizeangle(math.atan2(bY-aY,bX-aX))
+       # gt_slope_normal = -1/gt_slope
+       # # gt_yaw_normal = self.normalizeangle(math.atan(gt_slope_normal))
+       # gt_yaw_normal = self.normalizeangle(math.atan2(aX-bX,bY-aY))
+       #
+       if (self.pose_map_r.pose.position.x!=self.prev_pose_map_r.pose.position.x) and ((self.pose_map_r.pose.position.y!=self.prev_pose_map_r.pose.position.y)):
+            self.robot_yaw = self.normalizeangle(math.atan2(self.pose_map_r.pose.position.y-self.prev_pose_map_r.pose.position.y,self.pose_map_r.pose.position.x-self.prev_pose_map_r.pose.position.x))
+            self.prev_pose_map_r = self.pose_map_r
 
-       #self.gt_yaw = self.normalizeangle(math.atan2((bY-aY),(bX-aX)))
-
-       # Interpolate the nearest point on the line and find slope of that line
-       point = geom.Point(self.pose_map_r.pose.position.x, self.pose_map_r.pose.position.y)
-       nearest_line = geom.LineString(multilines[0][segment_index[0][0]])
-       point_on_line = nearest_line.interpolate(nearest_line.project(point))
-       robot_slope = (point.y-point_on_line.y)/(point.x-point_on_line.x)
-
-       # dummy_yaw_imu = math.atan2(point.y-point_on_line.y, point_on_line.x-point.x)
-       # self.yaw_imu = math.atan2(self.pose_map_r.pose.position.y, self.pose_map_r.pose.position.x)
+       # # Interpolate the nearest point on the line and find slope of that line
+       # point = geom.Point(self.pose_map_r.pose.position.x, self.pose_map_r.pose.position.y)
+       # nearest_line = geom.LineString(multilines[0][segment_index[0][0]])
+       # point_on_line = nearest_line.interpolate(nearest_line.project(point))
+       # robot_slope = (point.y-point_on_line.y)/(point.x-point_on_line.x)
 
        # Angle between two lines as offset
-       self.angular_offset = self.normalizeangle(math.atan2((gt_slope_normal-robot_slope),(1+(gt_slope_normal*robot_slope))))
+       self.angular_offset = self.normalizeangle(self.robot_yaw-gt_yaw)
+
+       ########################################################################################33
+
+       #math.atan2((gt_slope_normal-robot_slope),(1+(gt_slope_normal*robot_slope))))
 
        # print AO #self.gt_yaw, self.yaw_imu, AO
 
@@ -230,7 +241,7 @@ if __name__ == '__main__':
         # Function to obtain the ground truth values in Map frame
         auto_label.ground_truth_utm2map()
 
-        myfile = open('20191010_L3_N_offsets.txt', 'a')
+        myfile = open('20191010_L2_N_offsets.txt', 'a')
         myfile.truncate(0)
         myfile.write("dt(cam)")
         myfile.write("\t")
@@ -241,7 +252,7 @@ if __name__ == '__main__':
         myfile.write("AO")
         myfile.write("\n")
 
-        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L3_N/bag_files/")
+        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L2_N/bag_files/")
 
         for bag_file in sorted(glob.glob(osp.join(input_dir, '*.bag'))):
             print(bag_file)
