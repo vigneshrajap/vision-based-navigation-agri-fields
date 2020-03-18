@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import numpy as np 
 from utilities import read_robot_offset_from_file
 import matplotlib.pyplot as plt
@@ -5,7 +6,7 @@ import os
 import glob
 
 #Plot the angular offsets for all the rows
-input_files = glob.glob(os.path.join('..','Frogn_Dataset','robot_offsets','*'))
+input_files = glob.glob(os.path.join('..','Frogn_Dataset','robot_offsets','*')) #
 #['../Frogn_Dataset/training_images_offset_20191010_L1_N.txt']
 plt.figure('a')
 plt.figure('l')
