@@ -50,10 +50,11 @@ def read_row_spec_from_file(row_spec_file,row_prefix):
         a = np.array(list(csv.reader(f, delimiter = '\t')))
         #lane_duty_cycle = np.array(list(csv.reader(f, delimiter = '\t')))[1:]
         a = a[1:] #remove headers
+    crop_duty_cycle = None
+    lane_spacing = None
     for ind,row in enumerate(a):
-        print(row[0])
         if row[0] == row_prefix:
-            lane_duty_cycle = float(a[ind,1])
+            crop_duty_cycle = float(a[ind,1])
             lane_spacing = float(a[ind,2])
             break
-    return lane_duty_cycle, lane_spacing
+    return crop_duty_cycle, lane_spacing

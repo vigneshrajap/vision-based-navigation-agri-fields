@@ -15,6 +15,22 @@ import argparse
 import time
 from PIL import Image
 
+def blend_color_and_image(image,mask,color_code=[0,255,0],alpha=0.5):
+    #Blend colored mask and input image
+    #Input:
+    #   3-channel image (numpy array)
+    #   1-channel (integer) mask
+
+    #convert input to uint8 image
+    if image.dtype is np.dtype('float32') or np.dtype('float64') and np.max(image) <= 1:
+        image = np.uint8(image*255)
+
+    mask = np.tile(mask[:,:,np.newaxis],[1,1,3])
+    #convert nan values to zero
+    mask = np.nan_to_num(mask)
+    blended_im = np.uint8((mask * (1-alpha) * color_code) + (mask * alpha * image) + (np.logical_not(mask) * image)) #mask + image under mask + image outside mask
+    return blended_im
+
 def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm):
     #Visualize segmentation prediction and false positives/negatives
     

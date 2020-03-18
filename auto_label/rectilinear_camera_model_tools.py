@@ -71,10 +71,20 @@ class RectiLinearCameraModel:
 
 
 if __name__ == "__main__":
-    calib_file = os.path.join('../camera_data_collection/realsense_model.xml')
+    calib_file = os.path.join('../camera_data_collection/realsense_model_cropped.xml')
     cam_model = RectiLinearCameraModel(calib_file)
+    print(cam_model.height)
     #vector to point debug
     point = [0,1,5]
     pixel = cam_model.vector_to_pixel(point)
-    print(pixel)
+    print('pixel',pixel)
+
+    px = cam_model.width
+    py = 0#cam_model.height
+    vector = cam_model.pixel_to_vector(px,py)[0:2]
+    vector_normalized = vector/np.linalg.norm(vector,ord=2)
+
+    print('vector',vector_normalized)
+
+
     

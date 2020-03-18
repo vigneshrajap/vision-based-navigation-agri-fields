@@ -143,7 +143,7 @@ Assumptions:
     Camera coordinate system: X right, Y down, Z into the image
 '''
 
-def make_field_mask(labels = [1,0,1], lane_spacing = None, lane_duty_cycle = None, widths = None, extent=5):
+def make_field_mask(labels = [1,0,1], lane_spacing = None, crop_duty_cycle = None, widths = None, extent=5):
     #Create adjacent rectangles with row/crop labels and save as polygons
     #Origo is at x = 0 and y = w/2 (in the middle of the center row)
     # label = 1 is lane = 0 is crop
@@ -154,14 +154,14 @@ def make_field_mask(labels = [1,0,1], lane_spacing = None, lane_duty_cycle = Non
     h = extent
     #shift to get the desired origo
     if widths is None:
-        total_width = lane_spacing*(np.sum(labels) * lane_duty_cycle + np.sum(np.logical_not(labels)) * (1-lane_duty_cycle))
+        total_width = lane_spacing*(np.sum(labels) * (1-crop_duty_cycle) + np.sum(np.logical_not(labels)) * crop_duty_cycle)
     else:
         total_width = np.sum(widths)
     shift = -np.array([0,total_width/2])
 
     for ind,label in enumerate(labels):
         if widths is None:
-            w = lane_spacing*(lane_duty_cycle*label + (1-lane_duty_cycle)*int(not(label)))
+            w = lane_spacing*((1-crop_duty_cycle)*label + crop_duty_cycle*int(not(label)))
         else:
             w = widths[ind]
         
