@@ -25,6 +25,7 @@ import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" # Hides the pygame version, welcome msg
 from os.path import expanduser
 import os.path as osp
+import matplotlib.pyplot as plt
 
 class automated_labelling():
     '''
@@ -63,20 +64,31 @@ class automated_labelling():
         self.image = Image()
         self.img_timestamp = Header()
         self.bridge = CvBridge()
+        self.magnetic_declination = 0.0523599
 
         self.orientation_imu = []
         self.yaw_imu = []
         self.lateral_offset = 0.0
         self.angular_offset = 0.0
+        self.angular_offset_imu = 0
         self.rot_vec = []
         self.pose_map_r = PoseStamped()
         self.prev_pose_map_r = PoseStamped()
-        self.increment = 5 # Fit Line segments over increment values
+        self.increment = 10 # Fit Line segments over increment values
         self.line = geom.LineString()
         self.gt_yaw = 0
         self.prev_pose_map_r.pose.position.x = 0
         self.prev_pose_map_r.pose.position.y = 0
         self.robot_yaw = []
+        self.robot_dir = []
+        self.robot_imu = []
+        self.robot_pose_x = []
+        self.robot_pose_y = []
+        self.count_ind = 0
+        self.first_dir = 12
+        self.yaw_imu_t = 0.0
+        self.oneshot_imu_start_pose=0
+        self.curr_robot_yaw = 0
 
         self.gps_oldTime = []
         self.gps_NewTime = []
@@ -158,7 +170,7 @@ class automated_labelling():
         gps_trans.header.stamp = rospy.Time.now()
         gps_trans.header.frame_id = self.robot_frame
         gps_trans.child_frame_id = self.gps_frame
-        gps_trans.transform.translation = Vector3(self.rot_vec[0], self.rot_vec[1], 0.0) #self.gps_robot[0],self.gps_robot[1]
+        gps_trans.transform.translation = Vector3(self.gps_robot[0],self.gps_robot[1], 0.0) #self.rot_vec[0], self.rot_vec[1]
         gps_trans.transform.rotation = Quaternion(0,0,0,1) # Set to identity
 
         # Transform RTK values w.r.t to "Map" frame
@@ -201,10 +213,40 @@ class automated_labelling():
        # gt_slope_normal = -1/gt_slope
        # # gt_yaw_normal = self.normalizeangle(math.atan(gt_slope_normal))
        # gt_yaw_normal = self.normalizeangle(math.atan2(aX-bX,bY-aY))
-       #
-       if (self.pose_map_r.pose.position.x!=self.prev_pose_map_r.pose.position.x) and ((self.pose_map_r.pose.position.y!=self.prev_pose_map_r.pose.position.y)):
-            self.robot_yaw = self.normalizeangle(math.atan2(self.pose_map_r.pose.position.y-self.prev_pose_map_r.pose.position.y,self.pose_map_r.pose.position.x-self.prev_pose_map_r.pose.position.x))
-            self.prev_pose_map_r = self.pose_map_r
+
+       if (self.count_ind < self.first_dir):
+           self.robot_pose_x.append(self.pose_map_r.pose.position.x)
+           self.robot_pose_y.append(self.pose_map_r.pose.position.y)
+
+       if (len(self.robot_pose_x)>=self.first_dir):
+
+           if (self.pose_map_r.pose.position.x!=self.prev_pose_map_r.pose.position.x) and ((self.pose_map_r.pose.position.y!=self.prev_pose_map_r.pose.position.y)):
+               delta_x = self.pose_map_r.pose.position.x-self.robot_pose_x[self.count_ind-self.first_dir] #self.prev_pose_map_r.pose.position.x
+               delta_y = self.pose_map_r.pose.position.y-self.robot_pose_y[self.count_ind-self.first_dir] #self.prev_pose_map_r.pose.position.y
+
+               self.robot_yaw = self.normalizeangle(math.atan2(delta_y,delta_x))
+               self.prev_pose_map_r = self.pose_map_r
+
+               # Angle between two lines as offset
+               self.angular_offset = self.normalizeangle(self.robot_yaw-gt_yaw)
+
+               if self.oneshot_imu_start_pose==0:
+                   self.curr_robot_yaw = self.robot_yaw #self.normalizeangle(math.atan2(self.pose_map_r.pose.position.y, self.pose_map_r.pose.position.x))
+                   self.oneshot_imu_start_pose = 1
+               print self.curr_robot_yaw, self.robot_yaw, gt_yaw
+
+               self.angular_offset_imu = self.normalizeangle((self.yaw_imu_t+self.curr_robot_yaw)-gt_yaw)
+
+           self.robot_pose_x.append(self.pose_map_r.pose.position.x)
+           self.robot_pose_y.append(self.pose_map_r.pose.position.y)
+
+       # print "angular_offset:", self.angular_offset
+
+       self.robot_dir.append(self.angular_offset)
+       self.robot_imu.append(self.angular_offset_imu)
+       self.count_ind = self.count_ind + 1
+
+       ########################################################################################33
 
        # # Interpolate the nearest point on the line and find slope of that line
        # point = geom.Point(self.pose_map_r.pose.position.x, self.pose_map_r.pose.position.y)
@@ -212,19 +254,11 @@ class automated_labelling():
        # point_on_line = nearest_line.interpolate(nearest_line.project(point))
        # robot_slope = (point.y-point_on_line.y)/(point.x-point_on_line.x)
 
-       # Angle between two lines as offset
-       self.angular_offset = self.normalizeangle(self.robot_yaw-gt_yaw)
-
-       ########################################################################################33
-
        #math.atan2((gt_slope_normal-robot_slope),(1+(gt_slope_normal*robot_slope))))
-
-       # print AO #self.gt_yaw, self.yaw_imu, AO
 
        # # Angular Offset => IMU with GT yaw (line segement index)
        # if self.receive_imu_fix==True:
        #     self.angular_offset = self.normalizeangle(AO) #(math.pi-self.yaw_imu)
-       #     # print "angular_offset:", self.angular_offset
 
        # RGB Image nearest to current GNSS fix msg
        if self.img_receive==True:
@@ -241,7 +275,7 @@ if __name__ == '__main__':
         # Function to obtain the ground truth values in Map frame
         auto_label.ground_truth_utm2map()
 
-        myfile = open('20191010_L2_N_offsets.txt', 'a')
+        myfile = open('20191010_L2_N_imu_offsets.txt', 'a')
         myfile.truncate(0)
         myfile.write("dt(cam)")
         myfile.write("\t")
@@ -278,21 +312,23 @@ if __name__ == '__main__':
             auto_label.dt_imu_fix_ = []
 
             for topic, imu_msg, t_imu in bag.read_messages(topics=[auto_label.imu_topic_name]):
+
+                 imu_data = imu_msg
+                 orientation_imu_orginal = [imu_data.orientation.x, imu_data.orientation.y, imu_data.orientation.z, imu_data.orientation.w]
+                 (roll_imu, pitch_imu, yaw_r_imu) = euler_from_quaternion(orientation_imu_orginal)
+                 yaw_r_imu = yaw_r_imu+auto_label.magnetic_declination # Compensate
+
                  if(auto_label.oneshot_imu==0):
                      t0_imu = t_imu.to_sec()
                      auto_label.oneshot_imu = 1
                      auto_label.receive_imu_fix = True
-                     prev_yaw_map_imu = 0
+                     prev_yaw_map_imu = yaw_r_imu
                      auto_label.first_line = geom.LineString(auto_label.gt_map[0:auto_label.increment,:])
                      first_aX, first_aY, first_bX, first_bY = auto_label.first_line.bounds
                      #delta_yaw_map_imu = auto_label.normalizeangle(math.atan2(first_bY-first_aY,first_bX-first_aX)) # Set Initial Yaw
                      delta_yaw_map_imu = 0 # Set Initial Yaw
 
                  auto_label.dt_imu = auto_label.dt_imu + (t_imu.to_sec()-t0_imu)
-
-                 imu_data = imu_msg
-                 orientation_imu_orginal = [imu_data.orientation.x, imu_data.orientation.y, imu_data.orientation.z, imu_data.orientation.w]
-                 (roll_imu, pitch_imu, yaw_imu) = euler_from_quaternion(orientation_imu_orginal)
 
                  # Transform IMU values w.r.t to "base_link" frame
                  pose_imu = PoseStamped()
@@ -308,8 +344,6 @@ if __name__ == '__main__':
                  (roll_map_imu, pitch_map_imu, yaw_map_imu) = euler_from_quaternion(orientation_map_imu)
                  delta_yaw_map_imu = delta_yaw_map_imu + (yaw_map_imu-prev_yaw_map_imu) # Rate of change of IMU yaw
                  auto_label.orientation_imu = quaternion_from_euler(0,0,yaw_map_imu-prev_yaw_map_imu)
-
-                 # print yaw_imu, yaw_map_imu, delta_yaw_map_imu
 
                  auto_label.dt_imu_fix_.append(auto_label.dt_imu)
                  auto_label.imu_fix_.append(delta_yaw_map_imu)
@@ -342,11 +376,13 @@ if __name__ == '__main__':
                 auto_label.gps_fix.latitude = auto_label.gps_fix_[gps_idx][0]
                 auto_label.gps_fix.longitude = auto_label.gps_fix_[gps_idx][1]
 
-                imu_idx = (np.abs(np.array(auto_label.dt_imu_fix_) - auto_label.dt_img_[i])).argmin()
-                # auto_label.yaw_imu = auto_label.imu_fix_[imu_idx]
-
                 # RTK Fix from UTM Frame to Robot Frame
                 auto_label.GNSS_WorldToRobot()
+
+                #auto_label.yaw_imu_t = math.atan2(auto_label.pose_map_r.pose.position.y, auto_label.pose_map_r.pose.position.x)
+                imu_idx = (np.abs(np.array(auto_label.dt_imu_fix_) - auto_label.dt_img_[i])).argmin()
+                auto_label.yaw_imu_t = auto_label.imu_fix_[imu_idx] #auto_label.yaw_imu_t+
+                auto_label.yaw_imu.append(auto_label.yaw_imu_t)
 
                 # Offset Estimation
                 auto_label.offset_estimation()
@@ -357,10 +393,19 @@ if __name__ == '__main__':
                 myfile.write("\t")
                 myfile.write(str("%.4f" % auto_label.lateral_offset))
                 myfile.write("\t")
-                myfile.write(str("%.4f" % auto_label.angular_offset))
+                myfile.write(str("%.4f" % auto_label.angular_offset_imu))
                 myfile.write("\n")
 
             bag.close()
+
+        # plt.figure('a')
+        # plt.plot(auto_label.robot_dir) #robot_dir
+        # plt.plot(auto_label.robot_imu) #yaw_imu
+        # plt.legend(['Travel Direction','IMU'])
+        # plt.title('Angular data')
+        # plt.xlabel('Frame number')
+        # plt.ylabel('Radians')
+        # plt.show()
 
     except rospy.ROSInterruptException:
          cv2.destroyAllWindows() # Closes all the frames

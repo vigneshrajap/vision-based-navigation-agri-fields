@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import numpy as np 
+import numpy as np
 from utilities import read_robot_offset_from_file
 import matplotlib.pyplot as plt
 import os
@@ -20,6 +20,8 @@ for inp in input_files:
     plt.figure('l')
     plt.plot(row_inds,lateral_offsets)
     plt.title('Lateral offset')
+
+#print input_files[0][31:44]
 plt.figure('a')
 plt.legend(input_files)
 plt.xlabel('Frame number')
