@@ -23,11 +23,11 @@ def vec3_normalise(point):
 #Evaluation of polynomials
 #cubic
 def eval_poly3(poly,x):
-    return ((poly[0]*x + poly[1])*x + poly[2])*x + poly[3];
+    return ((poly[0]*x + poly[1])*x + poly[2])*x + poly[3]
 
 #quartic
 def eval_poly4(poly, x):
-    return (((poly[0]*x + poly[1])*x + poly[2])*x + poly[3])*x + poly[4];
+    return (((poly[0]*x + poly[1])*x + poly[2])*x + poly[3])*x + poly[4]
 
 class OcamCalibCameraModel:
     '''
