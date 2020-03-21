@@ -85,7 +85,7 @@ class automated_labelling():
         self.robot_pose_x = []
         self.robot_pose_y = []
         self.count_ind = 0
-        self.first_dir = 12
+        self.first_dir = 36
         self.yaw_imu_t = 0.0
         self.oneshot_imu_start_pose=0
         self.curr_robot_yaw = 0
@@ -134,6 +134,12 @@ class automated_labelling():
           pose_trans = tf2_geometry_msgs.do_transform_pose(pose_stamped, self.map_trans) # Transform RTK values w.r.t to "Map" frame
 
           self.gt_map[i] = ([pose_trans.pose.position.x, pose_trans.pose.position.y])
+
+        # Increment by parameter for multiple line segments along ground truth points
+        # for ind in range((self.increment/2),len(self.gt_utm),self.increment):
+        #     line_1 = geom.LineString(self.gt_utm[ind-(self.increment/2):ind+(self.increment/2),:])
+        #     a,b,c,d = line_1.bounds
+        #     print math.atan2(d-b,c-a)
 
     def qv_mult(self):
         # rotate vector v1 by quaternion q1
@@ -192,6 +198,10 @@ class automated_labelling():
             dist_0[np.int(ind/self.increment)-1] = self.line.distance(point)
             lines.append(self.line)
 
+            aX1, aY1, bX1, bY1 = self.line.bounds
+            gt_yaw1 = self.normalizeangle(math.atan2(bY1-aY1,bX1-aX1))
+            # print ind/self.increment, gt_yaw1
+
        multilines.append(geom.MultiLineString(lines))
 
        ############################## LATERAL OFFSET ###########################
@@ -214,6 +224,12 @@ class automated_labelling():
        # # gt_yaw_normal = self.normalizeangle(math.atan(gt_slope_normal))
        # gt_yaw_normal = self.normalizeangle(math.atan2(aX-bX,bY-aY))
 
+       # Interpolate the nearest point on the line and find slope of that line
+       point = geom.Point(self.pose_map_r.pose.position.x, self.pose_map_r.pose.position.y)
+       nearest_line = geom.LineString(multilines[0][segment_index[0][0]])
+       point_on_line = nearest_line.interpolate(nearest_line.project(point))
+       robot_slope = (point.y-point_on_line.y)/(point.x-point_on_line.x)
+
        if (self.count_ind < self.first_dir):
            self.robot_pose_x.append(self.pose_map_r.pose.position.x)
            self.robot_pose_y.append(self.pose_map_r.pose.position.y)
@@ -224,18 +240,26 @@ class automated_labelling():
                delta_x = self.pose_map_r.pose.position.x-self.robot_pose_x[self.count_ind-self.first_dir] #self.prev_pose_map_r.pose.position.x
                delta_y = self.pose_map_r.pose.position.y-self.robot_pose_y[self.count_ind-self.first_dir] #self.prev_pose_map_r.pose.position.y
 
-               self.robot_yaw = self.normalizeangle(math.atan2(delta_y,delta_x))
+               if delta_x==0:
+                   self.robot_yaw = self.normalizeangle(math.atan2(delta_y,delta_x))
+               else:
+                   self.robot_yaw = self.normalizeangle(math.atan(delta_y/delta_x))
+
                self.prev_pose_map_r = self.pose_map_r
 
                # Angle between two lines as offset
                self.angular_offset = self.normalizeangle(self.robot_yaw-gt_yaw)
 
-               if self.oneshot_imu_start_pose==0:
-                   self.curr_robot_yaw = self.robot_yaw #self.normalizeangle(math.atan2(self.pose_map_r.pose.position.y, self.pose_map_r.pose.position.x))
-                   self.oneshot_imu_start_pose = 1
-               print self.curr_robot_yaw, self.robot_yaw, gt_yaw
+               # if self.oneshot_imu_start_pose==0:
+               #     self.curr_robot_yaw = self.normalizeangle(math.atan(self.pose_map_r.pose.position.y/self.pose_map_r.pose.position.x))
+               #     self.oneshot_imu_start_pose = 1
 
-               self.angular_offset_imu = self.normalizeangle((self.yaw_imu_t+self.curr_robot_yaw)-gt_yaw)
+               self.curr_robot_yaw = self.normalizeangle(math.atan(self.pose_map_r.pose.position.y/self.pose_map_r.pose.position.x))
+
+               #self.curr_robot_yaw = self.yaw_imu_t+self.curr_robot_yaw
+               #self.angular_offset_imu = self.normalizeangle(self.yaw_imu_t-(self.curr_robot_yaw-gt_yaw))
+               self.angular_offset_imu = self.normalizeangle((self.curr_robot_yaw+self.yaw_imu_t)-math.atan(robot_slope))
+               #print self.yaw_imu_t, math.atan(robot_slope), self.angular_offset_imu
 
            self.robot_pose_x.append(self.pose_map_r.pose.position.x)
            self.robot_pose_y.append(self.pose_map_r.pose.position.y)
@@ -247,12 +271,6 @@ class automated_labelling():
        self.count_ind = self.count_ind + 1
 
        ########################################################################################33
-
-       # # Interpolate the nearest point on the line and find slope of that line
-       # point = geom.Point(self.pose_map_r.pose.position.x, self.pose_map_r.pose.position.y)
-       # nearest_line = geom.LineString(multilines[0][segment_index[0][0]])
-       # point_on_line = nearest_line.interpolate(nearest_line.project(point))
-       # robot_slope = (point.y-point_on_line.y)/(point.x-point_on_line.x)
 
        #math.atan2((gt_slope_normal-robot_slope),(1+(gt_slope_normal*robot_slope))))
 
@@ -275,7 +293,7 @@ if __name__ == '__main__':
         # Function to obtain the ground truth values in Map frame
         auto_label.ground_truth_utm2map()
 
-        myfile = open('20191010_L2_N_imu_offsets.txt', 'a')
+        myfile = open('20191010_L2_N_offsets.txt', 'a') #_imu
         myfile.truncate(0)
         myfile.write("dt(cam)")
         myfile.write("\t")
@@ -293,7 +311,7 @@ if __name__ == '__main__':
 
             bag = rosbag.Bag(bag_file) #'/home/vignesh/Third_Paper/Datasets/20191010_L1_N/bag_files/dataset_recording_2019-10-10-14-52-14_0.bag')
 
-            # GNSS Data
+            ##################### Extract GNSS Data #####################
             auto_label.gps_fix_ = []
             auto_label.dt_gps_fix_ = []
 
@@ -307,7 +325,7 @@ if __name__ == '__main__':
                  auto_label.gps_fix_.append([msg.latitude, msg.longitude])
                  t0 = t.to_sec()
 
-            # IMU data
+            ##################### Extract IMU Data #####################
             auto_label.imu_fix_ = []
             auto_label.dt_imu_fix_ = []
 
@@ -343,8 +361,9 @@ if __name__ == '__main__':
 
                  (roll_map_imu, pitch_map_imu, yaw_map_imu) = euler_from_quaternion(orientation_map_imu)
                  delta_yaw_map_imu = delta_yaw_map_imu + (yaw_map_imu-prev_yaw_map_imu) # Rate of change of IMU yaw
-                 auto_label.orientation_imu = quaternion_from_euler(0,0,yaw_map_imu-prev_yaw_map_imu)
+                 # print yaw_map_imu, prev_yaw_map_imu
 
+                 auto_label.orientation_imu = quaternion_from_euler(0,0,yaw_map_imu-prev_yaw_map_imu)
                  auto_label.dt_imu_fix_.append(auto_label.dt_imu)
                  auto_label.imu_fix_.append(delta_yaw_map_imu)
                  t0_imu = t_imu.to_sec()
@@ -355,6 +374,7 @@ if __name__ == '__main__':
             auto_label.dt_img_ = []
             auto_label.dt_imgSeq_ = []
 
+            ##################### Extract Camera Data #####################
             for topic, img_msg, t_img in bag.read_messages(topics=[auto_label.image_topic_name]):
                  if(auto_label.oneshot_img==0):
                      t0_img = t_img.to_sec()
@@ -393,7 +413,7 @@ if __name__ == '__main__':
                 myfile.write("\t")
                 myfile.write(str("%.4f" % auto_label.lateral_offset))
                 myfile.write("\t")
-                myfile.write(str("%.4f" % auto_label.angular_offset_imu))
+                myfile.write(str("%.4f" % auto_label.angular_offset)) #_imu
                 myfile.write("\n")
 
             bag.close()
