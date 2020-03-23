@@ -39,7 +39,7 @@ class automated_labelling():
         rospack = rospkg.RosPack()
         self.book = pe.get_book(file_name=rospack.get_path('auto_nav')+"/config/ground_truth_coordinates.xls", start_row=1)
 
-        self.lane_number = str(1) #rospy.set_param('lane_number', 1)
+        self.lane_number = str(2) #rospy.set_param('lane_number', 1)
         self.gt_utm = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
         self.gt_map = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
 
@@ -60,6 +60,7 @@ class automated_labelling():
         self.img_receive = False
 
         self.gps_fix = NavSatFix()
+        self.imu_data = Imu()
         self.image = Image()
         self.img_timestamp = Header()
         self.bridge = CvBridge()
@@ -73,7 +74,7 @@ class automated_labelling():
         self.rot_vec = []
         self.pose_map_r = PoseStamped()
         self.prev_pose_map_r = PoseStamped()
-        self.increment = 5 # Fit Line segments over increment values
+        self.increment = 10 # Fit Line segments over increment values
         self.line = geom.LineString()
         self.gt_yaw = 0
         self.prev_pose_map_r.pose.position.x = 0
@@ -88,7 +89,6 @@ class automated_labelling():
         self.yaw_imu_t = 0.0
         self.oneshot_imu_start_pose=0
         self.curr_robot_yaw = 0
-        self.multilines = []
 
         self.gps_oldTime = []
         self.gps_NewTime = []
@@ -129,21 +129,18 @@ class automated_labelling():
         for i in range(0, len(self.gt_utm)): # Skip the first row if it is a String
           pose_stamped.pose.position = Point(self.gt_utm[i][0], self.gt_utm[i][1], 0)
           pose_stamped.pose.orientation = Quaternion(0,0,0,1) # GPS orientation is meaningless, set to identity
-          #print math.atan2(self.gt_utm[i][1],self.gt_utm[i][0])
+          print math.atan2(self.gt_utm[i][1],self.gt_utm[i][0])
 
           pose_trans.header.stamp = rospy.Time.now()
           pose_trans = tf2_geometry_msgs.do_transform_pose(pose_stamped, self.map_trans) # Transform RTK values w.r.t to "Map" frame
 
           self.gt_map[i] = ([pose_trans.pose.position.x, pose_trans.pose.position.y])
 
-        lines = []
-
         # Increment by parameter for multiple line segments along ground truth points
         for ind in range((self.increment/2),len(self.gt_utm),self.increment):
-            self.line = geom.LineString(self.gt_map[ind-(self.increment/2):ind+(self.increment/2),:])
-            lines.append(self.line)
-            # print ind-(self.increment/2), ind+(self.increment/2), self.line
-        self.multilines.append(geom.MultiLineString(lines))
+            line_1 = geom.LineString(self.gt_utm[ind-(self.increment/2):ind+(self.increment/2),:])
+            a,b,c,d = line_1.bounds
+            print d-b,c-a,math.atan2(d,c), math.atan2(b,a), math.atan2(d-b,c-a)
 
     def qv_mult(self):
         # rotate vector v1 by quaternion q1
@@ -191,35 +188,31 @@ class automated_labelling():
 
        # Initialize Parameters
        dist_0 = np.empty([np.int(len(self.gt_utm)/self.increment),1])
-
-       point = geom.Point(self.pose_map_r.pose.position.x, self.pose_map_r.pose.position.y)
-
-       self.lateral_offset = 100.0
+       multilines = []
+       lines = []
 
        # Increment by parameter for multiple line segments along ground truth points
-       for ind in range(len(self.multilines[0])-1):
-           # dist_0 = self.multilines[0][ind].distance(point)
+       for ind in range((self.increment/2),len(self.gt_utm),self.increment):
+            self.line = geom.LineString(self.gt_map[ind-(self.increment/2):ind+(self.increment/2),:])
+            point = geom.Point(self.pose_map_r.pose.position.x, self.pose_map_r.pose.position.y) # x, y
+            dist_0[np.int(ind/self.increment)-1] = self.line.distance(point)
+            lines.append(self.line)
 
-           aX_i, aY_i, bX_i, bY_i = self.multilines[0][ind].bounds
-           dist_num = abs((bY_i-aY_i)*point.x-(bX_i-aX_i)*point.y + (bX_i*aY_i) - (bY_i*aX_i))
-           dist_den =  math.sqrt(math.pow(bY_i-aY_i,2)+math.pow(bX_i-aX_i,2))
-           dist_0[ind] = dist_num/dist_den
+            aX1, aY1, bX1, bY1 = self.line.bounds
+            gt_yaw1 = self.normalizeangle(math.atan2(bY1-aY1,bX1-aX1))
+            # print ind/self.increment, gt_yaw1
 
-           self.lateral_offset = min(self.lateral_offset, dist_0[ind])
+       multilines.append(geom.MultiLineString(lines))
 
        ############################## LATERAL OFFSET ###########################
        # Min Lateral Offset and its line segement index
-       #self.lateral_offset = np.min(dist_0)
+       self.lateral_offset = np.min(dist_0)
+       segment_index = np.where(dist_0 == np.min(dist_0))
+       aX, aY, bX, bY = multilines[0][segment_index[0][0]].bounds
+       cX, cY = (self.pose_map_r.pose.position.x, self.pose_map_r.pose.position.y)
 
-       segment_index = np.argmin([dist_0]) #np.argmin(dist_0, axis=0)
-       #np.where(dist_0 == np.min([dist_0]))
-       #print self.lateral_offset, segment_index
-
-       # # Check the Sign of the Lateral Offset
-       aX, aY, bX, bY = self.multilines[0][segment_index].bounds #self.multilines[0][segment_index[0][0]].bounds
-       if ((bX - aX)*(point.y - aY) - (bY - aY)*(point.x - aX)) > 0:
+       if ((bX - aX)*(cY - aY) - (bY - aY)*(cX - aX)) > 0:
            self.lateral_offset = -self.lateral_offset
-
        # print "lateral_offset:", self.lateral_offset
 
        ############################## ANGULAR OFFSET ###########################
@@ -232,7 +225,8 @@ class automated_labelling():
        # gt_yaw_normal = self.normalizeangle(math.atan2(aX-bX,bY-aY))
 
        # Interpolate the nearest point on the line and find slope of that line
-       nearest_line = geom.LineString(self.multilines[0][segment_index])
+       point = geom.Point(self.pose_map_r.pose.position.x, self.pose_map_r.pose.position.y)
+       nearest_line = geom.LineString(multilines[0][segment_index[0][0]])
        point_on_line = nearest_line.interpolate(nearest_line.project(point))
        robot_slope = (point.y-point_on_line.y)/(point.x-point_on_line.x)
 
@@ -299,7 +293,7 @@ if __name__ == '__main__':
         # Function to obtain the ground truth values in Map frame
         auto_label.ground_truth_utm2map()
 
-        myfile = open('20191010_L1_N_offsets.txt', 'a') #_imu
+        myfile = open('20191010_L2_N_offsets.txt', 'a') #_imu
         myfile.truncate(0)
         myfile.write("dt(cam)")
         myfile.write("\t")
@@ -310,105 +304,77 @@ if __name__ == '__main__':
         myfile.write("AO")
         myfile.write("\n")
 
-        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L1_N/bag_files/")
+        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L2_N/bag_files/")
 
         for bag_file in sorted(glob.glob(osp.join(input_dir, '*.bag'))):
             print(bag_file)
 
-            bag = rosbag.Bag(bag_file)
-
-            ##################### Extract IMU Data #####################
-            auto_label.imu_fix_ = []
-            auto_label.dt_imu_fix_ = []
-
-            for imu_topic, imu_msg, t_imu in bag.read_messages(topics=[auto_label.imu_topic_name]):
-
-                 orientation_imu_orginal = [imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w]
-                 (roll_r_imu, pitch_r_imu, yaw_r_imu) = euler_from_quaternion(orientation_imu_orginal)
-                 yaw_r_imu = yaw_r_imu + auto_label.magnetic_declination # Compensate
-
-                 if(auto_label.oneshot_imu==0):
-                     t0_imu = t_imu.to_sec()
-                     auto_label.oneshot_imu = 1
-                     auto_label.receive_imu_fix = True
-                     prev_yaw_r_imu = yaw_r_imu
-                     # auto_label.first_line = geom.LineString(auto_label.gt_map[0:auto_label.increment,:])
-                     # first_aX, first_aY, first_bX, first_bY = auto_label.first_line.bounds
-                     #delta_yaw_map_imu = auto_label.normalizeangle(math.atan2(first_bY-first_aY,first_bX-first_aX)) # Set Initial Yaw
-                     delta_yaw_r_imu = 0 # Set Initial Yaw
-
-                 auto_label.dt_imu = auto_label.dt_imu + (t_imu.to_sec()-t0_imu)
-
-                 # # Transform IMU values w.r.t to "base_link" frame
-                 # pose_imu = PoseStamped()
-                 # pose_imu.pose.position = Point(0, 0, 0) # IMU position is meaningless, set to zero
-                 # pose_imu.pose.orientation = imu_msg.orientation
-                 #
-                 # # Transform IMU values w.r.t to "Map" frame
-                 # pose_map_imu = PoseStamped()
-                 # pose_map_imu.header.stamp = rospy.Time.now()
-                 # pose_map_imu = tf2_geometry_msgs.do_transform_pose(pose_imu, auto_label.imu_trans)
-                 # orientation_map_imu = [pose_map_imu.pose.orientation.x, pose_map_imu.pose.orientation.y, pose_map_imu.pose.orientation.z, pose_map_imu.pose.orientation.w]
-                 #
-                 # (roll_map_imu, pitch_map_imu, yaw_map_imu) = euler_from_quaternion(orientation_map_imu)
-                 # delta_yaw_map_imu = delta_yaw_map_imu + (yaw_map_imu-prev_yaw_map_imu) # Rate of change of IMU yaw
-
-                 delta_yaw_r_imu = delta_yaw_r_imu + (yaw_r_imu-prev_yaw_r_imu) # Rate of change of IMU yaw
-                 # print yaw_map_imu, prev_yaw_map_imu
-
-                 auto_label.orientation_imu = quaternion_from_euler(0, 0, yaw_r_imu-prev_yaw_r_imu)
-                 auto_label.dt_imu_fix_.append(auto_label.dt_imu)
-                 auto_label.imu_fix_.append(delta_yaw_r_imu)
-
-                 t0_imu = t_imu.to_sec()
-                 prev_yaw_r_imu = yaw_r_imu
+            bag = rosbag.Bag(bag_file) #'/home/vignesh/Third_Paper/Datasets/20191010_L1_N/bag_files/dataset_recording_2019-10-10-14-52-14_0.bag')
 
             ##################### Extract GNSS Data #####################
             auto_label.gps_fix_ = []
             auto_label.dt_gps_fix_ = []
 
-            for gps_topic, gps_msg, t_gps in bag.read_messages(topics=[auto_label.gps_topic_name]):
+            for topic, msg, t in bag.read_messages(topics=[auto_label.gps_topic_name]):
                  if(auto_label.oneshot_gps==0):
-                     t0 = t_gps.to_sec()
+                     t0 = t.to_sec()
                      auto_label.oneshot_gps = 1
 
-                 auto_label.dt_gps = auto_label.dt_gps + (t_gps.to_sec()-t0)
+                 auto_label.dt_gps = auto_label.dt_gps + (t.to_sec()-t0)
                  auto_label.dt_gps_fix_.append(auto_label.dt_gps)
-                 auto_label.gps_fix_.append([gps_msg.latitude, gps_msg.longitude])
-                 t0 = t_gps.to_sec()
+                 auto_label.gps_fix_.append([msg.latitude, msg.longitude])
+                 t0 = t.to_sec()
 
-            # for i in range(len(auto_label.dt_gps_fix_)):
+            ##################### Extract IMU Data #####################
+            auto_label.imu_fix_ = []
+            auto_label.dt_imu_fix_ = []
 
-                 # gps_idx = (np.abs(np.array(auto_label.dt_gps_fix_) - auto_label.dt_img_[i])).argmin()
-                 auto_label.gps_fix.latitude = gps_msg.latitude #auto_label.gps_fix_[i][0]
-                 auto_label.gps_fix.longitude = gps_msg.longitude #auto_label.gps_fix_[i][1]
+            for topic, imu_msg, t_imu in bag.read_messages(topics=[auto_label.imu_topic_name]):
 
-                 # RTK Fix from UTM Frame to Robot Frame
-                 auto_label.GNSS_WorldToRobot()
+                 imu_data = imu_msg
+                 orientation_imu_orginal = [imu_data.orientation.x, imu_data.orientation.y, imu_data.orientation.z, imu_data.orientation.w]
+                 (roll_imu, pitch_imu, yaw_r_imu) = euler_from_quaternion(orientation_imu_orginal)
+                 yaw_r_imu = yaw_r_imu+auto_label.magnetic_declination # Compensate
 
-                 #auto_label.yaw_imu_t = math.atan2(auto_label.pose_map_r.pose.position.y, auto_label.pose_map_r.pose.position.x)
-                 imu_idx = (np.abs(np.array(auto_label.dt_imu_fix_) - auto_label.dt_gps)).argmin()
-                 auto_label.yaw_imu_t = auto_label.imu_fix_[imu_idx] #auto_label.yaw_imu_t+
-                 auto_label.yaw_imu.append(auto_label.yaw_imu_t)
+                 if(auto_label.oneshot_imu==0):
+                     t0_imu = t_imu.to_sec()
+                     auto_label.oneshot_imu = 1
+                     auto_label.receive_imu_fix = True
+                     prev_yaw_map_imu = yaw_r_imu
+                     auto_label.first_line = geom.LineString(auto_label.gt_map[0:auto_label.increment,:])
+                     first_aX, first_aY, first_bX, first_bY = auto_label.first_line.bounds
+                     #delta_yaw_map_imu = auto_label.normalizeangle(math.atan2(first_bY-first_aY,first_bX-first_aX)) # Set Initial Yaw
+                     delta_yaw_map_imu = 0 # Set Initial Yaw
 
-                 # Offset Estimation
-                 auto_label.offset_estimation()
+                 auto_label.dt_imu = auto_label.dt_imu + (t_imu.to_sec()-t0_imu)
 
-                 myfile.write(str( "%.4f" %auto_label.dt_gps))
-                 myfile.write("\t")
-                 myfile.write(str("%04d" %int(auto_label.dt_gps)))
-                 myfile.write("\t")
-                 myfile.write(str("%.4f" %auto_label.lateral_offset))
-                 myfile.write("\t")
-                 myfile.write(str("%.4f" %auto_label.angular_offset)) #_imu
-                 myfile.write("\n")
+                 # Transform IMU values w.r.t to "base_link" frame
+                 pose_imu = PoseStamped()
+                 pose_imu.pose.position = Point(0, 0, 0) # IMU position is meaningless, set to zero
+                 pose_imu.pose.orientation = imu_data.orientation
 
-            ##################### Extract Camera Data #####################
+                 # Transform IMU values w.r.t to "Map" frame
+                 pose_map_imu = PoseStamped()
+                 pose_map_imu.header.stamp = rospy.Time.now()
+                 pose_map_imu = tf2_geometry_msgs.do_transform_pose(pose_imu, auto_label.imu_trans)
+                 orientation_map_imu = [pose_map_imu.pose.orientation.x, pose_map_imu.pose.orientation.y, pose_map_imu.pose.orientation.z, pose_map_imu.pose.orientation.w]
+
+                 (roll_map_imu, pitch_map_imu, yaw_map_imu) = euler_from_quaternion(orientation_map_imu)
+                 delta_yaw_map_imu = delta_yaw_map_imu + (yaw_map_imu-prev_yaw_map_imu) # Rate of change of IMU yaw
+                 # print yaw_map_imu, prev_yaw_map_imu
+
+                 auto_label.orientation_imu = quaternion_from_euler(0,0,yaw_map_imu-prev_yaw_map_imu)
+                 auto_label.dt_imu_fix_.append(auto_label.dt_imu)
+                 auto_label.imu_fix_.append(delta_yaw_map_imu)
+                 t0_imu = t_imu.to_sec()
+                 prev_yaw_map_imu = yaw_map_imu
+
             # Image data
             auto_label.img_ = []
             auto_label.dt_img_ = []
             auto_label.dt_imgSeq_ = []
 
+            ##################### Extract Camera Data #####################
             for topic, img_msg, t_img in bag.read_messages(topics=[auto_label.image_topic_name]):
                  if(auto_label.oneshot_img==0):
                      t0_img = t_img.to_sec()
@@ -423,6 +389,32 @@ if __name__ == '__main__':
                  auto_label.dt_img_.append(auto_label.dt_img)
                  auto_label.dt_imgSeq_.append(auto_label.dt_imgSeq)
                  t0_img = t_img.to_sec()
+
+            for i in range(len(auto_label.dt_img_)):
+
+                gps_idx = (np.abs(np.array(auto_label.dt_gps_fix_) - auto_label.dt_img_[i])).argmin()
+                auto_label.gps_fix.latitude = auto_label.gps_fix_[gps_idx][0]
+                auto_label.gps_fix.longitude = auto_label.gps_fix_[gps_idx][1]
+
+                # RTK Fix from UTM Frame to Robot Frame
+                auto_label.GNSS_WorldToRobot()
+
+                #auto_label.yaw_imu_t = math.atan2(auto_label.pose_map_r.pose.position.y, auto_label.pose_map_r.pose.position.x)
+                imu_idx = (np.abs(np.array(auto_label.dt_imu_fix_) - auto_label.dt_img_[i])).argmin()
+                auto_label.yaw_imu_t = auto_label.imu_fix_[imu_idx] #auto_label.yaw_imu_t+
+                auto_label.yaw_imu.append(auto_label.yaw_imu_t)
+
+                # Offset Estimation
+                auto_label.offset_estimation()
+
+                myfile.write(str( "%.4f" % auto_label.dt_img_[i]))
+                myfile.write("\t")
+                myfile.write(str("%04d" %auto_label.dt_imgSeq_[i]))
+                myfile.write("\t")
+                myfile.write(str("%.4f" % auto_label.lateral_offset))
+                myfile.write("\t")
+                myfile.write(str("%.4f" % auto_label.angular_offset)) #_imu
+                myfile.write("\n")
 
             bag.close()
 
