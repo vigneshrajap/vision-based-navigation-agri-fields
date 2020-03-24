@@ -84,7 +84,7 @@ class automated_labelling():
         self.robot_pose_x = []
         self.robot_pose_y = []
         self.count_ind = 0
-        self.first_dir = 12
+        self.first_dir = 2
         self.yaw_imu_t = 0.0
         self.oneshot_imu_start_pose=0
         self.curr_robot_yaw = 0
@@ -377,6 +377,32 @@ if __name__ == '__main__':
                  auto_label.gps_fix_.append([gps_msg.latitude, gps_msg.longitude])
                  t0 = t_gps.to_sec()
 
+            # for i in range(len(auto_label.dt_gps_fix_)):
+
+                 # gps_idx = (np.abs(np.array(auto_label.dt_gps_fix_) - auto_label.dt_img_[i])).argmin()
+                 auto_label.gps_fix.latitude = gps_msg.latitude #auto_label.gps_fix_[i][0]
+                 auto_label.gps_fix.longitude = gps_msg.longitude #auto_label.gps_fix_[i][1]
+
+                 # RTK Fix from UTM Frame to Robot Frame
+                 auto_label.GNSS_WorldToRobot()
+
+                 #auto_label.yaw_imu_t = math.atan2(auto_label.pose_map_r.pose.position.y, auto_label.pose_map_r.pose.position.x)
+                 imu_idx = (np.abs(np.array(auto_label.dt_imu_fix_) - auto_label.dt_gps)).argmin()
+                 auto_label.yaw_imu_t = auto_label.imu_fix_[imu_idx] #auto_label.yaw_imu_t+
+                 auto_label.yaw_imu.append(auto_label.yaw_imu_t)
+
+                 # Offset Estimation
+                 auto_label.offset_estimation()
+
+                 myfile.write(str( "%.4f" %auto_label.dt_gps))
+                 myfile.write("\t")
+                 myfile.write(str("%04d" %int(auto_label.dt_gps)))
+                 myfile.write("\t")
+                 myfile.write(str("%.4f" %auto_label.lateral_offset))
+                 myfile.write("\t")
+                 myfile.write(str("%.4f" %auto_label.angular_offset)) #_imu
+                 myfile.write("\n")
+
             ##################### Extract Camera Data #####################
             # Image data
             auto_label.img_ = []
@@ -397,32 +423,6 @@ if __name__ == '__main__':
                  auto_label.dt_img_.append(auto_label.dt_img)
                  auto_label.dt_imgSeq_.append(auto_label.dt_imgSeq)
                  t0_img = t_img.to_sec()
-
-            for img_ind in range(len(auto_label.dt_img_)):
-
-                 gps_idx = (np.abs(np.array(auto_label.dt_gps_fix_) - auto_label.dt_img_[img_ind])).argmin()
-                 auto_label.gps_fix.latitude = auto_label.gps_fix_[gps_idx][0] #gps_msg.latitude
-                 auto_label.gps_fix.longitude = auto_label.gps_fix_[gps_idx][1] #gps_msg.longitude
-
-                 # RTK Fix from UTM Frame to Robot Frame
-                 auto_label.GNSS_WorldToRobot()
-
-                 #auto_label.yaw_imu_t = math.atan2(auto_label.pose_map_r.pose.position.y, auto_label.pose_map_r.pose.position.x)
-                 imu_idx = (np.abs(np.array(auto_label.dt_imu_fix_) - auto_label.dt_gps)).argmin()
-                 auto_label.yaw_imu_t = auto_label.imu_fix_[imu_idx] #auto_label.yaw_imu_t+
-                 auto_label.yaw_imu.append(auto_label.yaw_imu_t)
-
-                 # Offset Estimation
-                 auto_label.offset_estimation()
-
-                 myfile.write(str( "%.4f" %auto_label.dt_img_[img_ind]))
-                 myfile.write("\t")
-                 myfile.write(str("%04d" %int(auto_label.dt_imgSeq_[img_ind])))
-                 myfile.write("\t")
-                 myfile.write(str("%.4f" %auto_label.lateral_offset))
-                 myfile.write("\t")
-                 myfile.write(str("%.4f" %auto_label.angular_offset)) #_imu
-                 myfile.write("\n")
 
             bag.close()
 
