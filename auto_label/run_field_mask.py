@@ -91,8 +91,8 @@ if __name__ == "__main__":
     #Make image mask for a folder of images and their robot position data
     #Setup
     dataset_dir = os.path.join('../Frogn_Dataset')
-    image_dir = os.path.join(dataset_dir,'calibration_selection')
-    output_dir = os.path.join('output/calibration')
+    image_dir = os.path.join(dataset_dir,'images_prepped_train')
+    output_dir = os.path.join('output')
     #Camera model
     calib_file = os.path.join('../camera_data_collection/realsense_model_cropped.xml')
 
