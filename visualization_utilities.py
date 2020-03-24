@@ -19,7 +19,7 @@ def blend_color_and_image(image,mask,color_code=[0,255,0],alpha=0.5):
     blended_im = np.uint8((mask * (1-alpha) * color_code) + (mask * alpha * image) + (np.logical_not(mask) * image)) #mask + image under mask + image outside mask
     return blended_im
 
-def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm=None):
+def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm=None,alpha = 0.5):
     #Visualize segmentation prediction and false positives/negatives
     
     #NB 3-class problem with background not handled properly
@@ -36,7 +36,6 @@ def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm=None):
     gt_mask = (gt-1)*np.uint8(error_mask == 0) #class 1 in ground truth encoded green
     
     #Blending
-    alpha = 0.4
     fp_color_code = np.array([1,0,1])*255 #magenta
     fn_color_code = np.array([0,0,1])*255 #blue
     gt_color_code = np.array([0,1,0])*255 #green

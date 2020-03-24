@@ -37,9 +37,9 @@ if __name__ == "__main__":
     visualize = False
     dataset_dir = os.path.join('../Frogn_Dataset')
     label_dir = os.path.join(dataset_dir,'annotations_prepped_train')
-    image_dir = os.path.join(dataset_dir,'calibration_selection')
-    auto_label_dir = os.path.join('output/calibration/arrays')
-    output_dir = os.path.join('output/calibration/compare')
+    image_dir = os.path.join(dataset_dir,'images_prepped_train')
+    auto_label_dir = os.path.join('output/arrays')
+    output_dir = os.path.join('output/compare')
 
     for auto_ann_file in glob.iglob(auto_label_dir+'/*'):
         #Read image , automatic label and manual label
@@ -54,8 +54,9 @@ if __name__ == "__main__":
         m_ann = m_ann.argmax(-1)
         #Visualize
         fig1 = vis_pred_vs_gt_separate(os.path.join(image_dir,filename + '.png'),auto_ann, m_ann)
-        fig2 = vis_pred_vs_gt_overlay(os.path.join(image_dir,filename + '.png'), auto_ann, m_ann)
+        fig2 = vis_pred_vs_gt_overlay(os.path.join(image_dir,filename + '.png'), auto_ann, m_ann,alpha = 0.6)
         if visualize:
             plt.show()
         else:
             fig2.savefig(os.path.join(output_dir,filename)+'.png')
+        plt.close('all') 
