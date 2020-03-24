@@ -19,13 +19,17 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
     image_dir = 'images_prepped_train',
     output_dir = 'output',
     calib_file = os.path.join('../camera_data_collection/realsense_model_cropped.xml'),
+    robot_offset_dir = None,
+    row_spec_file = None,
     use_robot_offset = True):
+
+    if robot_offset_dir is None:
+        robot_offset_dir = os.path.join(os.path.join(dataset_dir,'robot_offsets/*'))
+    if row_spec_file is None:
+        row_spec_file = os.path.join(dataset_dir,'row_spec.txt')
 
     #setup
     cam_model = RectiLinearCameraModel(calib_file)
-
-    robot_offset_dir = os.path.join(dataset_dir,'robot_offsets/*')
-    row_spec_file = os.path.join(dataset_dir,'row_spec.txt')
 
     #--- Per prefix
     #Set up field mask
@@ -44,15 +48,18 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
             lateral_offset, angular_offset,_ = read_robot_offset_from_file(robot_offset_file,frame_ind)
 
             #Camera setup #fixme read from urdf
-            #camera_xyz = np.array([0.749, 0.033, 1.242])
-            camera_xyz = np.array([0.749, 0.033, 1.1])
-            #camera_rpy = np.array([0.000, -0.332, 0.000]) 
-            camera_rpy = np.array([0.000, -0.4, 0.000]) 
-            
+            #camera_xyz = np.array([0.749, 0.033, 1.242]) #measured
+            #camera_xyz = np.array([0.749, 0.033, 1.1]) #adjusted
+            camera_xyz = np.array([0.0, 0.0, 1.1]) #zero xy offset
+            #camera_rpy = np.array([0.000, -0.332, 0.000]) #measured
+            #camera_rpy = np.array([0.000, -0.4, 0.000]) #adjusted
+            camera_rpy = np.array([0.000, -0.4, -0.2]) #zero yaw
+
             #Robot position 
             if use_robot_offset is True:
                 robot_rpy = [0,0,angular_offset] 
                 robot_xyz = [0,lateral_offset,0]
+                print(robot_rpy, robot_xyz)
             else:
                 robot_rpy = [0,0,0]
                 robot_xyz = [0,0,0]
@@ -92,13 +99,20 @@ if __name__ == "__main__":
     #Setup
     dataset_dir = os.path.join('../Frogn_Dataset')
     image_dir = os.path.join(dataset_dir,'images_prepped_train')
-    output_dir = os.path.join('output')
+    output_dir = os.path.join('output/dummy_values')
+    robot_offset_dir = os.path.join(dataset_dir,'robot_offsets/20191010_L3_N_offsets_dummy*')
     #Camera model
     calib_file = os.path.join('../camera_data_collection/realsense_model_cropped.xml')
+    #Turn robot offset on/off
+    use_robot_offset = False
 
     #Run field mask on the specified images, camera model and dataset directory:
-    run_field_mask(dataset_dir=dataset_dir, image_dir=image_dir, output_dir=output_dir,
-    calib_file=calib_file,use_robot_offset=False)
+    run_field_mask(dataset_dir=dataset_dir, 
+    image_dir=image_dir, 
+    output_dir=output_dir,
+    calib_file=calib_file,
+    robot_offset_dir = robot_offset_dir,
+    use_robot_offset=use_robot_offset)
 
 
 
