@@ -32,6 +32,7 @@ dependencies:
   - pip:
     - keras-segmentation --trusted-host pypi.org --trusted-host files.pythonhosted.org
   - tqdm
+  - xmltodict
     # Machine Learning packages
   - scikit-learn
   - tensorflow-gpu # FIXME: Does not support SSE, AVX and FMA. Need newer version to support this.
