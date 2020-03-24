@@ -8,10 +8,10 @@ from PIL import Image
 import os.path as osp
 
 #roi_x = 208 #120
-roi_y = 120 #120 #208
+roi_y = 8 #120 #208
 
-input_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset/images_prepped_test/") #/frogn_2%04d.jpg"%dannotations
-output_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset_32x_352/images_prepped_test/")
+input_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset/") #/frogn_2%04d.jpg"%dannotations #images_prepped_train
+output_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset_32x_352/images_prepped_train/")
 
 # input_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset/") #/frogn_2%04d.jpg"%dannotations
 # output_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset/")
