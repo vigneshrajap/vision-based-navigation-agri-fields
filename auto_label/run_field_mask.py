@@ -47,18 +47,24 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
             frame_ind = im_name[-4:]
             lateral_offset, angular_offset,_ = read_robot_offset_from_file(robot_offset_file,frame_ind)
 
+            #debug values
+            lateral_offset = lateral_offset+0.3
+            angular_offset = 0.0
             #Camera setup #fixme read from urdf
             #camera_xyz = np.array([0.749, 0.033, 1.242]) #measured
-            #camera_xyz = np.array([0.749, 0.033, 1.1]) #adjusted
-            camera_xyz = np.array([0.0, 0.0, 1.1]) #zero xy offset
+            camera_xyz = np.array([0.749, 0.033, 1.1]) #adjusted
+            #camera_xyz = np.array([0.0, 0.0, 1.1]) #zero xy offset
             #camera_rpy = np.array([0.000, -0.332, 0.000]) #measured
-            #camera_rpy = np.array([0.000, -0.4, 0.000]) #adjusted
-            camera_rpy = np.array([0.000, -0.4, -0.2]) #zero yaw
+            camera_rpy = np.array([0.000, -0.4, 0.000]) #adjusted
+            #camera_rpy = np.array([0.000, -0.4, 0]) #zero yaw
+
+            #compensate for wrong sign
+            camera_rpy[2] = -camera_rpy[2]
 
             #Robot position 
             if use_robot_offset is True:
-                robot_rpy = [0,0,angular_offset] 
-                robot_xyz = [0,lateral_offset,0]
+                robot_rpy = [0,0,-angular_offset] #compensate for wrong sign
+                robot_xyz = [0,lateral_offset,0] #compensate for wrong sign
                 print(robot_rpy, robot_xyz)
             else:
                 robot_rpy = [0,0,0]
@@ -104,7 +110,7 @@ if __name__ == "__main__":
     #Camera model
     calib_file = os.path.join('../camera_data_collection/realsense_model_cropped.xml')
     #Turn robot offset on/off
-    use_robot_offset = False
+    use_robot_offset = True
 
     #Run field mask on the specified images, camera model and dataset directory:
     run_field_mask(dataset_dir=dataset_dir, 
