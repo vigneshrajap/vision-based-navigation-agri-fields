@@ -34,7 +34,7 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
     #--- Per prefix
     #Set up field mask
     for robot_offset_file in glob.iglob(robot_offset_dir):
-        rec_prefix = os.path.basename(robot_offset_file)[:13]
+        rec_prefix = os.path.basename(robot_offset_file)[:-12]
         print('Processing ', rec_prefix)
         crop_duty_cycle, lane_spacing = read_row_spec_from_file(row_spec_file,rec_prefix)
         #Define field mask
@@ -47,9 +47,6 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
             frame_ind = im_name[-4:]
             lateral_offset, angular_offset,_ = read_robot_offset_from_file(robot_offset_file,frame_ind)
 
-            #debug values
-            lateral_offset = lateral_offset+0.3
-            angular_offset = 0.0
             #Camera setup #fixme read from urdf
             #camera_xyz = np.array([0.749, 0.033, 1.242]) #measured
             camera_xyz = np.array([0.749, 0.033, 1.1]) #adjusted
@@ -64,7 +61,7 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
             #Robot position 
             if use_robot_offset is True:
                 robot_rpy = [0,0,-angular_offset] #compensate for wrong sign
-                robot_xyz = [0,lateral_offset,0] #compensate for wrong sign
+                robot_xyz = [0,lateral_offset,0]
                 print(robot_rpy, robot_xyz)
             else:
                 robot_rpy = [0,0,0]
@@ -89,15 +86,15 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
 
             #Save visualization and numpy array
             vis_dir = os.path.join(output_dir,'visualisation')
-            #os.makedirs(vis_dir, exist_ok = True)
+            #os.makedirs(vis_dir)
             plt.imsave(os.path.join(output_dir,'visualisation',im_name) + '.png', overlay_im)
 
             ann_dir =  os.path.join(output_dir,'annotations')
-            #os.makedirs(ann_dir,exist_ok = True)
+            #os.makedirs(ann_dir)
             plt.imsave(os.path.join(output_dir,'annotations',im_name)+'.png',label_mask)
 
             arr_dir = os.path.join(output_dir,'arrays')
-            #os.makedirs(arr_dir,exist_ok = True)
+            #os.makedirs(arr_dir)
             np.save(os.path.join(output_dir,'arrays',im_name),label_mask)
 
 if __name__ == "__main__":
@@ -105,8 +102,8 @@ if __name__ == "__main__":
     #Setup
     dataset_dir = os.path.join('../Frogn_Dataset')
     image_dir = os.path.join(dataset_dir,'images_prepped_train')
-    output_dir = os.path.join('output/dummy_values')
-    robot_offset_dir = os.path.join(dataset_dir,'robot_offsets/20191010_L3_N_offsets_dummy*')
+    output_dir = os.path.join('output/slaloam')
+    robot_offset_dir = os.path.join(dataset_dir,'robot_offsets/20191010_L4_N_slaloam_offsets*')
     #Camera model
     calib_file = os.path.join('../camera_data_collection/realsense_model_cropped.xml')
     #Turn robot offset on/off
