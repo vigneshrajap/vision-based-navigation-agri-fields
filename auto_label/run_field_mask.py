@@ -60,9 +60,9 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
 
             #Robot position 
             if use_robot_offset is True:
+                print(lateral_offset, angular_offset)
                 robot_rpy = [0,0,-angular_offset] #compensate for wrong sign
                 robot_xyz = [0,lateral_offset,0]
-                print(robot_rpy, robot_xyz)
             else:
                 robot_rpy = [0,0,0]
                 robot_xyz = [0,0,0]
@@ -87,7 +87,7 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
             #Save visualization and numpy array
             vis_dir = os.path.join(output_dir,'visualisation')
             #os.makedirs(vis_dir)
-            plt.imsave(os.path.join(output_dir,'visualisation',im_name) + '.png', overlay_im)
+            plt.imsave(os.path.join(output_dir,'visualisation',im_name) + 'lat' + str(lateral_offset) + 'ang' + str(angular_offset) + '.png', overlay_im)
 
             ann_dir =  os.path.join(output_dir,'annotations')
             #os.makedirs(ann_dir)

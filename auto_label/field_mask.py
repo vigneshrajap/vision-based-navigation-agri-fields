@@ -198,29 +198,21 @@ def make_field_mask(widths,labels,extent):
     
     return list_of_polygons
 '''
-def cam_to_world_transform(T_robot_to_camera = np.eye(4), T_world_to_robot = np.eye(4)):
-    #Combine and invert transformation matrices to get the camera to world transform
-    #Resulting transformation is from fixed camera coordinate system to transformed world coordinate system
-    T_world_to_cam = T_world_to_robot.dot(T_robot_to_camera)
-    T_cam_to_world = np.linalg.inv(T_world_to_cam)
-    return T_cam_to_world
+def camera_to_world_transform(T_camera_to_robot = np.eye(4), T_robot_to_world = np.eye(4)):
+    return T_robot_to_world.dot(T_camera_to_robot)
 
-def set_up_world_to_robot_transform(rpy, xyz):
-    # Inputs: robot pose in world coordinates
-    # World as fixed coordinate system
+def set_up_robot_to_world_transform(rpy, xyz):
     return create_transformation_matrix(r=rpy, t=xyz)
         
-def set_up_robot_to_camera_transform(rpy = [0,0,0], xyz = [0,0,0]):
+def set_up_camera_to_robot_transform(rpy = [0,0,0], xyz = [0,0,0]):
     ''' 
     Robot coordinates: x ahead, y left, z up
     Camera coordinaes: x right, y down, z ahead
     
-    inputs: camera pose in robot (base) coordinates (robot coordinates as fixed coordinate system)
+    inputs: camera pose in robot (base) coordinates
     '''
     # Rotation between coordinate systems. Creating a camera coordinate system 
     # aligned with the robot coordinate system (x_robot = z_cam, y_robot = -x_cam, z_robot = -y_cam)
-
-    #fixme names
     rx = np.pi/2
     ry = 0
     rz = np.pi/2
@@ -289,16 +281,16 @@ if __name__ == "__main__":
     #dummy values, should get values from outside
     camera_tilt = np.pi/8 
     camera_height = 1
-    T_robot_to_camera = set_up_robot_to_camera_transform(rpy = [0,-camera_tilt,0], xyz =[0,0,camera_height])    
+    T_camera_to_robot = set_up_camera_to_robot_transform(rpy = [0,-camera_tilt,0], xyz =[0,0,camera_height])    
     
     
     #Robot position 
     #dummy values, should get values from outside
     robot_rpy = [0,0,0]
     robot_xyz = [0,0,0]
-    T_world_to_robot = set_up_world_to_robot_transform(rpy = robot_rpy, xyz = robot_xyz)
+    T_robot_to_world = set_up_robot_to_world_transform(rpy = robot_rpy, xyz = robot_xyz)
     
-    T_cam_to_world = camera_to_world_transform(T_robot_to_camera, T_world_to_robot)
+    T_cam_to_world = camera_to_world_transform(T_camera_to_robot, T_robot_to_world)
     image_mask = make_image_mask_from_polygons(cam_model, polygon_field_mask, T_cam_to_world, cropped_dims = [200,300])
         
     plt.figure(10)
