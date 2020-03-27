@@ -78,7 +78,9 @@ class automated_labelling():
         self.gt_yaw = 0
         self.prev_pose_map_r.pose.position.x = 0
         self.prev_pose_map_r.pose.position.y = 0
-        self.robot_yaw = []
+        self.robot_yaw = 0.0
+        self.delta_robot_yaw = 0.0
+        self.prev_robot_yaw = 0.0
         self.robot_dir = []
         self.robot_imu = []
         self.robot_pose_x = []
@@ -180,7 +182,7 @@ class automated_labelling():
         gps_trans.header.stamp = rospy.Time.now()
         gps_trans.header.frame_id = self.robot_frame
         gps_trans.child_frame_id = self.gps_frame
-        gps_trans.transform.translation = Vector3(self.gps_robot[0],self.gps_robot[1], 0.0) #self.rot_vec[0], self.rot_vec[1]
+        gps_trans.transform.translation = Vector3(self.rot_vec[0], self.rot_vec[1], 0.0) #self.rot_vec[0], self.rot_vec[1] #self.gps_robot[0],self.gps_robot[1]
         gps_trans.transform.rotation = Quaternion(0,0,0,1) # Set to identity
 
         # Transform RTK values w.r.t to "Map" frame
@@ -246,15 +248,17 @@ class automated_labelling():
                delta_x = self.pose_map_r.pose.position.x-self.robot_pose_x[self.count_ind-self.first_dir] #self.prev_pose_map_r.pose.position.x
                delta_y = self.pose_map_r.pose.position.y-self.robot_pose_y[self.count_ind-self.first_dir] #self.prev_pose_map_r.pose.position.y
 
-               if delta_x==0:
-                   self.robot_yaw = self.normalizeangle(math.atan2(delta_y,delta_x))
-               else:
-                   self.robot_yaw = self.normalizeangle(math.atan(delta_y/delta_x))
+               # if delta_x==0:
+               self.robot_yaw = self.normalizeangle(math.atan2(delta_y,delta_x))
+               # else:
+               #     self.robot_yaw = self.normalizeangle(math.atan(delta_y/delta_x))
+               self.delta_robot_yaw = self.robot_yaw-self.prev_robot_yaw
+               self.prev_robot_yaw = self.robot_yaw
 
                self.prev_pose_map_r = self.pose_map_r
 
                # Angle between two lines as offset
-               self.angular_offset = self.normalizeangle(self.robot_yaw-gt_yaw)
+               self.angular_offset = self.normalizeangle(gt_yaw-self.robot_yaw)
 
                # if self.oneshot_imu_start_pose==0:
                #     self.curr_robot_yaw = self.normalizeangle(math.atan(self.pose_map_r.pose.position.y/self.pose_map_r.pose.position.x))
@@ -272,7 +276,7 @@ class automated_labelling():
 
        # print "angular_offset:", self.angular_offset
 
-       self.robot_dir.append(self.angular_offset)
+       self.robot_dir.append(self.delta_robot_yaw) #self.angular_offset
        self.robot_imu.append(self.angular_offset_imu)
        self.count_ind = self.count_ind + 1
 
@@ -299,7 +303,7 @@ if __name__ == '__main__':
         # Function to obtain the ground truth values in Map frame
         auto_label.ground_truth_utm2map()
 
-        myfile = open('20191010_L4_N_slaloam_offsets.txt', 'a') #_imu
+        myfile = open('20191010_L4_N_slaloam_offsets_new.txt', 'a') #_imu
         myfile.truncate(0)
         myfile.write("dt(cam)")
         myfile.write("\t")
@@ -353,7 +357,7 @@ if __name__ == '__main__':
                  # (roll_map_imu, pitch_map_imu, yaw_map_imu) = euler_from_quaternion(orientation_map_imu)
                  # delta_yaw_map_imu = delta_yaw_map_imu + (yaw_map_imu-prev_yaw_map_imu) # Rate of change of IMU yaw
 
-                 delta_yaw_r_imu = delta_yaw_r_imu + (yaw_r_imu-prev_yaw_r_imu) # Rate of change of IMU yaw
+                 delta_yaw_r_imu = delta_yaw_r_imu + auto_label.normalizeangle(yaw_r_imu-prev_yaw_r_imu) # Rate of change of IMU yaw
                  # print yaw_map_imu, prev_yaw_map_imu
 
                  auto_label.orientation_imu = quaternion_from_euler(0, 0, yaw_r_imu-prev_yaw_r_imu)
@@ -426,14 +430,14 @@ if __name__ == '__main__':
 
             bag.close()
 
-        # plt.figure('a')
-        # plt.plot(auto_label.robot_dir) #robot_dir
-        # plt.plot(auto_label.robot_imu) #yaw_imu
-        # plt.legend(['Travel Direction','IMU'])
-        # plt.title('Angular data')
-        # plt.xlabel('Frame number')
-        # plt.ylabel('Radians')
-        # plt.show()
+        plt.figure('a')
+        plt.plot(auto_label.robot_dir) #robot_dir
+        plt.plot(auto_label.yaw_imu) #yaw_imu
+        plt.legend(['Travel Direction',' Relative Raw IMU'])
+        plt.title('Angular data')
+        plt.xlabel('Frame number')
+        plt.ylabel('Radians')
+        plt.show()
 
     except rospy.ROSInterruptException:
          cv2.destroyAllWindows() # Closes all the frames
