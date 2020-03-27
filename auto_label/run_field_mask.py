@@ -21,7 +21,8 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
     calib_file = os.path.join('../camera_data_collection/realsense_model_cropped.xml'),
     robot_offset_dir = None,
     row_spec_file = None,
-    use_robot_offset = True):
+    use_robot_offset = True,
+    sampling_step = None):
 
     if robot_offset_dir is None:
         robot_offset_dir = os.path.join(os.path.join(dataset_dir,'robot_offsets/*'))
@@ -30,6 +31,11 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
 
     #setup
     cam_model = RectiLinearCameraModel(calib_file)
+
+    #Experimental corrections, slalom dataset!!!
+    mean_correction = 0 #0.043762404580152674
+    delay_correction = 0 #20
+    angle_sign = 1#-1 #minus 1 if sign switch
 
     #--- Per prefix
     #Set up field mask
@@ -44,8 +50,15 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
         for im_path in glob.iglob(os.path.join(image_dir,rec_prefix+'*')):
             print(im_path)
             im_name = os.path.splitext(os.path.basename(im_path))[0]
-            frame_ind = im_name[-4:]
+            frame_ind = int(im_name[-4:])
+
+            frame_ind = frame_ind + delay_correction #subtract delay
+
             lateral_offset, angular_offset,_ = read_robot_offset_from_file(robot_offset_file,frame_ind)
+            if lateral_offset is None:
+                break
+            angular_offset = angular_offset - mean_correction #subtract mean value
+            angular_offset = angular_offset*angle_sign #switch sign
 
             #Camera setup #fixme read from urdf
             #camera_xyz = np.array([0.749, 0.033, 1.242]) #measured
@@ -73,15 +86,19 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
             T_cam_to_world = camera_to_world_transform(T_camera_to_robot, T_robot_to_world)
             
             #Make image mask
-            mask_with_index_and_label = make_image_mask_from_polygons(cam_model, polygon_field_mask, T_cam_to_world)
+            mask_with_index_and_label = make_image_mask_from_polygons(cam_model, polygon_field_mask, T_cam_to_world,sampling_step = sampling_step)
             #prepare label mask for saving and visualization
             label_mask = mask_with_index_and_label[:,:,1] #extract second channel
             label_mask = label_mask + 1 #shift from 0 and 1 to 1 and 2
-            label_mask = np.nan_to_num(label_mask).astype(int)
-            #fixme replace nan values with "no_value" class
+            label_mask = np.nan_to_num(label_mask).astype('uint8')
 
             #Visualize on top of example image
             camera_im = plt.imread(im_path)
+            #upsample back to original image size
+            if label_mask.shape != camera_im.shape[0:2]:
+                label_im = Image.fromarray(label_mask,mode='L')
+                label_im = label_im.resize((camera_im.shape[1],camera_im.shape[0]))
+                label_mask = np.array(label_im)
             overlay_im = blend_color_and_image(camera_im,label_mask,color_code = [0,255,0],alpha=0.7) 
 
             #Save visualization and numpy array
@@ -101,13 +118,15 @@ if __name__ == "__main__":
     #Make image mask for a folder of images and their robot position data
     #Setup
     dataset_dir = os.path.join('../Frogn_Dataset')
-    image_dir = os.path.join(dataset_dir,'images_prepped_train')
+    image_dir = os.path.join(dataset_dir,'images_only')
     output_dir = os.path.join('output/slaloam')
     robot_offset_dir = os.path.join(dataset_dir,'robot_offsets/20191010_L4_N_slaloam_offsets*')
     #Camera model
-    calib_file = os.path.join('../camera_data_collection/realsense_model_cropped.xml')
+    calib_file = os.path.join('../camera_data_collection/realsense_model.xml')
     #Turn robot offset on/off
     use_robot_offset = True
+    #Turn on subsampling
+    sampling_step = 8
 
     #Run field mask on the specified images, camera model and dataset directory:
     run_field_mask(dataset_dir=dataset_dir, 
@@ -115,7 +134,8 @@ if __name__ == "__main__":
     output_dir=output_dir,
     calib_file=calib_file,
     robot_offset_dir = robot_offset_dir,
-    use_robot_offset=use_robot_offset)
+    use_robot_offset=use_robot_offset,
+    sampling_step = sampling_step)
 
 
 
