@@ -5,6 +5,7 @@
 /auto_label/output
 /CASE2020_paper/prediction_overlay
 /Frogn_Dataset/calibration_selection/
+/Frogn_Dataset/images_only/
 **.pyc
 **.pyc
 **.swp

@@ -12,6 +12,9 @@ from ocam_camera_model_tools import OcamCalibCameraModel,vec3_normalise
 import os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from PIL import Image
+from scipy import interpolate
+import cv2
 
 #%% General transformation stuff
 '''
@@ -223,7 +226,7 @@ def set_up_camera_to_robot_transform(rpy = [0,0,0], xyz = [0,0,0]):
     T_cam_to_rob = T_camaligned_to_rob.dot(T_cam_to_camaligned)
     return T_cam_to_rob
 
-def make_image_mask_from_polygons(cam_model,polygon_mask,T_cam_to_world,cropped_dims = None):
+def make_image_mask_from_polygons(cam_model,polygon_mask,T_cam_to_world,sampling_step = None):
     ''' 
     Make an image mask from a polygon_mask in world coordinates, based on camera model and camera to world transform
     Cropped dims is height, width
@@ -231,21 +234,19 @@ def make_image_mask_from_polygons(cam_model,polygon_mask,T_cam_to_world,cropped_
         channel 0: polygon index
         channel 1: label
     '''
-    if cropped_dims is None:
-        cropped_dims = [cam_model.height,cam_model.width]
-        crop_h_start = 0
-        crop_w_start = 0
-    else:
-        crop_h_start = np.round(cam_model.height/2-cropped_dims[0]/2)
-        crop_w_start = np.round(cam_model.width/2-cropped_dims[1]/2)
+    if sampling_step is None:
+        sampling_step = 1
 
     camera_origo = transform_xyz_point(T_cam_to_world,[0,0,0]) #camera origo in world coordinates
     
     #Generate mask image
-    mask_image = np.zeros((cropped_dims[0],cropped_dims[1],2))
-    for j in tqdm(np.arange(mask_image.shape[1])):
-        for i in np.arange(mask_image.shape[0]):
-            pixel = [i+crop_h_start,j+crop_w_start]
+    image_dims = np.array([cam_model.height,cam_model.width])
+    subsampled_dims = image_dims/sampling_step
+    mask_image = np.zeros((subsampled_dims[0],subsampled_dims[1],2))
+
+    for j in tqdm(np.arange(subsampled_dims[1])):
+        for i in np.arange(subsampled_dims[0]):
+            pixel = np.array([i,j])*sampling_step
             mask_image[i,j,0],mask_image[i,j,1] = check_if_pixel_inside_mask(polygon_mask,cam_model,pixel,T_cam_to_world,camera_origo)
     return mask_image
     
@@ -291,7 +292,7 @@ if __name__ == "__main__":
     T_robot_to_world = set_up_robot_to_world_transform(rpy = robot_rpy, xyz = robot_xyz)
     
     T_cam_to_world = camera_to_world_transform(T_camera_to_robot, T_robot_to_world)
-    image_mask = make_image_mask_from_polygons(cam_model, polygon_field_mask, T_cam_to_world, cropped_dims = [200,300])
+    image_mask = make_image_mask_from_polygons(cam_model, polygon_field_mask, T_cam_to_world)
         
     plt.figure(10)
     plt.imshow(image_mask[:,:,0])  
