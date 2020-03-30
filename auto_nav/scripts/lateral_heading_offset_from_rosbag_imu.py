@@ -39,7 +39,7 @@ class automated_labelling():
         rospack = rospkg.RosPack()
         self.book = pe.get_book(file_name=rospack.get_path('auto_nav')+"/config/ground_truth_coordinates.xls", start_row=1)
 
-        self.lane_number = str(1) #rospy.set_param('lane_number', 1)
+        self.lane_number = str(4) #rospy.set_param('lane_number', 1)
         self.gt_utm = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
         self.gt_map = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
 
@@ -56,6 +56,8 @@ class automated_labelling():
         self.imu_topic_name = str('/imu/data')
         self.image_topic_name = str('/camera/color/image_raw')
         self.receive_gps_fix = False
+        self.receive_imu_fix = False
+        self.img_receive = False
 
         self.gps_fix = NavSatFix()
         self.image = Image()
@@ -64,25 +66,30 @@ class automated_labelling():
         self.magnetic_declination = 0.0523599
 
         self.orientation_imu = []
+        self.yaw_imu = []
         self.lateral_offset = 0.0
         self.angular_offset = 0.0
+        self.angular_offset_imu = 0
         self.rot_vec = []
-        self.rpos_map = PoseStamped()
-        self.prev_rpos_map = PoseStamped()
+        self.pose_map_r = PoseStamped()
+        self.prev_pose_map_r = PoseStamped()
         self.increment = 5 # Fit Line segments over increment values
         self.line = geom.LineString()
         self.gt_yaw = 0
-        self.prev_rpos_map.pose.position.x = 0
-        self.prev_rpos_map.pose.position.y = 0
+        self.prev_pose_map_r.pose.position.x = 0
+        self.prev_pose_map_r.pose.position.y = 0
         self.robot_yaw = 0.0
         self.delta_robot_yaw = 0.0
         self.prev_robot_yaw = 0.0
         self.robot_dir = []
         self.robot_imu = []
-        self.rpos_x = []
-        self.rpos_y = []
+        self.robot_pose_x = []
+        self.robot_pose_y = []
         self.count_ind = 0
-        self.first_dir = 24
+        self.first_dir = 12
+        self.yaw_imu_t = 0.0
+        self.oneshot_imu_start_pose=0
+        self.curr_robot_yaw = 0
         self.multilines = []
 
         self.gps_oldTime = []
@@ -109,6 +116,13 @@ class automated_labelling():
         self.map_trans.transform.translation = Vector3(self.datum[0], self.datum[1], self.datum[2]);
         self.map_trans.transform.rotation = Quaternion(0,0,0,1) # Set to identity
 
+        self.imu_trans = TransformStamped()
+        self.imu_trans.header.stamp = rospy.Time.now()
+        self.imu_trans.header.frame_id = self.robot_frame
+        self.imu_trans.child_frame_id = self.imu_frame
+        self.imu_trans.transform.translation = Vector3(self.imu_robot[0], self.imu_robot[1], 0);
+        self.imu_trans.transform.rotation = Quaternion(0,0,0,1) # Set to identity
+
     def ground_truth_utm2map(self):
 
         pose_stamped = PoseStamped()
@@ -129,6 +143,7 @@ class automated_labelling():
         for ind in range((self.increment/2),len(self.gt_utm),self.increment):
             self.line = geom.LineString(self.gt_map[ind-(self.increment/2):ind+(self.increment/2),:])
             lines.append(self.line)
+            # print ind-(self.increment/2), ind+(self.increment/2), self.line
         self.multilines.append(geom.MultiLineString(lines))
 
     def qv_mult(self):
@@ -160,8 +175,7 @@ class automated_labelling():
         gps_pose_map.header.stamp = rospy.Time.now()
         gps_pose_map = tf2_geometry_msgs.do_transform_pose(gps_pose_utm, auto_label.map_trans)
 
-        # Rotate the static offset value by IMU yaw
-        self.rot_vec = self.qv_mult()
+        self.rot_vec = self.qv_mult() # Rotate the static offset value by IMU yaw
 
         gps_trans = TransformStamped()
         gps_trans.header.stamp = rospy.Time.now()
@@ -171,20 +185,21 @@ class automated_labelling():
         gps_trans.transform.rotation = Quaternion(0,0,0,1) # Set to identity
 
         # Transform RTK values w.r.t to "Map" frame
-        self.rpos_map.header.stamp = rospy.Time.now()
-        self.rpos_map = tf2_geometry_msgs.do_transform_pose(gps_pose_map, gps_trans)
+        self.pose_map_r.header.stamp = rospy.Time.now()
+        self.pose_map_r = tf2_geometry_msgs.do_transform_pose(gps_pose_map, gps_trans)
 
     def offset_estimation(self):
 
        # Initialize Parameters
        dist_0 = np.empty([np.int(len(self.gt_utm)/self.increment),1])
 
-       point = geom.Point(self.rpos_map.pose.position.x, self.rpos_map.pose.position.y)
+       point = geom.Point(self.pose_map_r.pose.position.x, self.pose_map_r.pose.position.y)
 
        self.lateral_offset = 100.0
 
        # Increment by parameter for multiple line segments along ground truth points
        for ind in range(len(self.multilines[0])-1):
+           # dist_0 = self.multilines[0][ind].distance(point)
 
            aX_i, aY_i, bX_i, bY_i = self.multilines[0][ind].bounds
            dist_num = abs((bY_i-aY_i)*point.x-(bX_i-aX_i)*point.y + (bX_i*aY_i) - (bY_i*aX_i))
@@ -195,7 +210,11 @@ class automated_labelling():
 
        ############################## LATERAL OFFSET ###########################
        # Min Lateral Offset and its line segement index
-       segment_index = np.argmin([dist_0])
+       #self.lateral_offset = np.min(dist_0)
+
+       segment_index = np.argmin([dist_0]) #np.argmin(dist_0, axis=0)
+       #np.where(dist_0 == np.min([dist_0]))
+       #print self.lateral_offset, segment_index
 
        # # Check the Sign of the Lateral Offset
        aX, aY, bX, bY = self.multilines[0][segment_index].bounds #self.multilines[0][segment_index[0][0]].bounds
@@ -207,7 +226,11 @@ class automated_labelling():
        ############################## ANGULAR OFFSET ###########################
 
        # Estimate slope and perpendicular slope of the nearest line segement
+       gt_slope = (bY-aY)/(bX-aX)
        gt_yaw = self.normalizeangle(math.atan2(bY-aY,bX-aX))
+       # gt_slope_normal = -1/gt_slope
+       # # gt_yaw_normal = self.normalizeangle(math.atan(gt_slope_normal))
+       # gt_yaw_normal = self.normalizeangle(math.atan2(aX-bX,bY-aY))
 
        # Interpolate the nearest point on the line and find slope of that line
        nearest_line = geom.LineString(self.multilines[0][segment_index])
@@ -215,34 +238,59 @@ class automated_labelling():
        robot_slope = (point.y-point_on_line.y)/(point.x-point_on_line.x)
 
        if (self.count_ind < self.first_dir):
-           self.rpos_x.append(point.x)
-           self.rpos_y.append(point.y)
+           self.robot_pose_x.append(self.pose_map_r.pose.position.x)
+           self.robot_pose_y.append(self.pose_map_r.pose.position.y)
 
-       if (len(self.rpos_x)>=self.first_dir):
+       if (len(self.robot_pose_x)>=self.first_dir):
 
-           if (self.rpos_map.pose.position.x!=self.prev_rpos_map.pose.position.x) and ((self.rpos_map.pose.position.y!=self.prev_rpos_map.pose.position.y)):
-               delta_x = point.x-self.rpos_x[self.count_ind-self.first_dir] #self.prev_rpos_map.pose.position.x
-               delta_y = point.y-self.rpos_y[self.count_ind-self.first_dir] #self.prev_rpos_map.pose.position.y
+           if (self.pose_map_r.pose.position.x!=self.prev_pose_map_r.pose.position.x) and ((self.pose_map_r.pose.position.y!=self.prev_pose_map_r.pose.position.y)):
+               delta_x = self.pose_map_r.pose.position.x-self.robot_pose_x[self.count_ind-self.first_dir] #self.prev_pose_map_r.pose.position.x
+               delta_y = self.pose_map_r.pose.position.y-self.robot_pose_y[self.count_ind-self.first_dir] #self.prev_pose_map_r.pose.position.y
 
-               # if (delta_x==0):
+               # if delta_x==0:
                self.robot_yaw = self.normalizeangle(math.atan2(delta_y,delta_x))
                # else:
-               #   self.robot_yaw = self.normalizeangle(math.atan(delta_y/delta_x))
+               #     self.robot_yaw = self.normalizeangle(math.atan(delta_y/delta_x))
+               self.delta_robot_yaw = self.robot_yaw-self.prev_robot_yaw
+               self.prev_robot_yaw = self.robot_yaw
 
-               # self.delta_robot_yaw = self.robot_yaw-self.prev_robot_yaw
-               # self.prev_robot_yaw = self.robot_yaw
-               # self.prev_rpos_map = self.rpos_map
+               self.prev_pose_map_r = self.pose_map_r
 
                # Angle between two lines as offset
                self.angular_offset = self.normalizeangle(gt_yaw-self.robot_yaw)
 
-           self.rpos_x.append(self.rpos_map.pose.position.x)
-           self.rpos_y.append(self.rpos_map.pose.position.y)
+               # if self.oneshot_imu_start_pose==0:
+               #     self.curr_robot_yaw = self.normalizeangle(math.atan(self.pose_map_r.pose.position.y/self.pose_map_r.pose.position.x))
+               #     self.oneshot_imu_start_pose = 1
+
+               self.curr_robot_yaw = self.normalizeangle(math.atan(self.pose_map_r.pose.position.y/self.pose_map_r.pose.position.x))
+
+               #self.curr_robot_yaw = self.yaw_imu_t+self.curr_robot_yaw
+               #self.angular_offset_imu = self.normalizeangle(self.yaw_imu_t-(self.curr_robot_yaw-gt_yaw))
+               self.angular_offset_imu = self.normalizeangle((self.curr_robot_yaw+self.yaw_imu_t)-math.atan(robot_slope))
+               #print self.yaw_imu_t, math.atan(robot_slope), self.angular_offset_imu
+
+           self.robot_pose_x.append(self.pose_map_r.pose.position.x)
+           self.robot_pose_y.append(self.pose_map_r.pose.position.y)
 
        # print "angular_offset:", self.angular_offset
 
-       self.robot_dir.append(self.angular_offset)
+       self.robot_dir.append(self.delta_robot_yaw) #self.angular_offset
+       self.robot_imu.append(self.angular_offset_imu)
        self.count_ind = self.count_ind + 1
+
+       ########################################################################################33
+
+       #math.atan2((gt_slope_normal-robot_slope),(1+(gt_slope_normal*robot_slope))))
+
+       # # Angular Offset => IMU with GT yaw (line segement index)
+       # if self.receive_imu_fix==True:
+       #     self.angular_offset = self.normalizeangle(AO) #(math.pi-self.yaw_imu)
+
+       # RGB Image nearest to current GNSS fix msg
+       if self.img_receive==True:
+           rospy.loginfo('Received image for prediction')
+           print
 
 if __name__ == '__main__':
     try:
@@ -254,7 +302,7 @@ if __name__ == '__main__':
         # Function to obtain the ground truth values in Map frame
         auto_label.ground_truth_utm2map()
 
-        myfile = open('20191010_L1_N_offsets.txt', 'a') #_imu
+        myfile = open('20191010_L4_N_slaloam_offsets_new.txt', 'a') #_imu
         myfile.truncate(0)
         myfile.write("dt(cam)")
         myfile.write("\t")
@@ -265,7 +313,7 @@ if __name__ == '__main__':
         myfile.write("AO")
         myfile.write("\n")
 
-        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L1_N/bag_files/")
+        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L4_N_slaloam/bag_files/")
 
         for bag_file in sorted(glob.glob(osp.join(input_dir, '*.bag'))):
             print(bag_file)
@@ -292,6 +340,7 @@ if __name__ == '__main__':
                  auto_label.dt_imu = auto_label.dt_imu + (t_imu.to_sec()-t0_imu)
 
                  delta_yaw_r_imu = delta_yaw_r_imu + auto_label.normalizeangle(yaw_r_imu-prev_yaw_r_imu) # Rate of change of IMU yaw
+                 # print yaw_map_imu, prev_yaw_map_imu
 
                  auto_label.orientation_imu = quaternion_from_euler(0, 0, yaw_r_imu-prev_yaw_r_imu)
                  auto_label.dt_imu_fix_.append(auto_label.dt_imu)
@@ -344,6 +393,10 @@ if __name__ == '__main__':
                  # RTK Fix from UTM Frame to Robot Frame
                  auto_label.GNSS_WorldToRobot()
 
+                 imu_idx = (np.abs(np.array(auto_label.dt_imu_fix_) - auto_label.dt_gps)).argmin()
+                 auto_label.yaw_imu_t = auto_label.imu_fix_[imu_idx] #auto_label.yaw_imu_t+
+                 auto_label.yaw_imu.append(auto_label.yaw_imu_t)
+
                  # Offset Estimation
                  auto_label.offset_estimation()
 
@@ -353,10 +406,19 @@ if __name__ == '__main__':
                  myfile.write("\t")
                  myfile.write(str("%.4f" %auto_label.lateral_offset))
                  myfile.write("\t")
-                 myfile.write(str("%.4f" %auto_label.angular_offset))
+                 myfile.write(str("%.4f" %auto_label.angular_offset)) #_imu
                  myfile.write("\n")
 
             bag.close()
+
+        plt.figure('a')
+        plt.plot(auto_label.robot_dir) #robot_dir
+        plt.plot(auto_label.yaw_imu) #yaw_imu
+        plt.legend(['Travel Direction',' Relative Raw IMU'])
+        plt.title('Angular data')
+        plt.xlabel('Frame number')
+        plt.ylabel('Radians')
+        plt.show()
 
     except rospy.ROSInterruptException:
          cv2.destroyAllWindows() # Closes all the frames
