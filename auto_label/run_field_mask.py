@@ -33,9 +33,10 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
     cam_model = RectiLinearCameraModel(calib_file)
 
     #Experimental corrections, slalom dataset!!!
-    mean_correction = 0 #0.043762404580152674
-    delay_correction = 0 #20
-    angle_sign = 1#-1 #minus 1 if sign switch
+    angular_mean_correction = 0.047 #0.043762404580152674
+    lateral_mean_correction = 0.032
+    delay_correction = 0 #image frame vs offset correction
+    angle_sign = -1 #minus 1 if angle inversion
 
     #--- Per prefix
     #Set up field mask
@@ -57,15 +58,16 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
             lateral_offset, angular_offset,_ = read_robot_offset_from_file(robot_offset_file,frame_ind)
             if lateral_offset is None:
                 break
-            angular_offset = angular_offset - mean_correction #subtract mean value
+            angular_offset = angular_offset - angular_mean_correction #subtract mean value
             angular_offset = angular_offset*angle_sign #switch sign
+            lateral_offset = lateral_offset - lateral_mean_correction
 
             #Camera setup #fixme read from urdf
             #camera_xyz = np.array([0.749, 0.033, 1.242]) #measured
             camera_xyz = np.array([0.749, 0.033, 1.1]) #adjusted
             #camera_xyz = np.array([0.0, 0.0, 1.1]) #zero xy offset
             #camera_rpy = np.array([0.000, -0.332, 0.000]) #measured
-            camera_rpy = np.array([0.000, -0.4, 0.000]) #adjusted
+            camera_rpy = np.array([0.000, -0.4, 0.0]) #adjusted
             #camera_rpy = np.array([0.000, -0.4, 0]) #zero yaw
 
             #compensate for wrong sign
