@@ -123,15 +123,16 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
 if __name__ == "__main__":
     #Make image mask for a folder of images and their robot position data
     #Setup
-    dataset_dir = os.path.join('../Frogn_Dataset')
+    dataset_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/Frogn_Dataset')#'../Frogn_Dataset')
+    #dataset_dir = os.path.join('../Frogn_Dataset')
     image_dir = os.path.join(dataset_dir,'images_only')
     output_dir = os.path.join('output/')
-    robot_offset_dir = os.path.join(dataset_dir,'robot_offsets/20191010_L2_N_offsets*')
+    robot_offset_dir = os.path.join(dataset_dir,'robot_offsets/2019*')
     #Camera model
-    calib_file = os.path.join('../camera_data_collection/realsense_model.xml')
+    calib_file = os.path.join('../camera_data_collection/realsense_model.xml') #realsense model for "images only", cropped model for "prepped" images
     #Turn robot offset on/off
     use_robot_offset = True
-    #Turn on subsampling
+    #Turn on subsampling of image mask
     sampling_step = 8
 
     #Run field mask on the specified images, camera model and dataset directory:
