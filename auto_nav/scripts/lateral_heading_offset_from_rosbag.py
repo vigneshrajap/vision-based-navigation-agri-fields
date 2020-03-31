@@ -39,7 +39,7 @@ class automated_labelling():
         rospack = rospkg.RosPack()
         self.book = pe.get_book(file_name=rospack.get_path('auto_nav')+"/config/ground_truth_coordinates.xls", start_row=1)
 
-        self.lane_number = str(3) #rospy.set_param('lane_number', 1)
+        self.lane_number = str(1) #rospy.set_param('lane_number', 1)
         self.gt_utm = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
         self.gt_map = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
 
@@ -207,7 +207,8 @@ class automated_labelling():
        ############################## ANGULAR OFFSET ###########################
 
        # Estimate slope and perpendicular slope of the nearest line segement
-       gt_yaw = self.normalizeangle(math.atan2(bY-aY,bX-aX))
+       # gt_yaw = self.normalizeangle(math.atan2(bY-aY,bX-aX)) # North
+       gt_yaw = self.normalizeangle(math.atan2(aY-bY,aX-bX)) # South
 
        # Interpolate the nearest point on the line and find slope of that line
        nearest_line = geom.LineString(self.multilines[0][segment_index])
@@ -254,7 +255,7 @@ if __name__ == '__main__':
         # Function to obtain the ground truth values in Map frame
         auto_label.ground_truth_utm2map()
 
-        myfile = open('20191010_L3_S_morning_slaloam_offsets.txt', 'a') #_imu
+        myfile = open('20191010_L1_S_offsets.txt', 'a') #_imu
         myfile.truncate(0)
         myfile.write("dt(cam)")
         myfile.write("\t")
@@ -265,7 +266,7 @@ if __name__ == '__main__':
         myfile.write("AO")
         myfile.write("\n")
 
-        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L3_S_morning_slaloam/bag_files/")
+        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L1_S/bag_files/")
 
         for bag_file in sorted(glob.glob(osp.join(input_dir, '*.bag'))):
             print(bag_file)
