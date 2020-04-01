@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 from sensor_msgs.msg import Image
-import cv2
-from cv_bridge import CvBridge
 import rospy
 import numpy as np
 import glob
