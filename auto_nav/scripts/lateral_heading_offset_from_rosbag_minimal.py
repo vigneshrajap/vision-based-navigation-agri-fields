@@ -4,10 +4,10 @@ import rospy
 import numpy as np
 import glob
 import pyexcel as pe
-import tf
+#import tf
 import sys
 import math
-from tf.transformations import euler_from_quaternion, unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_from_euler
+#from tf.transformations import euler_from_quaternion, unit_vector, quaternion_multiply, quaternion_conjugate, quaternion_from_euler
 import tf2_ros
 import tf2_geometry_msgs
 from geometry_msgs.msg import Vector3, Quaternion, Transform, TransformStamped, Point, PoseStamped
@@ -56,7 +56,7 @@ class automated_labelling():
         self.gps_fix = NavSatFix()
         self.image = Image()
         self.img_timestamp = Header()
-        self.bridge = CvBridge()
+        #self.bridge = CvBridge()
         self.magnetic_declination = 0.0523599
 
         self.orientation_imu = []
@@ -97,7 +97,7 @@ class automated_labelling():
         self.dt_imu = 0
         self.dt_img = 0
 
-        self.listener = tf.TransformListener()
+        #self.listener = tf.TransformListener()
         self.map_trans = TransformStamped()
         self.map_trans.header.stamp = rospy.Time.now()
         self.map_trans.header.frame_id = self.map_frame

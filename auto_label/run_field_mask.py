@@ -127,7 +127,7 @@ if __name__ == "__main__":
     #dataset_dir = os.path.join('../Frogn_Dataset')
     image_dir = os.path.join(dataset_dir,'images_only')
     output_dir = os.path.join('output/')
-    robot_offset_dir = os.path.join(dataset_dir,'robot_offsets/20191010_L3_S_offsets*')
+    robot_offset_dir = os.path.join(dataset_dir,'robot_offsets/20191010_L2_S_offsets*')
     #Camera model
     calib_file = os.path.join('../camera_data_collection/realsense_model.xml') #realsense model for "images only", cropped model for "prepped" images
     #Turn robot offset on/off
