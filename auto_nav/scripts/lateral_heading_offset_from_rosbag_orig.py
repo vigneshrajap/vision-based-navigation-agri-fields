@@ -245,7 +245,7 @@ class automated_labelling():
        self.robot_dir.append(self.angular_offset)
        self.count_ind = self.count_ind + 1
 
-def main(input_dir, output_file):
+if __name__ == '__main__':
     try:
         #Initialize node
         rospy.init_node('lateral_heading_offset')
@@ -255,7 +255,7 @@ def main(input_dir, output_file):
         # Function to obtain the ground truth values in Map frame
         auto_label.ground_truth_utm2map()
 
-        myfile = open(output_file,'a')
+        myfile = open('20191010_L3_S_slaloam_offsets.txt', 'a') #_imu
         myfile.truncate(0)
         myfile.write("dt(cam)")
         myfile.write("\t")
@@ -265,6 +265,8 @@ def main(input_dir, output_file):
         myfile.write("\t")
         myfile.write("AO")
         myfile.write("\n")
+
+        input_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_9') #expanduser("~/Third_Paper/Datasets/20191010_L1_S/bag_files/")
 
         for bag_file in sorted(glob.glob(osp.join(input_dir, '*.bag'))):
             print(bag_file)
@@ -360,12 +362,3 @@ def main(input_dir, output_file):
     except rospy.ROSInterruptException:
          cv2.destroyAllWindows() # Closes all the frames
          pass
-
-if __name__ == '__main__':
-    input_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_9')
-    rec_prefix = '20191010_L3_S_slaloam'
-    output_file = rec_prefix+'_offsets.txt'
-
-    main(input_dir,output_file)
-
-
