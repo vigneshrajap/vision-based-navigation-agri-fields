@@ -125,10 +125,10 @@ class automated_labelling():
 
         lines = []
 
-        print('len gt utm', len(self.gt_utm)) #debug
+        #print('len gt utm', len(self.gt_utm)) #debug
         # Increment by parameter for multiple line segments along ground truth points
         for ind in range((self.increment/2),len(self.gt_utm),self.increment):
-            print('ind',ind) #debug
+            #print('ind',ind) #debug
             self.line = geom.LineString(self.gt_map[ind-(self.increment/2):ind+(self.increment/2),:])
             lines.append(self.line)
         self.multilines.append(geom.MultiLineString(lines))
@@ -182,7 +182,7 @@ class automated_labelling():
        dist_0 = np.empty([np.int(len(self.gt_utm)/self.increment),1])
 
        point = geom.Point(self.rpos_map.pose.position.x, self.rpos_map.pose.position.y)
-       print('point',point.x, point.y) #debug 
+       #print('point',point.x, point.y) #debug 
        self.lateral_offset = 100.0
 
        # Increment by parameter for multiple line segments along ground truth points

@@ -183,10 +183,12 @@ if __name__ == '__main__':
     input_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_9') #!!!input
     bag_files = sorted(glob.glob(osp.join(input_dir, '*.bag')))
 
+    cnt = 0 #debug
     for bag_file in bag_files:
         print(bag_file)
 
         bag = rosbag.Bag(bag_file)
+
         ##################### Extract IMU Data #####################
         auto_label.imu_fix_ = []
         auto_label.dt_imu_fix_ = []
@@ -214,56 +216,26 @@ if __name__ == '__main__':
 
                 t0_imu = t_imu.to_sec()
                 prev_yaw_r_imu = yaw_r_imu
-
         
         ##################### Extract GNSS Data #####################
-        auto_label.gps_fix_ = []
-        auto_label.dt_gps_fix_ = []
-
         for gps_topic, gps_msg, t_gps in bag.read_messages(topics=[auto_label.gps_topic_name]):
-                if(auto_label.oneshot_gps==0):
-                    t0 = t_gps.to_sec()
-                    print('t0_gps',t0)
-                    auto_label.oneshot_gps = 1
-
-                auto_label.dt_gps = auto_label.dt_gps + (t_gps.to_sec()-t0)
-                auto_label.dt_gps_fix_.append(auto_label.dt_gps)
-                auto_label.gps_fix_.append([gps_msg.latitude, gps_msg.longitude])
+                auto_label.gps_fix.latitude = gps_msg.latitude
+                auto_label.gps_fix.longitude = gps_msg.longitude
                 t0 = t_gps.to_sec()
-
-        ##################### Extract Camera Data #####################
-        # Image data
-        auto_label.img_ = []
-        auto_label.dt_img_ = []
-        auto_label.dt_imgSeq_ = []
-
-        for topic, img_msg, t_img in bag.read_messages(topics=[auto_label.image_topic_name]):
-                if(auto_label.oneshot_img==0):
-                    t0_img = t_img.to_sec()
-                    print("t0_img",t0_img)
-                    auto_label.img_oldSeq = img_msg.header.seq
-                    auto_label.oneshot_img = 1
-
-                auto_label.dt_img = auto_label.dt_img + (t_img.to_sec()-t0_img)
-                auto_label.img_NewSeq = img_msg.header.seq
-
-                auto_label.dt_imgSeq = auto_label.img_NewSeq - auto_label.img_oldSeq
-
-                auto_label.dt_img_.append(auto_label.dt_img)
-                auto_label.dt_imgSeq_.append(auto_label.dt_imgSeq)
-                t0_img = t_img.to_sec()
-
-        for img_ind in range(len(auto_label.dt_img_)):
-
-                gps_idx = (np.abs(np.array(auto_label.dt_gps_fix_) - auto_label.dt_img_[img_ind])).argmin()
-                auto_label.gps_fix.latitude = auto_label.gps_fix_[gps_idx][0] #gps_msg.latitude
-                auto_label.gps_fix.longitude = auto_label.gps_fix_[gps_idx][1] #gps_msg.longitude
 
                 # RTK Fix from UTM Frame to Robot Frame
                 auto_label.GNSS_WorldToRobot()
-                print('img_dt and img_ind', (auto_label.dt_img_[img_ind],img_ind))
-                print('gps_dt and rpos_map',(auto_label.dt_gps_fix_[gps_idx],auto_label.rpos_map.pose.position.x, auto_label.rpos_map.pose.position.y))
-                #fixme save robot positions for all robot frames, not just camera frames
+                print('gps_t0 and rpos_map',t0, auto_label.rpos_map.pose.position.x, auto_label.rpos_map.pose.position.y)
 
+        ##################### Extract Camera Data #####################
+        '''
+        seq0_img = None
+        for topic, img_msg, t_img in bag.read_messages(topics=[auto_label.image_topic_name]):
+            if(seq0_img is None): #first frame
+                seq0_img = img_msg.header.seq
+            seq_img = img_msg.header.seq - seq0_img #relative frame number
+            t_img_sec = t_img.to_sec() #aboslute time
+            print("t_img",t_img_sec)
+            print('dt img seq', seq_img)
+        '''
         bag.close()
-        break #debug: stop after one bag file
