@@ -1,5 +1,6 @@
 import numpy as np
 import csv
+
 #Utility functions for automatic labelling
 
 def blend_color_and_image(image,mask,color_code=[0,255,0],alpha=0.5):
