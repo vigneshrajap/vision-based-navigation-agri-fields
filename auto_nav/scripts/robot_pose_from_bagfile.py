@@ -25,6 +25,7 @@ from os.path import expanduser
 import os.path as osp
 import matplotlib.pyplot as plt
 
+from collections import namedtuple
 
 #Read and save GPS ground truth, robot pose and camera images for further processing 
 
@@ -126,26 +127,70 @@ class automated_labelling():
         # Transform RTK values w.r.t to "Map" frame
         self.rpos_map.header.stamp = rospy.Time.now()
         self.rpos_map = tf2_geometry_msgs.do_transform_pose(gps_pose_map, gps_trans)
+'''
+class RobotPos(object):
+    def __init__(self,x,y,time):
+        self.x = x
+        self.y = y
+        self.time = time
+'''
+
+def cast_if_number(s):
+    try:
+        return float(s)
+    except ValueError:
+        return s
+
+def write_namedtuples_to_csv(filename, nt_list):
+    assert all([type(a)==type(nt_list[0]) for a in nt_list]) 
+
+    with open(filename, 'w') as csvfile:
+        wr = csv.writer(csvfile, delimiter= '\t')
+        wr.writerow(nt_list[0]._fields)
+        for nt in nt_list:
+            wr.writerow(nt)
+
+def read_namedtuples_from_csv(filename, type_name):
+    with open(filename, 'r') as csvfile:
+        reader = csv.reader(csvfile, delimiter = '\t')
+        field_names = reader.next() #extract header
+        nt_class = namedtuple(type_name,field_names)
+        nt_list = []
+        for row in reader:
+            row = [cast_if_number(s) for s in row]
+            nt_list.append(nt_class._make(row))
+        return nt_list    
 
 if __name__ == '__main__':
     #user inputs
     input_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_9') #!!!input
     lane_number = 3
+    row_prefix = '20191010_L3_S_morning_slaloam'
 
+    output_dir = '.'
+    #bag_files = sorted(glob.glob(osp.join(input_dir, '*.bag')))
+    bag_files = ['/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_9/dataset_recording_2019-10-10-12-14-31_37.bag'] #debug
     #Initialize node
     rospy.init_node('lateral_heading_offset')
 
     auto_label = automated_labelling()
 
-    #Read and convert ground truth values to map frame
+    ############ Read and convert ground truth values ###################
+
     auto_label.read_utm_gt_from_xls(lane_number)
     auto_label.ground_truth_utm2map()
+    
+    GTPos = namedtuple('GTPos',['x','y'])
+    gt_map_positions = []
+    for row in auto_label.gt_map:
+        gt_map_positions.append(GTPos(x=row[0],y=row[1]))
 
-    print('gt_map',auto_label.gt_map) #output
-
-    bag_files = sorted(glob.glob(osp.join(input_dir, '*.bag')))
-
-    cnt = 0 #debug
+    ############ Read from bagfiles #################
+    RobotPos = namedtuple('RobotPos',['x','y','time'])
+    robot_map_positions = []
+    ImageMeta = namedtuple('ImageFrame',['frame_num','time','filename'])
+    image_meta_list = []
+    
     for bag_file in bag_files:
         print(bag_file)
 
@@ -155,12 +200,13 @@ if __name__ == '__main__':
         for gps_topic, gps_msg, t_gps in bag.read_messages(topics=[auto_label.gps_topic_name]):
                 auto_label.gps_fix.latitude = gps_msg.latitude
                 auto_label.gps_fix.longitude = gps_msg.longitude
-                t0 = t_gps.to_sec()
 
                 # RTK Fix from UTM Frame to Robot Frame
                 auto_label.GNSS_WorldToRobot()
-                print('gps_t0 and rpos_map',t0, auto_label.rpos_map.pose.position.x, auto_label.rpos_map.pose.position.y) #output
-
+                
+                rp = RobotPos(x = auto_label.rpos_map.pose.position.x, y = auto_label.rpos_map.pose.position.y, time = t_gps.to_sec())
+                robot_map_positions.append(rp)
+        
         ##################### Extract Camera Data #####################
         
         seq0_img = None
@@ -169,8 +215,33 @@ if __name__ == '__main__':
                 seq0_img = img_msg.header.seq
             seq_img = img_msg.header.seq - seq0_img #relative frame number
             t_img_sec = t_img.to_sec() #aboslute time
-            print("t_img",t_img_sec) #output
-            print('dt img seq', seq_img) #output
-        
+
+            #Read and save image to file
+            im_filename = row_prefix + '_' +  str(seq_img) + '.png'
+            im_path = os.path.join(output_dir, im_filename)
+            #fixme read image and save directly to png file?
+
+            #accumulate metadata
+            im_meta = ImageMeta(frame_num = seq_img, time = t_img_sec, filename = im_filename)
+            image_meta_list.append(im_meta)
+               
         bag.close()
-        break
+
+######## Write to csv files
+
+#Ground truth
+gt_pos_file = os.path.join(output_dir, row_prefix + '_gt_pos.csv')
+print('Writing ground truth positions to '+ gt_pos_file)
+write_namedtuples_to_csv(gt_pos_file,gt_map_positions)
+
+# Robot positions
+robot_pos_file = os.path.join(output_dir,row_prefix + '_robot_pos_and_timestamps.csv')
+print('Writing robot positions to '+ robot_pos_file)
+write_namedtuples_to_csv(robot_pos_file,robot_map_positions)
+
+#Image frames
+img_meta_file = os.path.join(output_dir,row_prefix + '_image_timestamps.csv')
+print('Writing image timestamps to '+ robot_pos_file)
+write_namedtuples_to_csv(img_meta_file,image_meta_list)
+
+
