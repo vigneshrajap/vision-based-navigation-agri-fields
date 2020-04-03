@@ -136,9 +136,9 @@ if __name__ == '__main__':
     lane_number = 3
     row_prefix = '20191010_L3_S_morning_slaloam'
 
-    output_dir = '.'
-    #bag_files = sorted(glob.glob(osp.join(input_dir, '*.bag')))
-    bag_files = ['/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_9/dataset_recording_2019-10-10-12-14-31_37.bag'] #debug
+    output_dir = './output'
+    bag_files = sorted(glob.glob(os.path.join(input_dir, '*.bag')))
+    #bag_files = ['/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_9/dataset_recording_2019-10-10-12-14-31_37.bag'] #debug
     #Initialize node
     rospy.init_node('lateral_heading_offset')
 
@@ -160,6 +160,8 @@ if __name__ == '__main__':
     ImageMeta = namedtuple('ImageFrame',['frame_num','time','filename'])
     image_meta_list = []
     
+    seq0_img = None
+
     for bag_file in bag_files:
         print('Opening ' + bag_file)
 
@@ -178,7 +180,6 @@ if __name__ == '__main__':
         
         ##################### Extract Camera Data #####################
         
-        seq0_img = None
         for topic, img_msg, t_img in bag.read_messages(topics=[auto_label.image_topic_name]):
             if(seq0_img is None): #first frame
                 seq0_img = img_msg.header.seq
@@ -210,7 +211,7 @@ write_namedtuples_to_csv(robot_pos_file,robot_map_positions)
 
 #Image frames
 img_meta_file = os.path.join(output_dir,row_prefix + '_image_timestamps.csv')
-print('Writing image timestamps to '+ robot_pos_file)
+print('Writing image timestamps to '+ img_meta_file)
 write_namedtuples_to_csv(img_meta_file,image_meta_list)
 
 
