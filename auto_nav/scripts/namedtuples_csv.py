@@ -3,6 +3,7 @@ from collections import namedtuple
 import csv
 
 def cast_if_number(s):
+    #Hacky way of casting to number
     try:
         return float(s)
     except ValueError:
