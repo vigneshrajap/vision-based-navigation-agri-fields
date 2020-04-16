@@ -13,8 +13,6 @@ import tf2_geometry_msgs
 from geometry_msgs.msg import Vector3, Quaternion, Transform, TransformStamped, Point, PoseStamped
 from sensor_msgs.msg import NavSatFix
 import geo2UTM
-#import timeit
-#import shapely.geometry as geom
 import rospkg
 from std_msgs.msg import Header
 import csv
@@ -23,12 +21,9 @@ import os
 from namedtuples_csv import write_namedtuples_to_csv
 
 from collections import namedtuple
-#os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" # Hides the pygame version, welcome msg
-#from os.path import expanduser
-#import os.path as osp
-#import matplotlib.pyplot as plt
 
 #Read and save GPS ground truth, robot pose and camera images for further processing 
+# (Based on the reading part of lateral_heading_offset_from_rosbag.py)
 
 class automated_labelling():
     '''

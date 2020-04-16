@@ -63,6 +63,10 @@ def point_negative():
 def point_backwards():
     return np.array([-2,-1])
 
+@pytest.fixture
+def point_xaxis():
+    return np.array([1,0])
+
 #Direction tests
 def test_direction_both_forwards(vector1, vector2):
     direction_sign = geometric_utilities.direction_sign(vector1,vector2)
@@ -133,7 +137,13 @@ def test_signed_distance_both_backwards_correct_sign(point_backwards, origo, vec
     d = geometric_utilities.signed_distance_point_to_line(point=point_backwards, line_point=origo, line_vector=vector1_backwards)
     assert d < 0
 
-
+def test_closest_point(point,point_negative,point_xaxis,origo):
+    ind1 = geometric_utilities.closest_point(point[0],point[1],[point_xaxis[0],origo[0]],[point_xaxis[1],origo[1]])
+    ind2 = geometric_utilities.closest_point(point_negative[0],point_negative[1],[point_xaxis[0],origo[0]],[point_xaxis[1],origo[1]])
+    ind3 = geometric_utilities.closest_point(origo[0],origo[1],[point_xaxis[0],point[0], point_negative[0]],[point_xaxis[1],point[1], point_negative[1]])
+    assert ind1 == 0
+    assert ind2 == 0
+    assert ind3 == 0
 
 
 

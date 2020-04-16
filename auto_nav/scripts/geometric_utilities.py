@@ -19,6 +19,27 @@ def signed_distance_point_to_line(point, line_point, line_vector):
     d = np.cross(line_vector,point_vector)
     return d
 
+def closest_point(x0,y0,xs,ys):
+    #Compute distance between points, given as lists or np arrays of x and y coordinates
+    x0 = np.repeat(x0,len(xs))
+    y0 = np.repeat(y0,len(ys))
+    sum_squared_error = 0.5*np.sqrt((x0-xs)**2 +(y0-ys)**2)
+    ind = np.argmin(sum_squared_error)
+    
+    return ind
+
+def line_to_next_point(point_ind, xs, ys):
+    #Line segment directly from current to next point
+    #Returns line on point, unit vector form
+    point = np.array([xs[point_ind],ys[point_ind]])
+    next_point = np.array([xs[point_ind+1],ys[point_ind+1]])
+    vector = next_point-point
+    vector = vector/np.linalg.norm(vector)
+
+    print('pints', point, next_point)
+
+    return point,vector
+
     
 
 
