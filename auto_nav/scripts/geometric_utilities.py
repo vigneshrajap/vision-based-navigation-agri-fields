@@ -28,17 +28,17 @@ def closest_point(x0,y0,xs,ys):
     
     return ind
 
-def line_to_next_point(point_ind, xs, ys):
+def line_to_next_point(point_ind, xs, ys, step = 1):
     #Line segment directly from current to next point
     #Returns line on point, unit vector form
     point = np.array([xs[point_ind],ys[point_ind]])
-    next_point = np.array([xs[point_ind+1],ys[point_ind+1]])
+    next_point = np.array([xs[point_ind+step],ys[point_ind+step]])
     vector = next_point-point
     vector = vector/np.linalg.norm(vector)
-
-    print('pints', point, next_point)
-
+    
     return point,vector
+
+    
 
     
 
