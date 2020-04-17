@@ -57,6 +57,6 @@ def data_correction(robot_offset_file, visualize = False):
 
 if __name__ == "__main__":
     dataset_dir = os.path.join('../Frogn_Dataset'),
-    robot_offset_file = os.path.join('../Frogn_Dataset','robot_offsets/20191010_L1_N_offsets.txt')
+    robot_offset_file = os.path.join('../Frogn_Dataset','robot_offsets/20191010_L3_S_morning_slaloam_offsets.txt')
 
     data_correction(robot_offset_file,visualize = True)

@@ -192,21 +192,21 @@ if __name__ == '__main__':
                
         bag.close()
 
-######## Write to csv files
+    ######## Write to csv files
 
-#Ground truth
-gt_pos_file = os.path.join(output_dir, row_prefix + '_gt_pos.csv')
-print('Writing ground truth positions to '+ gt_pos_file)
-write_namedtuples_to_csv(gt_pos_file,gt_map_positions)
+    #Ground truth
+    gt_pos_file = os.path.join(output_dir, row_prefix + '_gt_pos.csv')
+    print('Writing ground truth positions to '+ gt_pos_file)
+    write_namedtuples_to_csv(gt_pos_file,gt_map_positions)
 
-# Robot positions
-robot_pos_file = os.path.join(output_dir,row_prefix + '_robot_pos_and_timestamps.csv')
-print('Writing robot positions to '+ robot_pos_file)
-write_namedtuples_to_csv(robot_pos_file,robot_map_positions)
+    # Robot positions
+    robot_pos_file = os.path.join(output_dir,row_prefix + '_robot_pos_and_timestamps.csv')
+    print('Writing robot positions to '+ robot_pos_file)
+    write_namedtuples_to_csv(robot_pos_file,robot_map_positions)
 
-#Image frames
-img_meta_file = os.path.join(output_dir,row_prefix + '_image_timestamps.csv')
-print('Writing image timestamps to '+ img_meta_file)
-write_namedtuples_to_csv(img_meta_file,image_meta_list)
+    #Image frames
+    img_meta_file = os.path.join(output_dir,row_prefix + '_image_timestamps.csv')
+    print('Writing image timestamps to '+ img_meta_file)
+    write_namedtuples_to_csv(img_meta_file,image_meta_list)
 
 
