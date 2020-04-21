@@ -31,8 +31,6 @@ class automated_labelling():
     '''
     def __init__(self):
         self.datum = [-6614855.745, -594362.895, 0.0] # Manual Datum (NEGATE if UTM is the child frame)
-        self.gps_robot = [-0.425, 0.62, 1.05] # Fixed Static Transform
-        self.imu_robot = [0.310, 0.00, 0.80] # Fixed Static Transform
 
         self.map_frame = str('map')
         self.utm_frame = str('utm')
@@ -62,9 +60,6 @@ class automated_labelling():
         self.gt_utm = []
         self.gt_map = []
 
-        #robot position
-        self.rpos_map = PoseStamped()
-
     def read_utm_gt_from_xls(self,lane_number):
         #Open xls file
         rospack = rospkg.RosPack()
@@ -92,15 +87,7 @@ class automated_labelling():
 
           self.gt_map[i] = ([pose_trans.pose.position.x, pose_trans.pose.position.y])
 
-    def normalizeangle(self, bearing):
-        if (bearing < -math.pi):
-                  bearing += 2 * math.pi
-        elif (bearing > math.pi):
-                  bearing -= 2 * math.pi
-        return bearing
-
-    def GNSS_WorldToRobot(self):
-
+    def robot_GPS_utm2map(self):
         # Custom Library to convert geo to UTM co-ordinates
         gps_fix_utm = geo2UTM.geo2UTM(self.gps_fix.latitude, self.gps_fix.longitude)
 
@@ -113,17 +100,7 @@ class automated_labelling():
         gps_pose_map.header.stamp = rospy.Time.now()
         gps_pose_map = tf2_geometry_msgs.do_transform_pose(gps_pose_utm, self.map_trans)
 
-        gps_trans = TransformStamped()
-        gps_trans.header.stamp = rospy.Time.now()
-        gps_trans.header.frame_id = self.robot_frame
-        gps_trans.child_frame_id = self.gps_frame
-        gps_trans.transform.translation = Vector3(self.gps_robot[0],self.gps_robot[1], 0.0) #self.rot_vec[0], self.rot_vec[1] #self.gps_robot[0],self.gps_robot[1]
-        gps_trans.transform.rotation = Quaternion(0,0,0,1) # Set to identity
-
-        # Transform RTK values w.r.t to "Map" frame
-        self.rpos_map.header.stamp = rospy.Time.now()
-        self.rpos_map = tf2_geometry_msgs.do_transform_pose(gps_pose_map, gps_trans)
-
+        return gps_pose_map
 
 if __name__ == '__main__':
     #user inputs
@@ -150,8 +127,8 @@ if __name__ == '__main__':
         gt_map_positions.append(GTPos(x=row[0],y=row[1]))
 
     ############ Read from bagfiles #################
-    RobotPos = namedtuple('RobotPos',['x','y','time'])
-    robot_map_positions = []
+    GPSPos = namedtuple('GPSPos',['x','y','time'])
+    gps_map_positions = []
     ImageMeta = namedtuple('ImageFrame',['frame_num','time','filename'])
     image_meta_list = []
     
@@ -159,20 +136,21 @@ if __name__ == '__main__':
 
     for bag_file in bag_files:
         print('Opening ' + bag_file)
-
-        bag = rosbag.Bag(bag_file)
+        try:
+            bag = rosbag.Bag(bag_file)
+        except:
+            print("Could not open bagile")
 
         ##################### Extract GNSS Data #####################
         for gps_topic, gps_msg, t_gps in bag.read_messages(topics=[auto_label.gps_topic_name]):
                 auto_label.gps_fix.latitude = gps_msg.latitude
                 auto_label.gps_fix.longitude = gps_msg.longitude
 
-                # RTK Fix from UTM Frame to Robot Frame
-                auto_label.GNSS_WorldToRobot()
+                # RTK GPS position from GNNs to UTM map frame (not transformed to robot baselink yet)
+                gps_pose_map = auto_label.robot_GPS_utm2map()
                 
-                rp = RobotPos(x = auto_label.rpos_map.pose.position.x, y = auto_label.rpos_map.pose.position.y, time = t_gps.to_sec())
-                robot_map_positions.append(rp)
-        
+                gps_pos = GPSPos(x = gps_pose_map.pose.position.x, y = gps_pose_map.pose.position.y, time = t_gps.to_sec())
+                gps_map_positions.append(gps_pos)
         ##################### Extract Camera Data #####################
         
         for topic, img_msg, t_img in bag.read_messages(topics=[auto_label.image_topic_name]):
@@ -199,10 +177,10 @@ if __name__ == '__main__':
     print('Writing ground truth positions to '+ gt_pos_file)
     write_namedtuples_to_csv(gt_pos_file,gt_map_positions)
 
-    # Robot positions
-    robot_pos_file = os.path.join(output_dir,row_prefix + '_robot_pos_and_timestamps.csv')
-    print('Writing robot positions to '+ robot_pos_file)
-    write_namedtuples_to_csv(robot_pos_file,robot_map_positions)
+    # GPS (robot) positions
+    gps_pos_file = os.path.join(output_dir,row_prefix + '_gps_pos_and_timestamps.csv')
+    print('Writing robot positions to '+ gps_pos_file)
+    write_namedtuples_to_csv(gps_pos_file,gps_map_positions)
 
     #Image frames
     img_meta_file = os.path.join(output_dir,row_prefix + '_image_timestamps.csv')

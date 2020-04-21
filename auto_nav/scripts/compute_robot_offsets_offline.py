@@ -62,19 +62,23 @@ def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'),
     visualize = False):
     # Read converted positions and timestamps
     gt_positions = read_namedtuples_from_csv(os.path.join(input_dir, rec_prefix + '_gt_pos.csv'),'GTPos')
-    robot_positions = read_namedtuples_from_csv(os.path.join(input_dir, rec_prefix + '_robot_pos_and_timestamps.csv'), 'RobotPos')
+    #robot_positions = read_namedtuples_from_csv(os.path.join(input_dir, rec_prefix + '_robot_pos_and_timestamps.csv'), 'RobotPos')
+    gps_positions = read_namedtuples_from_csv(os.path.join(input_dir, rec_prefix + '_gps_pos_and_timestamps.csv'), 'GPSPos')
     img_meta = read_namedtuples_from_csv(os.path.join(input_dir, rec_prefix + '_image_timestamps.csv'), 'ImageMeta')
 
     #NB: 2 more frames when reading time stamps than what was saved with rqt image viewer. Should implement image saving in the conversion script (or make a separate script.)
+
+    #Fixed transform between robot and GPS antenna (should be read from somewhere)
+    gps_to_robot_translation = [-0.425, 0.62, 1.05] # Fixed Static Transform
 
     #Define data structures
     RobotOffset = namedtuple('Offsets',['time', 'frame', 'LO','AO'])
     robot_offsets = []
    
     #-- Sync robot position with image frames
-    pos_time = [r.time for r in robot_positions]
-    pos_x = [r.x for r in robot_positions]
-    pos_y = [r.y for r in robot_positions]
+    pos_time = [r.time for r in gps_positions]
+    pos_x = [r.x for r in gps_positions]
+    pos_y = [r.y for r in gps_positions]
     img_time = [im_m.time for im_m in img_meta]
     r_pos_upsampled_x, r_pos_upsampled_y = interpolate_position_to_new_time(pos_time, pos_x, pos_y, img_time)
 
