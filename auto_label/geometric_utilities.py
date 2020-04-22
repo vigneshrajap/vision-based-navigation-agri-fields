@@ -1,6 +1,6 @@
 import numpy as np 
 import matplotlib.pyplot as plt
-
+import math
 #Utility functions for two-dimensional vectors
 
 def direction_sign(v0, v1):
@@ -8,11 +8,18 @@ def direction_sign(v0, v1):
     #Check whether vector 1 has the same direction as vector 2 (the angle between them is smaller than 90 degrees)
     return np.sign(np.dot(v0,v1))
 
-def angle_between_vectors(v0,v1):
-    # Input: unit vectors in 2D
-    # Compute angle between two vectors. Output range is from -pi/2 to pi/2
+def angle_between_lines(v0,v1):
+    # Input: unit vectors describing lines in 2D
+    # Compute angle between lines (directionless). Output range is from -pi/2 to pi/2
     sin_theta = np.cross(v0,v1)
     return np.arcsin(sin_theta)
+
+def angle_between_vectors(v0,v1):
+    # Input: unit vectors in 2D
+    # Compute angle between vectors (with direction) Output range is from -pi to pi
+    y = v1[1]-v0[1]
+    x = v1[0]-v0[0]
+    return math.atan2(y,x)
 
 def signed_distance_point_to_line(point, line_point, line_vector):
     #Input: 2D points, 2D unit vector

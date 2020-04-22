@@ -77,7 +77,7 @@ class automated_labelling():
 
         pose_stamped = PoseStamped()
         pose_trans = PoseStamped()
-
+        print('gt_utm',self.gt_utm)
         for i in range(0, len(self.gt_utm)): # Skip the first row if it is a String
           pose_stamped.pose.position = Point(self.gt_utm[i][0], self.gt_utm[i][1], 0)
           pose_stamped.pose.orientation = Quaternion(0,0,0,1) # GPS orientation is meaningless, set to identity
@@ -86,11 +86,13 @@ class automated_labelling():
           pose_trans = tf2_geometry_msgs.do_transform_pose(pose_stamped, self.map_trans) # Transform RTK values w.r.t to "Map" frame
 
           self.gt_map[i] = ([pose_trans.pose.position.x, pose_trans.pose.position.y])
+        print('gt_map',self.gt_map)
 
     def robot_GPS_utm2map(self):
         # Custom Library to convert geo to UTM co-ordinates
+        print('gps_fix_latlong', self.gps_fix.latitude,self.gps_fix.longitude)
         gps_fix_utm = geo2UTM.geo2UTM(self.gps_fix.latitude, self.gps_fix.longitude)
-
+        print('gps_fix_utm', gps_fix_utm)
         gps_pose_utm = PoseStamped()
         gps_pose_utm.pose.position = Point(gps_fix_utm[0], gps_fix_utm[1], 0)
         gps_pose_utm.pose.orientation = Quaternion(0,0,0,1) # GPS orientation is meaningless, set to identity
@@ -99,7 +101,7 @@ class automated_labelling():
         gps_pose_map = PoseStamped()
         gps_pose_map.header.stamp = rospy.Time.now()
         gps_pose_map = tf2_geometry_msgs.do_transform_pose(gps_pose_utm, self.map_trans)
-
+        print('gps_pose_map',gps_pose_map)
         return gps_pose_map
 
 if __name__ == '__main__':
@@ -108,7 +110,7 @@ if __name__ == '__main__':
     lane_number = 3
     row_prefix = '20191010_L3_S_morning_slaloam'
 
-    output_dir = './output'
+    output_dir = './output/position_data'
     bag_files = sorted(glob.glob(os.path.join(input_dir, '*.bag')))
     #bag_files = ['/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_9/dataset_recording_2019-10-10-12-14-31_37.bag'] #debug
     #Initialize node
@@ -145,7 +147,7 @@ if __name__ == '__main__':
         for gps_topic, gps_msg, t_gps in bag.read_messages(topics=[auto_label.gps_topic_name]):
                 auto_label.gps_fix.latitude = gps_msg.latitude
                 auto_label.gps_fix.longitude = gps_msg.longitude
-
+            
                 # RTK GPS position from GNNs to UTM map frame (not transformed to robot baselink yet)
                 gps_pose_map = auto_label.robot_GPS_utm2map()
                 
