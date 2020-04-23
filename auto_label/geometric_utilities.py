@@ -17,9 +17,10 @@ def angle_between_lines(v0,v1):
 def angle_between_vectors(v0,v1):
     # Input: unit vectors in 2D
     # Compute angle between vectors (with direction) Output range is from -pi to pi
-    y = v1[1]-v0[1]
-    x = v1[0]-v0[0]
-    return math.atan2(y,x)
+    sin_theta = np.cross(v0,v1)
+    cos_theta = np.dot(v0,v1)
+    return math.atan2(sin_theta,cos_theta)
+
 
 def signed_distance_point_to_line(point, line_point, line_vector):
     #Input: 2D points, 2D unit vector

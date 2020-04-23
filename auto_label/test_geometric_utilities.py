@@ -13,6 +13,11 @@ def vector2():
     return vector/np.linalg.norm(vector)
 
 @pytest.fixture
+def vector3():
+    vector = [np.sqrt(3),1]
+    return vector/np.linalg.norm(vector)
+
+@pytest.fixture
 def vector1_backwards():
     vector = [-1,-1]
     return vector/np.linalg.norm(vector)
@@ -94,27 +99,52 @@ def test_direction_same_vector(vector1):
 
 #Angle
 def test_angle_negative_correct_sign(vector1, vector2):
-    angle = geometric_utilities.angle_between_vectors(vector1,vector2)
+    angle = geometric_utilities.angle_between_lines(vector1,vector2)
     assert angle < 0
 
 def test_angle_positive_correct_sign(vector1, vector2):
-    angle = geometric_utilities.angle_between_vectors(vector2,vector1)
+    angle = geometric_utilities.angle_between_lines(vector2,vector1)
     assert angle > 0
 
 def test_angle_both_negative_correct_sign(vector1_negative, vector2_negative):
-    angle = geometric_utilities.angle_between_vectors(vector1_negative,vector2_negative)
+    angle = geometric_utilities.angle_between_lines(vector1_negative,vector2_negative)
     assert angle > 0
 
 def test_angle_positive_negative_correct_sign(vector1, vector2_negative):
-    angle = geometric_utilities.angle_between_vectors(vector1,vector2_negative)
+    angle = geometric_utilities.angle_between_lines(vector1,vector2_negative)
     assert angle < 0
 def test_angle_negative_correct_value(vector1, xvector):
-    angle = geometric_utilities.angle_between_vectors(vector1,xvector)
+    angle = geometric_utilities.angle_between_lines(vector1,xvector)
     assert angle == approx(-np.pi/4)
 
 def test_angle_positive_correct_value(vector1, xvector):
-    angle = geometric_utilities.angle_between_vectors(xvector,vector1)
+    angle = geometric_utilities.angle_between_lines(xvector,vector1)
     assert angle == approx(np.pi/4)
+
+def test_angle_between_vector_both_lower_right(vector1,vector3):
+    angle = geometric_utilities.angle_between_vectors(vector1,vector3)
+    assert angle == approx(-0.261799388)
+
+def test_angle_between_vector_lower_right(vector3,xvector):
+    print('vector',vector3)
+    angle = geometric_utilities.angle_between_vectors(vector3,xvector)
+    assert angle == approx(-0.5235987755982988)
+
+def test_angle_between_vector_upper_right(vector3,xvector):
+    print('vector',vector3)
+    angle = geometric_utilities.angle_between_vectors(xvector,vector3)
+    assert angle == approx(0.5235987755982988)
+
+def test_angle_between_vector_upper_left(vector3,xvector):
+    print('vector',vector3)
+    angle = geometric_utilities.angle_between_vectors(xvector,vector3*[-1,1])
+    assert angle == approx(0.5235987755982988+np.pi/2)
+
+def test_angle_between_vector_upper_left(vector3,xvector):
+    print('vector',vector3)
+    angle = geometric_utilities.angle_between_vectors(xvector,-vector3)
+    assert angle == approx(0.5235987755982988-np.pi)
+
 
 #Distance
 def test_signed_distance_negative_correct_sign(point, origo, vector1):
