@@ -18,9 +18,9 @@ def align_gt_direction(gt_x, gt_y, robot_x, robot_y):
         gt_y = list(reversed(gt_y))
     return gt_x, gt_y
 
-def interpolate_position_to_new_time(pos_time, pos_x, pos_y, new_time):  
-    f_interp_x = interp1d(x=pos_time, y = pos_x, fill_value = 'extrapolate', kind = 'linear')
-    f_interp_y = interp1d(x=pos_time, y = pos_y, fill_value = 'extrapolate', kind = 'linear')
+def interpolate_position_to_new_time(pos_time, pos_x, pos_y, new_time, interpolation_mode = 'linear'):  
+    f_interp_x = interp1d(x=pos_time, y = pos_x, fill_value = 'extrapolate', kind = interpolation_mode)
+    f_interp_y = interp1d(x=pos_time, y = pos_y, fill_value = 'extrapolate', kind = interpolation_mode)
     
     pos_interp_x = f_interp_x(new_time)
     pos_interp_y = f_interp_y(new_time)
@@ -29,6 +29,8 @@ def interpolate_position_to_new_time(pos_time, pos_x, pos_y, new_time):
 def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'), 
     output_dir = os.path.join('.','output'), 
     rec_prefix = '20191010_L3_S_morning_slaloam', 
+    robot_position_window = [5,5],
+    gt_position_window = [1,1],
     debug = False, 
     visualize = False):
     # Read converted positions and timestamps
@@ -40,8 +42,8 @@ def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'),
     #NB: 2 more frames when reading time stamps than what was saved with rqt image viewer. Should implement image saving in the conversion script (or make a separate script.)
 
     #Fixed transform between robot/camera and GPS antenna (should be read from somewhere)
-    robot_to_gps_translation = [-0.425, 0.62, 1.05] # Fixed Static Transform
-    #robot_to_gps_translation = [0, 0.62, 1.05] #approx. camera y position (no x component)
+    #robot_to_gps_translation = [-0.425, 0.62, 1.05] # Fixed Static Transform
+    robot_to_gps_translation = [0, 0.62, 1.05] #approx. camera y position (no x component)
 
     #Define data structures
     RobotOffset = namedtuple('Offsets',['time', 'frame', 'LO','AO'])
@@ -56,7 +58,7 @@ def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'),
     #-- Sync and interpolate gps position to image frames
     pos_time = [r.time for r in gps_positions]
     img_time = [im_m.time for im_m in img_meta]
-    pos_upsampled_x, pos_upsampled_y = interpolate_position_to_new_time(pos_time, pos_x, pos_y, img_time)
+    pos_upsampled_x, pos_upsampled_y = interpolate_position_to_new_time(pos_time, pos_x, pos_y, img_time, interpolation_mode = 'cubic')
 
     #-- Preprocess ground truth data
     gt_x,gt_y = align_gt_direction(gt_x, gt_y,robot_x = pos_x, robot_y = pos_y)
@@ -71,7 +73,7 @@ def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'),
             gpsy = pos_upsampled_y[ind]
 
             #Compute movement direction from GPS points
-            gps_point, gps_vec = line_fit_from_points(ind,pos_upsampled_x,pos_upsampled_y,forward_window = 5, backward_window = 5)
+            gps_point, gps_vec = line_fit_from_points(ind,pos_upsampled_x,pos_upsampled_y,forward_window = robot_position_window[0], backward_window = robot_position_window[1])
 
             #Transform position from GPS antenna to robot 
             r_vec = gps_vec
@@ -84,7 +86,7 @@ def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'),
             
             #find closest GT point and compute GT direction
             closest_point_ind = closest_point(rx,ry,gt_x,gt_y)
-            gt_line_point, gt_line_vec = line_to_next_point(closest_point_ind, gt_x,gt_y) #naive way - point to point
+            gt_line_point, gt_line_vec = line_fit_from_points(closest_point_ind, gt_x,gt_y,forward_window = 1, backward_window = 1) #naive way - point to point
             
             #Compute lateral and angular offset
             angular_offset = angle_between_lines(gt_line_vec,r_vec)
@@ -96,15 +98,15 @@ def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'),
 
             r_yaw = angle_between_lines(-np.array([1,0]),r_vec)
             r_yaw_list.append(r_yaw)
-
+            
             if debug:
-                if angular_offset < -0.5:
-                    if(ind%3)== 0:
+                if angular_offset < 100:#all
+                    if(ind%10)== 0:
                         plt.figure(1)
-                        plt.plot(pos_x,pos_y,'bo')
-                        plt.plot(pos_upsampled_x, pos_upsampled_y, 'b.')
+                        plt.plot(pos_x,pos_y,'b+')
+                        plt.plot(pos_upsampled_x[ind - robot_position_window[1] : ind + robot_position_window[0]+1], pos_upsampled_y[ind - robot_position_window[1] : ind + robot_position_window[0]+1], 'b.')
                         plt.plot(gpsx,gpsy,'m+')
-                        plt.plot([gpsx,gpsx+gps_vec[0]],[gpsy,gpsy+gps_vec[1]],'b-')
+                        plt.plot([gpsx,gpsx+gps_vec[0]],[gpsy,gpsy+gps_vec[1]],'m-')
                         #Plot gt and gps/robot vectors step by step
                         plt.plot(rx_list,ry_list,'r.')
                         plt.plot([rx,rx+r_vec[0]],[ry,ry+r_vec[1]],'r-')
@@ -115,6 +117,7 @@ def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'),
                         plt.ylim([ry-5,ry+5])
                         plt.title('angular_offset '+  '%.3f' % angular_offset + ', lateral_offset ' + '%.3f' % lateral_offset)
                         plt.show()
+                        print('pos', pos_upsampled_x[ind - robot_position_window[1] : ind + robot_position_window[0]+1])
         except IndexError:
             print("Index error, frame number ", ind)
             break
@@ -127,6 +130,11 @@ def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'),
     write_namedtuples_to_csv(offset_file,robot_offsets)
 
     if visualize:
+        lateral_offsets = [ro.LO for ro in robot_offsets]
+        angular_offsets = [ro.AO for ro in robot_offsets]
+        lateral_offset_mean = np.mean(lateral_offsets)
+        angular_offset_mean = np.mean(angular_offsets)
+
         plt.figure(1)
         plt.plot(gt_x,gt_y,'g-+')
         plt.plot(pos_upsampled_x,pos_upsampled_y,'b.')
@@ -134,10 +142,14 @@ def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'),
         plt.show()
 
         plt.figure(2)
-        plt.plot([ro.AO for ro in robot_offsets])
-        plt.plot([ro.LO for ro in robot_offsets])
-        plt.plot(r_yaw_list)
-        plt.legend(['Angular offset', 'Lateral Offset','Movement direction angle'])
+        plt.plot(angular_offsets)
+        plt.plot(lateral_offsets)
+        #plt.plot(r_yaw_list)
+        plt.plot(np.repeat(angular_offset_mean,len(angular_offsets)))
+        plt.plot(np.repeat(lateral_offset_mean,len(lateral_offsets)))
+
+        #plt.legend(['Angular offset', 'Lateral Offset', 'Movement direction','Mean angular offset: ' + str(angular_offset_mean),'Mean lateral offset: ' + str(lateral_offset_mean)])
+        plt.legend(['Angular offset', 'Lateral Offset', 'Mean angular offset: ' + str(angular_offset_mean),'Mean lateral offset: ' + str(lateral_offset_mean)])
         plt.ylim([-1,1])
         plt.show()
 
@@ -145,10 +157,18 @@ if __name__ == '__main__':
     input_dir = os.path.join('.','output/position_data')
     output_dir = os.path.join('.','output/position_data')
     rec_prefix = '20191010_L3_S_morning_slaloam'
-    debug = True
+    robot_position_window = [50,50]
+    gt_position_window = [1,1]
+    debug = False
     visualize = True
 
-    compute_and_save_robot_offsets(input_dir = input_dir, output_dir = output_dir, rec_prefix = rec_prefix, debug = debug, visualize = visualize)
+    compute_and_save_robot_offsets(input_dir = input_dir, 
+    output_dir = output_dir, 
+    rec_prefix = rec_prefix, 
+    debug = debug, 
+    visualize = visualize,
+    robot_position_window = robot_position_window,
+    gt_position_window = gt_position_window)
 
 
 
