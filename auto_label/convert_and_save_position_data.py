@@ -101,9 +101,9 @@ class automated_labelling():
 
 if __name__ == '__main__':
     #user inputs
-    input_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_14') #!!!input
+    input_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_18') #!!!input
     lane_number = 4
-    row_prefix = '20191010_L4_N'
+    row_prefix = '20191010_L4_N_slaloam'
 
     output_dir = './output/position_data'
     bag_files = sorted(glob.glob(os.path.join(input_dir, '*.bag')))

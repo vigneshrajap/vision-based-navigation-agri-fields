@@ -15,7 +15,7 @@ from field_mask import *
 import csv
 import glob
 import re
-import tqdm
+from tqdm import tqdm
 
 def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
     image_dir = 'images_prepped_train',
@@ -36,11 +36,9 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
     #setup
     cam_model = RectiLinearCameraModel(calib_file)
 
-    #Experimental corrections, slalom dataset!!!
-    angular_mean_correction = 0#0.047 #0.043762404580152674
-    lateral_mean_correction = 0.13 #0.032
-    delay_correction = 30 #image frame vs offset correction
-    angle_sign = 1#-1 #minus 1 if angle inversion
+    #Corrections
+    lateral_correction = 0.13
+    delay_correction = 30 #L3S slalom #image frame vs offset correction
 
     #--- Per prefix
     #Set up field mask
@@ -64,14 +62,15 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
 
             try: 
                 lateral_offset, angular_offset,_ = read_robot_offset_from_file(robot_offset_file,frame_ind)
-                angular_offset = angular_offset - angular_mean_correction #subtract mean value
-                angular_offset = angular_offset*angle_sign #switch sign
-                lateral_offset = lateral_offset - lateral_mean_correction
+
+                #lateral_offset = lateral_offset - lateral_correction #south #should be fixed in camera coordinate frame
+                lateral_offset = lateral_offset + lateral_correction #north
 
                 #Camera setup #fixme read from urdf
                 #camera_xyz = np.array([0.749, 0.033, 1.242]) #measured
                 #camera_xyz = np.array([0.749, 0.033, 1.1]) #adjusted
-                camera_xyz = np.array([0, 0.033, 1.1]) #zero y offset
+                camera_xyz = np.array([0, 0.033, 1.1]) #zero y offset, including lateral correction
+                #camera_xyz = np.array([0, 0.033 - lateral_correction, 1.1]) #zero y offset, including lateral correction
                 #camera_xyz = np.array([0.0, 0.0, 1.1]) #zero xy offset
                 #camera_rpy = np.array([0.000, -0.332, 0.000]) #measured
                 camera_rpy = np.array([0.000, -0.4, 0.0]) #adjusted
@@ -134,8 +133,8 @@ if __name__ == "__main__":
     dataset_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/Frogn_Dataset')
     #dataset_dir = os.path.join('../Frogn_Dataset')
     image_dir = os.path.join(dataset_dir,'images_only')
-    output_dir = os.path.join('output/robot_offset_experiments/delay30_smoothing50_meancomp')
-    robot_offset_dir = os.path.join('output/robot_offset_experiments/delay30_smoothing50_meancomp/20191010*')
+    output_dir = os.path.join('output/robot_offset_experiments/offsetfix3_widercrop_delay30_smoothing50_meancomp')
+    robot_offset_dir = os.path.join('output/robot_offset_experiments/offsetfix3_widercrop_delay30_smoothing50_meancomp/20191010*')
     #Camera model
     calib_file = os.path.join('../camera_data_collection/realsense_model.xml') #realsense model for "images only", cropped model for "prepped" images
     #Turn robot offset on/off

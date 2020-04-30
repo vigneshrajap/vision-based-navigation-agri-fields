@@ -268,7 +268,7 @@ def check_if_pixel_inside_mask(polygon_mask,cam_model,pixel_yx, T_cam_to_world,c
     return np.NaN, np.NaN
 
 if __name__ == "__main__":
-    #%% Demo code: Hot to make an image field mask
+    #%% Demo code: How to make an image field mask
     
     #Dummy field mask
     polygon_field_mask = make_field_mask(widths = [0.5,0.3,0.5], labels = [1,0,1], extent = 5)
