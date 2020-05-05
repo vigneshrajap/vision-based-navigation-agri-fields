@@ -37,7 +37,7 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
     cam_model = RectiLinearCameraModel(calib_file)
 
     #Corrections
-    lateral_correction = 0.13
+    #lateral_correction = 0.13
     delay_correction = 30 #L3S slalom #image frame vs offset correction
 
     #--- Per prefix
@@ -64,7 +64,7 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
                 lateral_offset, angular_offset,_ = read_robot_offset_from_file(robot_offset_file,frame_ind)
 
                 #lateral_offset = lateral_offset - lateral_correction #south #should be fixed in camera coordinate frame
-                lateral_offset = lateral_offset + lateral_correction #north
+                #lateral_offset = lateral_offset + lateral_correction #north
 
                 #Camera setup #fixme read from urdf
                 #camera_xyz = np.array([0.749, 0.033, 1.242]) #measured
