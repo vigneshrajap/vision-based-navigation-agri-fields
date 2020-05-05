@@ -20,6 +20,9 @@ import rosbag
 import os
 from namedtuples_csv import write_namedtuples_to_csv
 
+import cv2
+from cv_bridge import CvBridge
+
 from collections import namedtuple
 
 #Read and save GPS ground truth, robot pose and camera images for further processing 
@@ -100,15 +103,16 @@ class automated_labelling():
         return gps_pose_map
 
 if __name__ == '__main__':
-    #user inputs
+    #---User inputs
     input_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_18') #!!!input
     lane_number = 4
-    row_prefix = '20191010_L4_N_slaloam'
+    row_prefix = '20191010_L4_N_slalom'
 
-    output_dir = './output/position_data'
+    image_output_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/Frogn_Dataset/new_images_only')
+    position_output_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/Frogn_Dataset/position_data')
+    
+    #---
     bag_files = sorted(glob.glob(os.path.join(input_dir, '*.bag')))
-    #bag_files = ['/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_9/dataset_recording_2019-10-10-12-14-31_37.bag'] #debug
-    #Initialize node
     rospy.init_node('lateral_heading_offset')
 
     auto_label = automated_labelling()
@@ -148,8 +152,9 @@ if __name__ == '__main__':
                 
                 gps_pos = GPSPos(x = gps_pose_map.pose.position.x, y = gps_pose_map.pose.position.y, time = t_gps.to_sec())
                 gps_map_positions.append(gps_pos)
+
         ##################### Extract Camera Data #####################
-        
+        bridge = CvBridge()
         for topic, img_msg, t_img in bag.read_messages(topics=[auto_label.image_topic_name]):
             if(seq0_img is None): #first frame
                 seq0_img = img_msg.header.seq
@@ -158,8 +163,11 @@ if __name__ == '__main__':
 
             #Read and save image to file
             im_filename = row_prefix + '_' +  str(seq_img) + '.png'
-            im_path = os.path.join(output_dir, im_filename)
+            im_path = os.path.join(image_output_dir, im_filename)
             #fixme read image and save directly to png file?
+            cv_img = bridge.imgmsg_to_cv2(img_msg, desired_encoding="bgr8")
+            cv2.imwrite(im_path, cv_img)
+            print "Wrote image %i from topic %s" % (seq_img,topic)
 
             #accumulate metadata
             im_meta = ImageMeta(frame_num = seq_img, time = t_img_sec, filename = im_filename)
@@ -170,17 +178,17 @@ if __name__ == '__main__':
     ######## Write to csv files
 
     #Ground truth
-    gt_pos_file = os.path.join(output_dir, row_prefix + '_gt_pos.csv')
+    gt_pos_file = os.path.join(position_output_dir, row_prefix + '_gt_pos.csv')
     print('Writing ground truth positions to '+ gt_pos_file)
     write_namedtuples_to_csv(gt_pos_file,gt_map_positions)
 
     # GPS (robot) positions
-    gps_pos_file = os.path.join(output_dir,row_prefix + '_gps_pos_and_timestamps.csv')
+    gps_pos_file = os.path.join(position_output_dir,row_prefix + '_gps_pos_and_timestamps.csv')
     print('Writing robot positions to '+ gps_pos_file)
     write_namedtuples_to_csv(gps_pos_file,gps_map_positions)
 
     #Image frames
-    img_meta_file = os.path.join(output_dir,row_prefix + '_image_timestamps.csv')
+    img_meta_file = os.path.join(image_output_dir,row_prefix + '_image_timestamps.csv')
     print('Writing image timestamps to '+ img_meta_file)
     write_namedtuples_to_csv(img_meta_file,image_meta_list)
 
