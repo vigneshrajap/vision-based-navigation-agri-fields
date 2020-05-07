@@ -24,6 +24,7 @@ import cv2
 from cv_bridge import CvBridge
 
 from collections import namedtuple
+import argparse
 
 #Read and save GPS ground truth, robot pose and camera images for further processing 
 # (Based on the reading part of lateral_heading_offset_from_rosbag.py)
@@ -102,15 +103,33 @@ class automated_labelling():
         gps_pose_map = tf2_geometry_msgs.do_transform_pose(gps_pose_utm, self.map_trans)
         return gps_pose_map
 
-if __name__ == '__main__':
+def main():
+    parser = argparse.ArgumentParser(description="Read and convert field recordings to csv format. Works on one bagfile series at a time. Roscore must run in other terminal. Example call: convert_and_save_position_data.py --bagfile_dir 20191010_bagfiles/dataset_11 --row_number 1 --row_prefix 20191010_L1_S")
+    parser.add_argument("--input_data_dir", default = './data', help = "Base directory for input data")
+    parser.add_argument("--output_data_dir", default = './output', help = "Base directory for output data")
+    parser.add_argument("--bagfile_dir", help = "Mandatory. Folder with bagfile series. (relative to data basedir)")
+    parser.add_argument("--image_output_dir", default = 'images_only', help = "Output directory for images (relative to data basedir)")
+    parser.add_argument("--position_output_dir", default = 'position_data', help = "Output directory for position data (relative to data data basedir)")
+    parser.add_argument("--row_number", help = "Mandatory. Row number in ground truth data")
+    parser.add_argument("--row_prefix", help = "Mandatory. Row ID")
+
+    args = parser.parse_args()
+
+    input_dir = os.path.join(args.input_data_dir,args.bagfile_dir)
+    lane_number = args.row_number
+    row_prefix = args.row_prefix
+    image_output_dir = os.path.join(args.output_data_dir,args.image_output_dir)
+    position_output_dir = os.path.join(args.output_data_dir,args.position_output_dir)
+
+    '''
     #---User inputs
-    input_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_18') #!!!input
-    lane_number = 4
-    row_prefix = '20191010_L4_N_slalom'
+    input_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_12') #!!!input
+    lane_number = 2
+    row_prefix = '20191010_L2_S'
 
     image_output_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/Frogn_Dataset/new_images_only')
     position_output_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/Frogn_Dataset/position_data')
-    
+    '''
     #---
     bag_files = sorted(glob.glob(os.path.join(input_dir, '*.bag')))
     rospy.init_node('lateral_heading_offset')
@@ -144,14 +163,14 @@ if __name__ == '__main__':
 
         ##################### Extract GNSS Data #####################
         for gps_topic, gps_msg, t_gps in bag.read_messages(topics=[auto_label.gps_topic_name]):
-                auto_label.gps_fix.latitude = gps_msg.latitude
-                auto_label.gps_fix.longitude = gps_msg.longitude
+            auto_label.gps_fix.latitude = gps_msg.latitude
+            auto_label.gps_fix.longitude = gps_msg.longitude
+        
+            # RTK GPS position from GNNs to UTM map frame (not transformed to robot baselink yet)
+            gps_pose_map = auto_label.robot_GPS_utm2map()
             
-                # RTK GPS position from GNNs to UTM map frame (not transformed to robot baselink yet)
-                gps_pose_map = auto_label.robot_GPS_utm2map()
-                
-                gps_pos = GPSPos(x = gps_pose_map.pose.position.x, y = gps_pose_map.pose.position.y, time = t_gps.to_sec())
-                gps_map_positions.append(gps_pos)
+            gps_pos = GPSPos(x = gps_pose_map.pose.position.x, y = gps_pose_map.pose.position.y, time = t_gps.to_sec())
+            gps_map_positions.append(gps_pos)
 
         ##################### Extract Camera Data #####################
         bridge = CvBridge()
@@ -162,7 +181,7 @@ if __name__ == '__main__':
             t_img_sec = t_img.to_sec() #aboslute time
 
             #Read and save image to file
-            im_filename = row_prefix + '_' +  str(seq_img) + '.png'
+            im_filename = row_prefix + '_' + '%04i.png' %seq_img
             im_path = os.path.join(image_output_dir, im_filename)
             #fixme read image and save directly to png file?
             cv_img = bridge.imgmsg_to_cv2(img_msg, desired_encoding="bgr8")
@@ -188,8 +207,10 @@ if __name__ == '__main__':
     write_namedtuples_to_csv(gps_pos_file,gps_map_positions)
 
     #Image frames
-    img_meta_file = os.path.join(image_output_dir,row_prefix + '_image_timestamps.csv')
+    img_meta_file = os.path.join(position_output_dir,row_prefix + '_image_timestamps.csv')
     print('Writing image timestamps to '+ img_meta_file)
     write_namedtuples_to_csv(img_meta_file,image_meta_list)
 
+if __name__ == "__main__":
+    main()
 

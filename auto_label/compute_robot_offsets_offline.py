@@ -6,6 +6,7 @@ from scipy.interpolate import interp1d
 from scipy.signal import resample
 from geometric_utilities import direction_sign, angle_between_vectors, signed_distance_point_to_line, closest_point, line_to_next_point, line_fit_from_points, angle_between_lines
 import homogeneous_transformation as ht
+import argparse
 
 from collections import namedtuple
 
@@ -27,13 +28,29 @@ def interpolate_position_to_new_time(pos_time, pos_x, pos_y, new_time, interpola
     pos_interp_y = f_interp_y(new_time)
     return pos_interp_x, pos_interp_y
 
+def main():
+    parser = argparse.ArgumentParser(description="Compute robot offsets from position data in csv files.")
+    parser.add_argument("--base_dir", default = './output/position_data', help = "Input and output directory for position data")
+    parser.add_argument("--rec_prefix", help = "Mandatory. Row ID")
+    parser.add_argument("--smoothing_windows", default = [50,50], help = "Window size for smoothing position data")
+    parser.add_argument("--debug",default = False, help = "Debug flag")
+    parser.add_argument("--visualize", default = True, help = "Visualization flag")
+    args = parser.parse_args()
+
+    compute_and_save_robot_offsets(input_dir = args.base_dir, 
+    output_dir = args.base_dir, 
+    rec_prefix = args.rec_prefix, 
+    debug = args.debug, 
+    visualize = args.visualize,
+    smoothing_windows = args.smoothing_windows)
+
 def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'), 
     output_dir = os.path.join('.','output'), 
     rec_prefix = '20191010_L3_S_morning_slaloam', 
     smoothing_windows= [5,5],
-    gt_position_window = [1,1],
     debug = False, 
     visualize = False):
+
     # Read converted positions and timestamps
     gt_positions = read_namedtuples_from_csv(os.path.join(input_dir, rec_prefix + '_gt_pos.csv'),'GTPos')
     #robot_positions = read_namedtuples_from_csv(os.path.join(input_dir, rec_prefix + '_robot_pos_and_timestamps.csv'), 'RobotPos')
@@ -149,7 +166,8 @@ def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'),
         plt.plot(gt_upsampled_x,gt_upsampled_y,'g.')
         plt.plot(pos_upsampled_x,pos_upsampled_y,'b.')
         plt.plot(rx_list, ry_list,'r.')
-        plt.show()
+        #plt.show()
+        plt.savefig(os.path.join(output_dir, rec_prefix + '_gps_data'))
 
         plt.figure(2)
         plt.plot(angular_offsets)
@@ -161,24 +179,27 @@ def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'),
         #plt.legend(['Angular offset', 'Lateral Offset', 'Movement direction','Mean angular offset: ' + str(angular_offset_mean),'Mean lateral offset: ' + str(lateral_offset_mean)])
         plt.legend(['Angular offset', 'Lateral Offset', 'Mean angular offset: ' + str(angular_offset_mean),'Mean lateral offset: ' + str(lateral_offset_mean)])
         plt.ylim([-1,1])
-        plt.show()
+        #plt.show()
+        plt.savefig(os.path.join(output_dir, rec_prefix + '_offsets'))
 
 if __name__ == '__main__':
-    input_dir = os.path.join('.','output/position_data')
-    output_dir = os.path.join('.','output/position_data')
-    rec_prefix = '20191010_L3_S_morning'
-    smoothing_windows = [50,50]
+    '''
+    input_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/Frogn_Dataset/position_data')
+    output_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/Frogn_Dataset/position_data')
+    rec_prefix = '20191010_L2_N'
+    smoothing_windows = [50,50]#[50,50]
     gt_position_window = [1,1]
     debug = False
     visualize = True
-
+    
     compute_and_save_robot_offsets(input_dir = input_dir, 
     output_dir = output_dir, 
     rec_prefix = rec_prefix, 
     debug = debug, 
     visualize = visualize,
-    smoothing_windows = smoothing_windows,
-    gt_position_window = gt_position_window)
+    smoothing_windows = smoothing_windows)
+    '''
+    main()
 
 
 
