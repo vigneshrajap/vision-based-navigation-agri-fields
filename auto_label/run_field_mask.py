@@ -15,60 +15,60 @@ from field_mask import *
 import csv
 import glob
 import re
+from tqdm import tqdm
+import argparse
 
-def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
-    image_dir = 'images_prepped_train',
+def run_field_mask(image_dir = 'images_prepped_train',
     output_dir = 'output',
     calib_file = os.path.join('../camera_data_collection/realsense_model_cropped.xml'),
-    robot_offset_dir = None,
+    robot_offset_file = None,
     row_spec_file = None,
     use_robot_offset = True,
-    sampling_step = None):
-
-    if robot_offset_dir is None:
-        robot_offset_dir = os.path.join(os.path.join(dataset_dir,'robot_offsets/*'))
-    if row_spec_file is None:
-        row_spec_file = os.path.join(dataset_dir,'row_spec.txt')
+    sampling_step = None,
+    debug = False,
+    visualize = False):
 
     #setup
     cam_model = RectiLinearCameraModel(calib_file)
 
-    #Experimental corrections, slalom dataset!!!
-    angular_mean_correction = 0#0.047 #0.043762404580152674
-    lateral_mean_correction = 0#0.032
-    delay_correction = 0 #image frame vs offset correction
-    angle_sign = 1#-1 #minus 1 if angle inversion
+    #Corrections
+    #lateral_correction = 0.13
+    delay_correction = 30 #L3S slalom #image frame vs offset correction
 
     #--- Per prefix
     #Set up field mask
-    for robot_offset_file in glob.iglob(robot_offset_dir):
-        rec_prefix = os.path.basename(robot_offset_file)[:-12]
-        print('Processing ', rec_prefix)
+    #for robot_offset_file in glob.iglob(robot_offset_dir):
+    rec_prefix = os.path.basename(robot_offset_file)[:-12]
+    print('Processing ', rec_prefix)
+    try:
         crop_duty_cycle, lane_spacing = read_row_spec_from_file(row_spec_file,rec_prefix)
-        #Define field mask
-        polygon_field_mask = make_field_mask(lane_spacing = lane_spacing, crop_duty_cycle = crop_duty_cycle, labels = [0,1,0,1,0], extent = 5) #read from file?
+    except:
+        print('Could not read rowspec file')
+    #Define field mask
+    polygon_field_mask = make_field_mask(lane_spacing = lane_spacing, crop_duty_cycle = crop_duty_cycle, labels = [0,1,0,1,0], extent = 5) #read from file?
 
-        #--- For each image in the specified folder
-        files = os.listdir(image_dir)
-        pat = re.compile(rec_prefix + '_\d\d\d\d.png',re.UNICODE)  
-        for im_file in filter(pat.match, files):         
-        #for im_path in glob.iglob(os.path.join(image_dir,rec_prefix+'*')):
-            print(im_file)
-            im_name = os.path.splitext(os.path.basename(im_file))[0]
-            frame_ind = int(im_name[-4:])
+    #--- For each image in the specified folder
+    files = os.listdir(image_dir)
+    pat = re.compile(rec_prefix + '_\d\d\d\d.png',re.UNICODE)  
+    for im_file in tqdm(filter(pat.match, files)):         
+    #for im_path in glob.iglob(os.path.join(image_dir,rec_prefix+'*')):
+        print(im_file)
+        im_name = os.path.splitext(os.path.basename(im_file))[0]
+        frame_ind = int(im_name[-4:])
 
-            frame_ind = frame_ind + delay_correction #subtract delay
+        frame_ind = frame_ind - delay_correction #subtract delay
 
+        try: 
             lateral_offset, angular_offset,_ = read_robot_offset_from_file(robot_offset_file,frame_ind)
-            if lateral_offset is None:
-                break
-            angular_offset = angular_offset - angular_mean_correction #subtract mean value
-            angular_offset = angular_offset*angle_sign #switch sign
-            lateral_offset = lateral_offset - lateral_mean_correction
+
+            #lateral_offset = lateral_offset - lateral_correction #south #should be fixed in camera coordinate frame
+            #lateral_offset = lateral_offset + lateral_correction #north
 
             #Camera setup #fixme read from urdf
             #camera_xyz = np.array([0.749, 0.033, 1.242]) #measured
-            camera_xyz = np.array([0.749, 0.033, 1.1]) #adjusted
+            #camera_xyz = np.array([0.749, 0.033, 1.1]) #adjusted
+            camera_xyz = np.array([0, 0.033, 1.1]) #zero y offset, including lateral correction
+            #camera_xyz = np.array([0, 0.033 - lateral_correction, 1.1]) #zero y offset, including lateral correction
             #camera_xyz = np.array([0.0, 0.0, 1.1]) #zero xy offset
             #camera_rpy = np.array([0.000, -0.332, 0.000]) #measured
             camera_rpy = np.array([0.000, -0.4, 0.0]) #adjusted
@@ -107,42 +107,65 @@ def run_field_mask(dataset_dir = os.path.join('../Frogn_Dataset'),
                 label_mask = np.array(label_im)
             overlay_im = blend_color_and_image(camera_im,label_mask,color_code = [0,255,0],alpha=0.7) 
 
-            #Save visualization and numpy array
-            vis_dir = os.path.join(output_dir,'visualisation')
-            #os.makedirs(vis_dir)
-            plt.imsave(os.path.join(output_dir,'visualisation',im_name) + 'lat' + str(lateral_offset) + 'ang' + str(angular_offset) + '.png', overlay_im)
-            '''
-            ann_dir =  os.path.join(output_dir,'annotations')
-            #os.makedirs(ann_dir)
-            plt.imsave(os.path.join(output_dir,'annotations',im_name)+'.png',label_mask)
+            if debug or visualize:
+                #Save visualization and numpy array
+                vis_dir = os.path.join(output_dir,'visualisation')
+                #os.makedirs(vis_dir)
+                plt.imsave(os.path.join(output_dir,'visualisation',im_name) + 'lat' + str(lateral_offset) + 'ang' + str(angular_offset) + '.png', overlay_im)
+            
+            if not debug:
+                #Save annotiations alone as images and arrays
+                ann_dir =  os.path.join(output_dir,'annotations')
+                #os.makedirs(ann_dir)
+                plt.imsave(os.path.join(output_dir,'annotations',im_name)+'.png',label_mask)
 
-            arr_dir = os.path.join(output_dir,'arrays')
-            #os.makedirs(arr_dir)
-            np.save(os.path.join(output_dir,'arrays',im_name),label_mask)
-            '''
+                arr_dir = os.path.join(output_dir,'arrays')
+                #os.makedirs(arr_dir)
+                np.save(os.path.join(output_dir,'arrays',im_name),label_mask)
+        except ValueError:
+            print('Frame index ', str(frame_ind), ' not in list')
+
+def main():
+    parser = argparse.ArgumentParser(description="Make field mask for specified image and position data")
+    parser.add_argument("--dataset_dir", default = './output', help = "Base data directory")
+    parser.add_argument("--image_dir",default = 'images_only', help = "Input image directory. Relative to dataset dir")
+    parser.add_argument("--output_dir", default = 'automatic_annotations', help = "Output directory for results. Relative to dataset_dir")
+    parser.add_argument("--robot_offset_file", help = "Mandatory. Specify row to process through robot offset file. Relative to dataset dir"),
+    parser.add_argument("--camera_calib_file", default = '../camera_data_collection/realsense_model.xml', help = "Camera model used for projecting the mask")
+    parser.add_argument("--sampling_step", default = 8, help = "Subsampling factor of image mask to increase speed")
+    parser.add_argument("--debug", default = False, help = "Debug flag: When in debug mode, only save visualisation")
+    parser.add_argument("--visualize", default = True, help = "Enable saving of visualization outside debug mode.")
+
+    args = parser.parse_args()
+    #Run field mask on the specified images, camera model and dataset directory:
+    run_field_mask(image_dir = os.path.join(args.dataset_dir, args.image_dir), 
+    output_dir = os.path.join(args.dataset_dir, args.output_dir),
+    calib_file = os.path.join(args.camera_calib_file),
+    robot_offset_file = os.path.join(args.dataset_dir, args.robot_offset_file),
+    row_spec_file = os.path.join(args.dataset_dir,'row_spec.txt'),
+    sampling_step = args.sampling_step,
+    debug = args.debug,
+    visualize = args.visualize,
+    )
+
 if __name__ == "__main__":
+    '''
     #Make image mask for a folder of images and their robot position data
     #Setup
-    dataset_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/Frogn_Dataset')#'../Frogn_Dataset')
+    dataset_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/Frogn_Dataset')
     #dataset_dir = os.path.join('../Frogn_Dataset')
     image_dir = os.path.join(dataset_dir,'images_only')
-    output_dir = os.path.join('output/')
-    robot_offset_dir = os.path.join(dataset_dir,'robot_offsets/2019*')
+    output_dir = os.path.join('output/robot_offset_experiments/offsetfix3_widercrop_delay30_smoothing50_meancomp')
+    robot_offset_dir = os.path.join('output/robot_offset_experiments/offsetfix3_widercrop_delay30_smoothing50_meancomp/20191010*')
     #Camera model
     calib_file = os.path.join('../camera_data_collection/realsense_model.xml') #realsense model for "images only", cropped model for "prepped" images
     #Turn robot offset on/off
     use_robot_offset = True
     #Turn on subsampling of image mask
     sampling_step = 8
+    '''
 
-    #Run field mask on the specified images, camera model and dataset directory:
-    run_field_mask(dataset_dir=dataset_dir, 
-    image_dir=image_dir, 
-    output_dir=output_dir,
-    calib_file=calib_file,
-    robot_offset_dir = robot_offset_dir,
-    use_robot_offset=use_robot_offset,
-    sampling_step = sampling_step)
+    main()
 
 
 

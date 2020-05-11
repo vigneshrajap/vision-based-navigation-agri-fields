@@ -1,5 +1,6 @@
 import numpy as np
 import csv
+
 #Utility functions for automatic labelling
 
 def blend_color_and_image(image,mask,color_code=[0,255,0],alpha=0.5):
@@ -28,14 +29,9 @@ def read_robot_offset_from_file(filename,row_ind = None):
 
     if row_ind is not None:
         frames = list(a[:,1])
-        try:
-            ind = frames.index(float(row_ind))
-            lateral_offset = a[ind,2]
-            angular_offset = a[ind,3]
-        except ValueError:
-            print('Frame index ', str(row_ind), ' not in list')
-            lateral_offset = None
-            angular_offset = None
+        ind = frames.index(float(row_ind))
+        lateral_offset = a[ind,2]
+        angular_offset = a[ind,3]
     else: 
         lateral_offset = a[:,2]
         angular_offset = a[:,3]

@@ -39,7 +39,7 @@ class automated_labelling():
         rospack = rospkg.RosPack()
         self.book = pe.get_book(file_name=rospack.get_path('auto_nav')+"/config/ground_truth_coordinates.xls", start_row=1)
 
-        self.lane_number = str(1) #rospy.set_param('lane_number', 1)
+        self.lane_number = str(3) #rospy.set_param('lane_number', 1) #!!!input
         self.gt_utm = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
         self.gt_map = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
 
@@ -125,8 +125,10 @@ class automated_labelling():
 
         lines = []
 
+        #print('len gt utm', len(self.gt_utm)) #debug
         # Increment by parameter for multiple line segments along ground truth points
         for ind in range((self.increment/2),len(self.gt_utm),self.increment):
+            #print('ind',ind) #debug
             self.line = geom.LineString(self.gt_map[ind-(self.increment/2):ind+(self.increment/2),:])
             lines.append(self.line)
         self.multilines.append(geom.MultiLineString(lines))
@@ -180,12 +182,12 @@ class automated_labelling():
        dist_0 = np.empty([np.int(len(self.gt_utm)/self.increment),1])
 
        point = geom.Point(self.rpos_map.pose.position.x, self.rpos_map.pose.position.y)
-
+       #print('point',point.x, point.y) #debug 
        self.lateral_offset = 100.0
 
        # Increment by parameter for multiple line segments along ground truth points
        for ind in range(len(self.multilines[0])-1):
-
+           #print('multilines',self.multilines[0][ind].bounds) #debug
            aX_i, aY_i, bX_i, bY_i = self.multilines[0][ind].bounds
            dist_num = abs((bY_i-aY_i)*point.x-(bX_i-aX_i)*point.y + (bX_i*aY_i) - (bY_i*aX_i))
            dist_den =  math.sqrt(math.pow(bY_i-aY_i,2)+math.pow(bX_i-aX_i,2))
@@ -211,9 +213,13 @@ class automated_labelling():
        gt_yaw = self.normalizeangle(math.atan2(aY-bY,aX-bX)) # South
 
        # Interpolate the nearest point on the line and find slope of that line
+
+       #MB: Not in use???
+       '''
        nearest_line = geom.LineString(self.multilines[0][segment_index])
        point_on_line = nearest_line.interpolate(nearest_line.project(point))
-       robot_slope = (point.y-point_on_line.y)/(point.x-point_on_line.x)
+       robot_slope = (point.y-point_on_line.y)/(point.x-point_on_line.x)  
+       '''
 
        if (self.count_ind < self.first_dir):
            self.rpos_x.append(point.x)
@@ -222,6 +228,8 @@ class automated_labelling():
        if (len(self.rpos_x)>=self.first_dir):
 
            if (self.rpos_map.pose.position.x!=self.prev_rpos_map.pose.position.x) and ((self.rpos_map.pose.position.y!=self.prev_rpos_map.pose.position.y)):
+               print('rposx', self.rpos_x)
+               print('delta_rposx', self.rpos_x[self.count_ind-self.first_dir])
                delta_x = point.x-self.rpos_x[self.count_ind-self.first_dir] #self.prev_rpos_map.pose.position.x
                delta_y = point.y-self.rpos_y[self.count_ind-self.first_dir] #self.prev_rpos_map.pose.position.y
 
@@ -255,7 +263,7 @@ if __name__ == '__main__':
         # Function to obtain the ground truth values in Map frame
         auto_label.ground_truth_utm2map()
 
-        myfile = open('20191010_L1_S_offsets.txt', 'a') #_imu
+        myfile = open('20191010_L3_S_slaloam_offsets.txt', 'a') #_imu #!!!input
         myfile.truncate(0)
         myfile.write("dt(cam)")
         myfile.write("\t")
@@ -266,7 +274,7 @@ if __name__ == '__main__':
         myfile.write("AO")
         myfile.write("\n")
 
-        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L1_S/bag_files/")
+        input_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/20191010_bagfiles/dataset_9') #!!!input
 
         for bag_file in sorted(glob.glob(osp.join(input_dir, '*.bag'))):
             print(bag_file)
@@ -358,6 +366,7 @@ if __name__ == '__main__':
                  myfile.write("\n")
 
             bag.close()
+            break #debug: stop after one bag file
 
     except rospy.ROSInterruptException:
          cv2.destroyAllWindows() # Closes all the frames
