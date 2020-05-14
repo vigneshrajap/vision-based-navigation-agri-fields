@@ -28,18 +28,18 @@ dependencies:
   - pytest-cov
 
     # Keras segNet dependencies
-  - pip
-  - pip:
-    - keras-segmentation --trusted-host pypi.org --trusted-host files.pythonhosted.org
+#  - pip
+#  - pip:
+#    - keras-segmentation --trusted-host pypi.org --trusted-host files.pythonhosted.org
   - tqdm
   - xmltodict
     # Machine Learning packages
   - scikit-learn
   - tensorflow-gpu # FIXME: Does not support SSE, AVX and FMA. Need newer version to support this.
-  - keras-gpu=2.2.0
-
+  - keras #=2.2.0
+  - opencv
     # Dependencies of VirtualCam
-  - make
-  - pkg-config
-  - conda-forge::compilers
-  - conda-forge::opencv=3
+#  - make
+#  - pkg-config
+#  - conda-forge::compilers
+  #- conda-forge::opencv=3
