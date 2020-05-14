@@ -241,7 +241,7 @@ def make_image_mask_from_polygons(cam_model,polygon_mask,T_cam_to_world,sampling
     
     #Generate mask image
     image_dims = np.array([cam_model.height,cam_model.width])
-    subsampled_dims = image_dims/sampling_step
+    subsampled_dims = np.uint16(np.floor(image_dims/sampling_step))
     mask_image = np.zeros((subsampled_dims[0],subsampled_dims[1],2))
 
     for j in tqdm(np.arange(subsampled_dims[1])):

@@ -1,8 +1,10 @@
 #!/usr/bin/env python
-import keras_segmentation
+import sys
+sys.path.append('../image-segmentation-keras')
+import keras_segmentation 
 import os
 
-main_path = os.path.join('/home/marianne/Code/vision-based-navigation-agri-fields')
+main_path = os.path.join('.')
 data_folder = 'Frogn_Dataset'
 model_folder = 'models'
 
@@ -12,7 +14,7 @@ model = keras_segmentation.models.segnet.segnet(n_classes=3,  input_height=360, 
 model.train(
     train_images =  os.path.join(main_path, data_folder,'images_prepped_train'),
     train_annotations = os.path.join(main_path, data_folder,'annotations_prepped_train'),
-    checkpoints_path = os.path.join(main_path,model_folder,'segnet_from_scatch'), epochs=5
+    checkpoints_path = os.path.join(main_path,model_folder,'resnet50_segnet'), epochs=5
 )
 
 #model.load_weights('/content/drive/My Drive/Colab Notebooks/segnet_weights/segnet.4') # load json and create model

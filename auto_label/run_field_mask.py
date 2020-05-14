@@ -105,23 +105,24 @@ def run_field_mask(image_dir = 'images_prepped_train',
                 label_im = Image.fromarray(label_mask,mode='L')
                 label_im = label_im.resize((camera_im.shape[1],camera_im.shape[0]))
                 label_mask = np.array(label_im)
-            overlay_im = blend_color_and_image(camera_im,label_mask,color_code = [0,255,0],alpha=0.7) 
-
+            
             if debug or visualize:
+                overlay_im = blend_color_and_image(camera_im,label_mask,color_code = [0,255,0],alpha=0.7) 
                 #Save visualization and numpy array
-                vis_dir = os.path.join(output_dir,'visualisation')
+                vis_dir = os.path.join(output_dir,'visualization')
                 #os.makedirs(vis_dir)
-                plt.imsave(os.path.join(output_dir,'visualisation',im_name) + 'lat' + str(lateral_offset) + 'ang' + str(angular_offset) + '.png', overlay_im)
+                #plt.imsave(os.path.join(output_dir,'visualisation',im_name) + 'lat' + str(lateral_offset) + 'ang' + str(angular_offset) + '.png', overlay_im)
+                plt.imsave(os.path.join(output_dir,'visualization',im_name)+'.png', overlay_im)
             
             if not debug:
                 #Save annotiations alone as images and arrays
-                ann_dir =  os.path.join(output_dir,'annotations')
+                ann_dir =  os.path.join(output_dir,'annotation_images')
                 #os.makedirs(ann_dir)
-                plt.imsave(os.path.join(output_dir,'annotations',im_name)+'.png',label_mask)
+                plt.imsave(os.path.join(output_dir,'annotation_images',im_name)+'.png',label_mask)
 
-                arr_dir = os.path.join(output_dir,'arrays')
+                arr_dir = os.path.join(output_dir,'annotation_arrays')
                 #os.makedirs(arr_dir)
-                np.save(os.path.join(output_dir,'arrays',im_name),label_mask)
+                np.save(os.path.join(output_dir,'annotation_arrays',im_name),label_mask)
         except ValueError:
             print('Frame index ', str(frame_ind), ' not in list')
 
@@ -143,7 +144,7 @@ def main():
     calib_file = os.path.join(args.camera_calib_file),
     robot_offset_file = os.path.join(args.dataset_dir, args.robot_offset_file),
     row_spec_file = os.path.join(args.dataset_dir,'row_spec.txt'),
-    sampling_step = args.sampling_step,
+    sampling_step = np.uint8(args.sampling_step),
     debug = args.debug,
     visualize = args.visualize,
     )

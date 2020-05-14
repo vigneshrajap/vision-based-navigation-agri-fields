@@ -14,7 +14,9 @@ from tqdm import tqdm
 import argparse
 import time
 from PIL import Image
+from auto_label.utilities import blend_color_and_image
 
+'''
 def blend_color_and_image(image,mask,color_code=[0,255,0],alpha=0.5):
     #Blend colored mask and input image
     #Input:
@@ -30,17 +32,19 @@ def blend_color_and_image(image,mask,color_code=[0,255,0],alpha=0.5):
     mask = np.nan_to_num(mask)
     blended_im = np.uint8((mask * (1-alpha) * color_code) + (mask * alpha * image) + (np.logical_not(mask) * image)) #mask + image under mask + image outside mask
     return blended_im
+'''
 
-def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm):
+def vis_pred_vs_gt_overlay(inp, pr, gt):
     #Visualize segmentation prediction and false positives/negatives
     
     #NB 3-class problem with background not handled properly
     input_image = Image.open(inp)
-
+    input_image.convert('RGB')
     #Make overlay image
     #mask = np.zeros((gt.shape[0],gt.shape[1],3),dtype='uint8')
-    im_resized = np.array(input_image.resize((gt.shape[1],gt.shape[0])))
-    
+    im_resized = np.array(input_image.resize((gt.shape[1],gt.shape[0])))[:,:,:3]
+
+    '''
     error_mask = pr-gt
     #Make non-overlapping masks
     fp_mask = np.uint8(error_mask > 0)  
@@ -48,6 +52,7 @@ def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm):
     gt_mask = (gt-1)*np.uint8(error_mask == 0) #class 1 in ground truth encoded green
     
     #Blending
+    
     alpha = 0.4
     fp_color_code = np.array([1,0,1])*255 #magenta
     fn_color_code = np.array([0,0,1])*255 #blue
@@ -58,9 +63,13 @@ def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm):
     im_vis= blend_color_and_image(im_vis,gt_mask,gt_color_code,alpha)
     #vis_img = np.uint8(fp_mask * (1-alpha) * color_code + fp_mask * alpha * im_resized + np.logical_not(fp_mask) * im_resized)
     #vis_img = np.uint8(fp_mask*(1-alpha)*im_resized + (fp_mask*alpha)*color_code))
+    '''
+    #fixme make mask with gt vs pr
     
-    fig = plt.figure(111)#figsize = (figure_width_mm/25.4,figure_width_mm/25.4))
-    plt.imshow(im_vis)
+    overlay_im = blend_color_and_image(im_resized,pr,color_code = [0,255,0],alpha=0.7) 
+
+    fig = plt.figure(111)
+    plt.imshow(overlay_im)
     plt.axis('off')    
     return fig
 
@@ -92,6 +101,8 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
     #Input: array of paths or nd arrays
     if model is None and ( not checkpoints_path is None ):
         model = model_from_checkpoint_path(checkpoints_path,epoch)
+    if checkpoints_path is None:
+        checkpoints_path = ''
 
     ious = []
     pred_time = []
@@ -108,7 +119,7 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
         ious.append( iou )
 
         if visualize:
-            fig = vis_pred_vs_gt_separate(inp,pr,gt)
+            fig = vis_pred_vs_gt_overlay(inp,pr,gt)
             plt.title("Predicted mask and errors. " "IOU (bg, crop, lane):"+str(iou))
             if not output_folder:
                 if epoch is None:
@@ -118,7 +129,7 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
                 print('Saving to: ',checkpoints_path+epoch+'_IOU_'+os.path.basename(inp))
             else:
                 fig.savefig(os.path.join(output_folder,os.path.basename(checkpoints_path)+'_IOU_'+os.path.basename(inp)))
-    print ious
+    print(ious)
     ious = np.array( ious )
     print("Class wise IoU "  ,  np.mean(ious , axis=0 ))
     print("Total  IoU "  ,  np.mean(ious ))
