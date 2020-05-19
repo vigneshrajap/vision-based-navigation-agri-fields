@@ -50,13 +50,19 @@ for n in range(start_frame_ind,len(ann_files),sample_step): #start on first vali
         #Split into train and test
         if counter%10 == 0: #Put every 10 sample in test set (or change condition later)
             save_dir = os.path.join(output_dir,'test')
+            #tmp:
+            print('Saving to ', save_dir)
+            plt.imsave(os.path.join(save_dir,'images',im_name + '.png'),im_cropped)
+            plt.imsave(os.path.join(save_dir,'visualization',im_name + '.png'),vis_cropped)
+            cv2.imwrite(os.path.join(save_dir,'annotations',im_name + '.png'),ann_cropped)
         else:
             save_dir = os.path.join(output_dir,'train')
-
+        '''
         print('Saving to ', save_dir)
         plt.imsave(os.path.join(save_dir,'images',im_name + '.png'),im_cropped)
         plt.imsave(os.path.join(save_dir,'visualization',im_name + '.png'),vis_cropped)
         cv2.imwrite(os.path.join(save_dir,'annotations',im_name + '.png'),ann_cropped)
+        '''
 
         counter+=1
 

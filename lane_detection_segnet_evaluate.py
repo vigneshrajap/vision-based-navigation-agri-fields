@@ -65,7 +65,7 @@ def vis_pred_vs_gt_overlay(inp, pr, gt):
     #vis_img = np.uint8(fp_mask*(1-alpha)*im_resized + (fp_mask*alpha)*color_code))
     '''
     #fixme make mask with gt vs pr
-    
+
     overlay_im = blend_color_and_image(im_resized,pr,color_code = [0,255,0],alpha=0.7) 
 
     fig = plt.figure(111)
