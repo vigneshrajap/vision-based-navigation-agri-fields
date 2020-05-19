@@ -31,6 +31,13 @@ def run_field_mask(image_dir = 'images_prepped_train',
     #setup
     cam_model = RectiLinearCameraModel(calib_file)
 
+    ann_dir =  os.path.join(output_dir,'annotation_images')
+    os.makedirs(ann_dir, exist_ok = True)
+    vis_dir = os.path.join(output_dir,'visualization')
+    os.makedirs(vis_dir, exist_ok = True)
+    arr_dir = os.path.join(output_dir,'annotation_arrays')
+    os.makedirs(arr_dir, exist_ok = True)
+    
     #Corrections
     #lateral_correction = 0.13
     delay_correction = 30 #L3S slalom #image frame vs offset correction
@@ -67,7 +74,7 @@ def run_field_mask(image_dir = 'images_prepped_train',
             #Camera setup #fixme read from urdf
             #camera_xyz = np.array([0.749, 0.033, 1.242]) #measured
             #camera_xyz = np.array([0.749, 0.033, 1.1]) #adjusted
-            camera_xyz = np.array([0, 0.033, 1.1]) #zero y offset, including lateral correction
+            camera_xyz = np.array([0, 0.033, 1.1]) #zero y offset
             #camera_xyz = np.array([0, 0.033 - lateral_correction, 1.1]) #zero y offset, including lateral correction
             #camera_xyz = np.array([0.0, 0.0, 1.1]) #zero xy offset
             #camera_rpy = np.array([0.000, -0.332, 0.000]) #measured
@@ -107,22 +114,15 @@ def run_field_mask(image_dir = 'images_prepped_train',
                 label_mask = np.array(label_im)
             
             if debug or visualize:
-                overlay_im = blend_color_and_image(camera_im,label_mask,color_code = [0,255,0],alpha=0.7) 
+                overlay_im = blend_color_and_image(camera_im,label_mask,color_code = [0,255,0],alpha=0.3) 
                 #Save visualization and numpy array
-                vis_dir = os.path.join(output_dir,'visualization')
-                #os.makedirs(vis_dir)
                 #plt.imsave(os.path.join(output_dir,'visualisation',im_name) + 'lat' + str(lateral_offset) + 'ang' + str(angular_offset) + '.png', overlay_im)
-                plt.imsave(os.path.join(output_dir,'visualization',im_name)+'.png', overlay_im)
+                plt.imsave(os.path.join(vis_dir,im_name)+'.png', overlay_im)
             
             if not debug:
                 #Save annotiations alone as images and arrays
-                ann_dir =  os.path.join(output_dir,'annotation_images')
-                #os.makedirs(ann_dir)
-                plt.imsave(os.path.join(output_dir,'annotation_images',im_name)+'.png',label_mask)
-
-                arr_dir = os.path.join(output_dir,'annotation_arrays')
-                #os.makedirs(arr_dir)
-                np.save(os.path.join(output_dir,'annotation_arrays',im_name),label_mask)
+                plt.imsave(os.path.join(ann_dir,im_name)+'.png',label_mask)
+                np.save(os.path.join(arr_dir,im_name),label_mask)
         except ValueError:
             print('Frame index ', str(frame_ind), ' not in list')
 
@@ -131,7 +131,8 @@ def main():
     parser.add_argument("--dataset_dir", default = './output', help = "Base data directory")
     parser.add_argument("--image_dir",default = 'images_only', help = "Input image directory. Relative to dataset dir")
     parser.add_argument("--output_dir", default = 'automatic_annotations', help = "Output directory for results. Relative to dataset_dir")
-    parser.add_argument("--robot_offset_file", help = "Mandatory. Specify row to process through robot offset file. Relative to dataset dir"),
+    parser.add_argument("--robot_offset_file", help = "Mandatory, even if use_robot_offset is False. Specify row to process through robot offset file. Relative to dataset dir"),
+    parser.add_argument("--use_robot_offset", default = True, help = "If off: Assume straight driving."),
     parser.add_argument("--camera_calib_file", default = '../camera_data_collection/realsense_model.xml', help = "Camera model used for projecting the mask")
     parser.add_argument("--sampling_step", default = 8, help = "Subsampling factor of image mask to increase speed")
     parser.add_argument("--debug", default = False, help = "Debug flag: When in debug mode, only save visualisation")
@@ -143,6 +144,7 @@ def main():
     output_dir = os.path.join(args.dataset_dir, args.output_dir),
     calib_file = os.path.join(args.camera_calib_file),
     robot_offset_file = os.path.join(args.dataset_dir, args.robot_offset_file),
+    use_robot_offset = args.use_robot_offset,
     row_spec_file = os.path.join(args.dataset_dir,'row_spec.txt'),
     sampling_step = np.uint8(args.sampling_step),
     debug = args.debug,
