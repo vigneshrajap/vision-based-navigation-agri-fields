@@ -14,26 +14,23 @@ from tqdm import tqdm
 import argparse
 import time
 from PIL import Image
-from auto_label.utilities import blend_color_and_image
+from visualization_utilities import blend_color_and_image
 
-'''
-def blend_color_and_image(image,mask,color_code=[0,255,0],alpha=0.5):
-    #Blend colored mask and input image
-    #Input:
-    #   3-channel image (numpy array)
-    #   1-channel (integer) mask
 
-    #convert input to uint8 image
-    if image.dtype is np.dtype('float32') or np.dtype('float64') and np.max(image) <= 1:
-        image = np.uint8(image*255)
+def vis_pred_overlay(inp,pr):
+    input_image = Image.open(inp)
+    input_image.convert('RGB')
+    #Make overlay image
+    #mask = np.zeros((gt.shape[0],gt.shape[1],3),dtype='uint8')
+    im_resized = np.array(input_image.resize((pr.shape[1],pr.shape[0])))[:,:,:3]
+    overlay_im = blend_color_and_image(im_resized,pr,color_codes = [[None,None,None],[0,0,255],[255,255,0]],alpha=0.85) 
 
-    mask = np.tile(mask[:,:,np.newaxis],[1,1,3])
-    #convert nan values to zero
-    mask = np.nan_to_num(mask)
-    blended_im = np.uint8((mask * (1-alpha) * color_code) + (mask * alpha * image) + (np.logical_not(mask) * image)) #mask + image under mask + image outside mask
-    return blended_im
-'''
+    fig = plt.figure(111)
+    plt.imshow(overlay_im)
+    plt.axis('off')    
+    return fig
 
+'''   
 def vis_pred_vs_gt_overlay(inp, pr, gt):
     #Visualize segmentation prediction and false positives/negatives
     
@@ -44,7 +41,6 @@ def vis_pred_vs_gt_overlay(inp, pr, gt):
     #mask = np.zeros((gt.shape[0],gt.shape[1],3),dtype='uint8')
     im_resized = np.array(input_image.resize((gt.shape[1],gt.shape[0])))[:,:,:3]
 
-    '''
     error_mask = pr-gt
     #Make non-overlapping masks
     fp_mask = np.uint8(error_mask > 0)  
@@ -63,7 +59,7 @@ def vis_pred_vs_gt_overlay(inp, pr, gt):
     im_vis= blend_color_and_image(im_vis,gt_mask,gt_color_code,alpha)
     #vis_img = np.uint8(fp_mask * (1-alpha) * color_code + fp_mask * alpha * im_resized + np.logical_not(fp_mask) * im_resized)
     #vis_img = np.uint8(fp_mask*(1-alpha)*im_resized + (fp_mask*alpha)*color_code))
-    '''
+    
     #fixme make mask with gt vs pr
 
     overlay_im = blend_color_and_image(im_resized,pr,color_code = [0,255,0],alpha=0.7) 
@@ -72,6 +68,7 @@ def vis_pred_vs_gt_overlay(inp, pr, gt):
     plt.imshow(overlay_im)
     plt.axis('off')    
     return fig
+'''
 
 def vis_pred_vs_gt_separate(inp,pr,gt):
               
@@ -119,7 +116,7 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
         ious.append( iou )
 
         if visualize:
-            fig = vis_pred_vs_gt_overlay(inp,pr,gt)
+            fig = vis_pred_overlay(inp,pr)
             plt.title("Predicted mask and errors. " "IOU (bg, crop, lane):"+str(iou))
             if not output_folder:
                 if epoch is None:

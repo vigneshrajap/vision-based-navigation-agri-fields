@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 sys.path.append('../../image-segmentation-keras')
-import keras_segmentation 
+import keras_segmentation
 sys.path.append('..')
 from lane_detection_segnet_evaluate import evaluate
 import os
@@ -11,19 +11,13 @@ from time import strftime
 main_path = os.path.join('.')
 data_folder = 'output/prepped_data'
 model_folder = 'models'
-model_name = 'autolabel_L1_N_val2'+ strftime("%Y-%d-%m-%H%M") 
+model_name = 'autolabel_L1_N_flop'+'_'+strftime("%Y-%d-%m-%H%M") 
 
 model_path = os.path.join(main_path,model_folder,model_name)
-segmentation_path = os.path.join('output/segmentation', model_name)
-try:
-    os.makedirs(model_path)
-except:
-    print('Folder already excists?')
-try: 
-    os.makedirs(segmentation_path)
-except:
-    print('Folder already excists?')
+segmentation_path = os.path.join(main_path, 'output/segmentation', model_name)
 
+os.makedirs(model_path, exist_ok = True)
+os.makedirs(segmentation_path, exist_ok = True)
 
 model = keras_segmentation.models.segnet.segnet(n_classes=3,  input_height=360, input_width=640)
 
@@ -36,7 +30,7 @@ model.train(
     val_annotations = os.path.join(main_path, data_folder,'val/annotations'),
     checkpoints_path = model_path, 
     steps_per_epoch = None, #determined inside function
-    epochs=20,
+    epochs=30,
     logging = True
 )
 
