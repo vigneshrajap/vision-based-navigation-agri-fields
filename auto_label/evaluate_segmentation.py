@@ -8,8 +8,8 @@ import numpy as np
 
 if __name__ == "__main__":
     model_folder = 'models'
-    model_prefix = 'autolabel_L1_N_valv2_2020-21-05-1502'
-    epoch = 18
+    model_prefix = 'autolabel_L1_N_valv2_2020-21-05-1553'
+    epoch = 19
     data_folder = 'output/prepped_data/val'
     data_prefix = ''
     output_folder = 'output/segmentation'
@@ -18,6 +18,7 @@ if __name__ == "__main__":
     im_files = glob.glob(os.path.join(data_folder,'images', data_prefix + '*.png'))
     ann_files = glob.glob(os.path.join(data_folder,'annotations' , data_prefix + '*.png'))
     output_path = os.path.join(output_folder,model_prefix)
+    os.makedirs(output_path, exist_ok = True)
 
     print('Running evaluation on ',len(im_files),'images, and',len(ann_files),'annotations:')
     ious = evaluate_and_visualize(model=None , #fetched from path and epoch number
