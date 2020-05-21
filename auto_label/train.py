@@ -1,7 +1,7 @@
 import json
 import sys
 from keras_segmentation.data_utils.data_loader import image_segmentation_generator, \
-    verify_segmentation_dataset
+    verify_segmentation_dataset, get_pairs_from_paths
 from keras_segmentation.models.all_models import model_from_name
 import glob
 import six
@@ -145,11 +145,13 @@ def train(model,
         train_images, train_annotations,  batch_size,  n_classes,
         input_height, input_width, output_height, output_width,
         do_augment=do_augment, augmentation_name=augmentation_name)
+    if steps_per_epoch is None: steps_per_epoch = len(get_pairs_from_paths(train_images, train_annotations))
 
     if validate:
         val_gen = image_segmentation_generator(
             val_images, val_annotations,  val_batch_size,
             n_classes, input_height, input_width, output_height, output_width)
+        if val_steps_per_epoch is None: val_steps_per_epoch = len(get_pairs_from_paths(val_images, val_annotations))
 
     callbacks = [
         CheckpointsCallback(checkpoints_path)
