@@ -6,15 +6,15 @@ import os
 import cv2
 
 input_dir = '/home/marianne/catkin_ws/src/vision-based-navigation-agri-fields/auto_label/output'
-annotation_dir = os.path.join(input_dir,'automatic_annotations/annotation_arrays')
+annotation_dir = os.path.join(input_dir,'automatic_annotations/annotation_arrays') #'straight_annotations'#'automatic_annotations/annotation_arrays'
 image_dir = os.path.join(input_dir,'images_only')
-visualization_dir = os.path.join(input_dir,'automatic_annotations/visualization')
-output_dir = os.path.join(input_dir,'prepped_data')
+visualization_dir = os.path.join(input_dir,'automatic_annotations/visualization') #'straight_annotations #'automatic_annotations/visualization'
+output_dir = os.path.join(input_dir,'prepped_data') #'prepped_data'
 
 #Input per row
-prefix = '20191010_L1_N'#'20191010_L1_N' #'20191010_L3_N_morning'
-start_frame_num = 96 #96 #58
-end_frame_num = 2112 #2112 #1293
+prefix = '20191010_L3_S_morning_slalom'#'20191010_L1_N' #'20191010_L3_N_morning'
+start_frame_num = 30 #96 #58
+end_frame_num = 3763  #2112 #1293
 
 #Common setup
 sample_step = 10
@@ -41,15 +41,15 @@ for n in range(start_frame_ind,len(ann_files),sample_step): #start on first vali
         im = plt.imread(os.path.join(image_dir,im_name + '.png'))
         vis = plt.imread(os.path.join(visualization_dir, im_name + '.png'))
         #Crop annotation and image
-        #Height from 360 to 480 from the top
-        ann_cropped = ann[-360:,-480:]
-        im_cropped = im[-360:,-480:]
-        vis_cropped = vis[-360:,-480:]
+        #Height from 480 to 360 from the top, keeping 640 width
+        ann_cropped = ann[-360:,-640:]
+        im_cropped = im[-360:,-640:]
+        vis_cropped = vis[-360:,-640:]
 
         #-- Save 
         #Split into train, validate and test
         if counter%10 == 0: #Put every 10 sample in test set (or change condition later)
-            save_dir = os.path.join(output_dir,'test')
+            save_dir = os.path.join(output_dir,'val')
         else:
             save_dir = os.path.join(output_dir,'train')
         

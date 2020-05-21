@@ -8,7 +8,7 @@ def blend_color_and_image(image,mask,color_codes,alpha=0.5):
     #Input:
     #   3-channel image (numpy array)
     #   1-channel (integer) mask with N different values
-    #   Nx3 list of RGB color codes (for each value mask)
+    #   Nx3 list of RGB color codes (for each value mask).Example for mask with values 0,1,2: color_codes = [[None,None,None],[0,0,255],[255,255,0]]
 
     mask_values = np.unique(mask)
     color_codes = np.array(color_codes)

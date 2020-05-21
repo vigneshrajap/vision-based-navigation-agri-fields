@@ -9,7 +9,7 @@ Created on Wed Jan  8 09:12:38 2020
 import numpy as np
 import matplotlib.pyplot as plt
 from rectilinear_camera_model_tools import RectiLinearCameraModel
-from utilities import read_robot_offset_from_file, read_row_spec_from_file, blend_color_and_image
+from utilities import read_robot_offset_from_file, read_row_spec_from_file
 import os
 from field_mask import *
 import csv
@@ -17,6 +17,9 @@ import glob
 import re
 from tqdm import tqdm
 import argparse
+import sys
+sys.path.append('..')
+from visualization_utilities import blend_color_and_image
 
 def run_field_mask(image_dir = 'images_prepped_train',
     output_dir = 'output',
@@ -50,7 +53,9 @@ def run_field_mask(image_dir = 'images_prepped_train',
     try:
         crop_duty_cycle, lane_spacing = read_row_spec_from_file(row_spec_file,rec_prefix)
     except:
-        print('Could not read rowspec file')
+        print('Error: Could not read rowspec file')
+    if lane_spacing is None:
+        print('Error: Could not read lane spec from rowspec file')
     #Define field mask
     polygon_field_mask = make_field_mask(lane_spacing = lane_spacing, crop_duty_cycle = crop_duty_cycle, labels = [0,1,0,1,0], extent = 5) #read from file?
 
@@ -114,7 +119,7 @@ def run_field_mask(image_dir = 'images_prepped_train',
                 label_mask = np.array(label_im)
             
             if debug or visualize:
-                overlay_im = blend_color_and_image(camera_im,label_mask,color_code = [0,255,0],alpha=0.3) 
+                overlay_im = blend_color_and_image(camera_im,label_mask,color_codes = [[None,None,None],[0,0,255],[255,255,0]],alpha=0.85) 
                 #Save visualization and numpy array
                 #plt.imsave(os.path.join(output_dir,'visualisation',im_name) + 'lat' + str(lateral_offset) + 'ang' + str(angular_offset) + '.png', overlay_im)
                 plt.imsave(os.path.join(vis_dir,im_name)+'.png', overlay_im)
@@ -134,7 +139,7 @@ def main():
     parser.add_argument("--robot_offset_file", help = "Mandatory, even if use_robot_offset is False. Specify row to process through robot offset file. Relative to dataset dir"),
     parser.add_argument("--use_robot_offset", default = True, help = "If off: Assume straight driving."),
     parser.add_argument("--camera_calib_file", default = '../camera_data_collection/realsense_model.xml', help = "Camera model used for projecting the mask")
-    parser.add_argument("--sampling_step", default = 8, help = "Subsampling factor of image mask to increase speed")
+    parser.add_argument("--sampling_step", default = 4, help = "Subsampling factor of image mask to increase speed")
     parser.add_argument("--debug", default = False, help = "Debug flag: When in debug mode, only save visualisation")
     parser.add_argument("--visualize", default = True, help = "Enable saving of visualization outside debug mode.")
 

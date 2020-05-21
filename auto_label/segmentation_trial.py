@@ -11,7 +11,8 @@ from time import strftime
 main_path = os.path.join('.')
 data_folder = 'output/prepped_data'
 model_folder = 'models'
-model_name = 'autolabel_L1_N_flop'+'_'+strftime("%Y-%d-%m-%H%M") 
+model_name = 'autolabel_L3_S_slalom'+'_'+strftime("%Y-%d-%m-%H%M") 
+prefix = '20191010_L3_S_morning_slalom' #empty prefix = train on all
 
 model_path = os.path.join(main_path,model_folder,model_name)
 segmentation_path = os.path.join(main_path, 'output/segmentation', model_name)
@@ -23,14 +24,14 @@ model = keras_segmentation.models.segnet.segnet(n_classes=3,  input_height=360, 
 
 #Training
 model.train(
-    train_images =  os.path.join(main_path, data_folder,'train/images'),
-    train_annotations = os.path.join(main_path, data_folder,'train/annotations'),
+    train_images =  os.path.join(main_path, data_folder,'train/images/'+prefix),
+    train_annotations = os.path.join(main_path, data_folder,'train/annotations/'+prefix),
     validate = True,
-    val_images = os.path.join(main_path, data_folder,'val/images'),
-    val_annotations = os.path.join(main_path, data_folder,'val/annotations'),
+    val_images = os.path.join(main_path, data_folder,'val/images/'+prefix),
+    val_annotations = os.path.join(main_path, data_folder,'val/annotations/'+prefix),
     checkpoints_path = model_path, 
     steps_per_epoch = None, #determined inside function
-    epochs=30,
+    epochs=5,
     logging = True
 )
 

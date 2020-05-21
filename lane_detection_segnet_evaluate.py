@@ -17,7 +17,7 @@ from PIL import Image
 from visualization_utilities import blend_color_and_image
 
 
-def vis_pred_overlay(inp,pr):
+def vis_pred_overlay(inp,pr, fig = None):
     input_image = Image.open(inp)
     input_image.convert('RGB')
     #Make overlay image
@@ -25,7 +25,7 @@ def vis_pred_overlay(inp,pr):
     im_resized = np.array(input_image.resize((pr.shape[1],pr.shape[0])))[:,:,:3]
     overlay_im = blend_color_and_image(im_resized,pr,color_codes = [[None,None,None],[0,0,255],[255,255,0]],alpha=0.85) 
 
-    fig = plt.figure(111)
+    if fig is None: fig = plt.figure(111)
     plt.imshow(overlay_im)
     plt.axis('off')    
     return fig
@@ -92,6 +92,25 @@ def vis_pred_vs_gt_separate(inp,pr,gt):
     
     return fig
 
+def vis_pred_vs_gt_overlay_and_separate(inp,pr,gt):
+    fig = plt.figure()
+    ax1 = fig.add_subplot(2,2,1)
+    ax1.imshow(gt-pr)
+    #ax1.colorbar()
+    ax1.title.set_text("Difference GT-pred")
+
+    ax2 = fig.add_subplot(2,2,2)
+    ax2.imshow(gt)
+    ax2.title.set_text('GT')
+
+    ax3 = fig.add_subplot(2,2,3)
+    ax3.imshow(pr)
+    ax3.title.set_text('pred')
+
+    ax4 = fig.add_subplot(2,2,4)
+    vis_pred_overlay(inp,pr, fig = ax4)
+    
+    return fig
 
 def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path=None, epoch = None, visualize = False, output_folder = ''):
     #Finished implementation of the evaluate function in keras_segmentation.predict
@@ -116,8 +135,9 @@ def evaluate( model=None , inp_images=None , annotations=None , checkpoints_path
         ious.append( iou )
 
         if visualize:
-            fig = vis_pred_overlay(inp,pr)
-            plt.title("Predicted mask and errors. " "IOU (bg, crop, lane):"+str(iou))
+            #fig = vis_pred_overlay(inp,pr)
+            fig = vis_pred_vs_gt_overlay_and_separate(inp,pr,gt)
+            plt.suptitle("Prediction. " "IOU (bg, crop, lane):"+str(iou))
             if not output_folder:
                 if epoch is None:
                     epoch = ''

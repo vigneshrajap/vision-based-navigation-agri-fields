@@ -96,7 +96,7 @@ def compute_and_save_robot_offsets(input_dir = os.path.join('.','output'),
             gps_point, gps_vec = line_fit_from_points(ind,pos_upsampled_x,pos_upsampled_y,forward_window = smoothing_windows[0], backward_window = smoothing_windows[1])
 
             #Additional correction between map and robot coordinates
-            correction_len = 0.1
+            correction_len = 0.1 #length of correction
             correction_dir = np.abs(np.cross(gps_vec,[0,0,1]))*np.array([1,-1,1]) #correction should be in southeast direction
             correction_EN = correction_len*correction_dir[0:2]
             gpsx, gpsy = [gpsx,gpsy] - correction_EN
