@@ -7,6 +7,8 @@ import os
 import glob
 from time import strftime
 from train import train
+from types import MethodType
+
 
 main_path = os.path.join('.')
 data_folder = 'output/prepped_data'
@@ -25,8 +27,9 @@ model = keras_segmentation.models.segnet.segnet(n_classes=3,  input_height=360, 
 #Training
 print('---------------------Using training data from ', os.path.join(main_path, data_folder,'train/images/'+prefix))
 
-train(
-    model = model,
+model.train = MethodType(train,model) #Redefine training function from keras_segmentation
+
+model.train(
     train_images =  os.path.join(main_path, data_folder,'train/images/'+prefix),
     train_annotations = os.path.join(main_path, data_folder,'train/annotations/'+prefix),
     validate = True,
