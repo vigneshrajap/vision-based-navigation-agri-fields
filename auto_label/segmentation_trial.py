@@ -14,31 +14,29 @@ main_path = os.path.join('.')
 data_folder = 'output/prepped_data'
 model_folder = 'models'
 model_name = 'autolabel_L1_N_valv2'+'_'+strftime("%Y-%d-%m-%H%M") 
-prefix = '' #empty prefix = train on all
+prefix = '20191010_L1_N' #empty prefix = train on all
 
 model_path = os.path.join(main_path,model_folder,model_name)
-segmentation_path = os.path.join(main_path, 'output/segmentation', model_name)
-
 os.makedirs(model_path, exist_ok = True)
-os.makedirs(segmentation_path, exist_ok = True)
 
 model = keras_segmentation.models.segnet.segnet(n_classes=3,  input_height=360, input_width=640)
 
 #Training
-print('---------------------Using training data from ', os.path.join(main_path, data_folder,'train/images/'+prefix))
+print('---------------------Using training data from ', os.path.join(main_path, data_folder,'train/images/'+prefix+'*'))
 
 model.train = MethodType(train,model) #Redefine training function from keras_segmentation
 
 model.train(
-    train_images =  os.path.join(main_path, data_folder,'train/images/'+prefix),
-    train_annotations = os.path.join(main_path, data_folder,'train/annotations/'+prefix),
+    train_images =  os.path.join(main_path, data_folder,'train/images/'+prefix+'*'),
+    train_annotations = os.path.join(main_path, data_folder,'train/annotations/'+prefix+'*'),
     validate = True,
-    val_images = os.path.join(main_path, data_folder,'val/images/'+prefix),
-    val_annotations = os.path.join(main_path, data_folder,'val/annotations/'+prefix),
+    val_images = os.path.join(main_path, data_folder,'val/images/'+prefix+'*'),
+    val_annotations = os.path.join(main_path, data_folder,'val/annotations/'+prefix+'*'),
     checkpoints_path = model_path, 
     steps_per_epoch = None, #determined inside function
     epochs=20,
-    logging = True
+    logging = True,
+    ignore_zero_class=False,
 )
 
 #Quick testing

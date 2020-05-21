@@ -8,7 +8,7 @@ def blend_color_and_image(image,mask,color_codes,alpha=0.5):
     #Input:
     #   3-channel image (numpy array)
     #   1-channel (integer) mask with N different values
-    #   Nx3 list of RGB color codes (for each value mask).Example for mask with values 0,1,2: color_codes = [[None,None,None],[0,0,255],[255,255,0]]
+    #   Nx3 list of RGB color codes (for each value mask).Example for mask with values 0,1,2:
 
     mask_values = np.unique(mask)
     color_codes = np.array(color_codes)
@@ -30,6 +30,39 @@ def blend_color_and_image(image,mask,color_codes,alpha=0.5):
             tmp_mask = (mask == val)
             blended_im = np.uint8((tmp_mask * (1-alpha) * color_codes[ind,:]) + (tmp_mask * alpha * blended_im) + (np.logical_not(tmp_mask) * blended_im)) #mask + image under mask + image outside mask
     return blended_im
+
+def vis_pred_overlay(inp,pr, fig = None):
+    input_image = Image.open(inp)
+    input_image.convert('RGB')
+    #Make overlay image
+    #mask = np.zeros((gt.shape[0],gt.shape[1],3),dtype='uint8')
+    im_resized = np.array(input_image.resize((pr.shape[1],pr.shape[0])))[:,:,:3]
+    overlay_im = blend_color_and_image(im_resized,pr,color_codes = [[None,None,None],[0,0,255],[255,255,0]],alpha=0.85) 
+
+    if fig is None: fig = plt.figure(111)
+    plt.imshow(overlay_im)
+    plt.axis('off')    
+    return fig
+
+def vis_pred_vs_gt_overlay_and_separate(inp,pr,gt):
+    fig = plt.figure()
+    ax1 = fig.add_subplot(2,2,1)
+    ax1.imshow(gt-pr)
+    #ax1.colorbar()
+    ax1.title.set_text("Difference GT-pred")
+
+    ax2 = fig.add_subplot(2,2,2)
+    ax2.imshow(gt)
+    ax2.title.set_text('GT')
+
+    ax3 = fig.add_subplot(2,2,3)
+    ax3.imshow(pr)
+    ax3.title.set_text('pred')
+
+    ax4 = fig.add_subplot(2,2,4)
+    vis_pred_overlay(inp,pr, fig = ax4)
+    
+    return fig
 
 def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm=None,alpha = 0.5):
     #Visualize segmentation prediction and false positives/negatives

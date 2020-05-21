@@ -1,54 +1,18 @@
 import json
 import sys
-from keras_segmentation.data_utils.data_loader import image_segmentation_generator, \
-    verify_segmentation_dataset, get_pairs_from_paths
 from keras_segmentation.models.all_models import model_from_name
+from keras_segmentation.train import find_latest_checkpoint,masked_categorical_crossentropy,CheckpointsCallback
 import glob
+import os
 import six
 from keras.callbacks import Callback
 from keras import callbacks as k_callbacks
 
+from tqdm import tqdm
+import cv2 
+import numpy as np
 
-def find_latest_checkpoint(checkpoints_path, fail_safe=True):
-
-    def get_epoch_number_from_path(path):
-        return path.replace(checkpoints_path, "").strip(".")
-
-    # Get all matching files
-    all_checkpoint_files = glob.glob(checkpoints_path + ".*")
-    # Filter out entries where the epoc_number part is pure number
-    all_checkpoint_files = list(filter(lambda f: get_epoch_number_from_path(f)
-                                       .isdigit(), all_checkpoint_files))
-    if not len(all_checkpoint_files):
-        # The glob list is empty, don't have a checkpoints_path
-        if not fail_safe:
-            raise ValueError("Checkpoint path {0} invalid"
-                             .format(checkpoints_path))
-        else:
-            return None
-
-    # Find the checkpoint file with the maximum epoch
-    latest_epoch_checkpoint = max(all_checkpoint_files,
-                                  key=lambda f:
-                                  int(get_epoch_number_from_path(f)))
-    return latest_epoch_checkpoint
-
-
-def masked_categorical_crossentropy(gt, pr):
-    from keras.losses import categorical_crossentropy
-    mask = 1 - gt[:, :, 0]
-    return categorical_crossentropy(gt, pr) * mask
-
-
-class CheckpointsCallback(Callback):
-    def __init__(self, checkpoints_path):
-        self.checkpoints_path = checkpoints_path
-
-    def on_epoch_end(self, epoch, logs=None):
-        if self.checkpoints_path is not None:
-            self.model.save_weights(self.checkpoints_path + "." + str(epoch))
-            print("saved ", self.checkpoints_path + "." + str(epoch))
-
+from data_loader import verify_segmentation_dataset, get_pairs_from_paths, image_segmentation_generator
 
 def train(model,
           train_images,
@@ -133,13 +97,13 @@ def train(model,
         verified = verify_segmentation_dataset(train_images,
                                                train_annotations,
                                                n_classes)
-        assert verified
+        assert (verified, "Verification of training set failed")
         if validate:
             print("Verifying validation dataset")
             verified = verify_segmentation_dataset(val_images,
                                                    val_annotations,
                                                    n_classes)
-            assert verified
+            assert (verified, "Verification of validation set failed")
 
     train_gen = image_segmentation_generator(
         train_images, train_annotations,  batch_size,  n_classes,
@@ -153,20 +117,10 @@ def train(model,
             n_classes, input_height, input_width, output_height, output_width)
         if val_steps_per_epoch is None: val_steps_per_epoch = len(get_pairs_from_paths(val_images, val_annotations))
 
-    callbacks = [
-        CheckpointsCallback(checkpoints_path)
-    ]
+    callbacks = [CheckpointsCallback(checkpoints_path)]
     if logging:
        tbCallBack = k_callbacks.TensorBoard(histogram_freq=0,log_dir=checkpoints_path)
        callbacks.append(tbCallBack)
 
-    if not validate:
-        model.fit_generator(train_gen, steps_per_epoch,
-                            epochs=epochs, callbacks=callbacks)
-    else:
-        model.fit_generator(train_gen,
-                            steps_per_epoch,
-                            validation_data=val_gen,
-                            validation_steps=val_steps_per_epoch,
-                            epochs=epochs, callbacks=callbacks,
-                            use_multiprocessing=gen_use_multiprocessing)
+    model.fit_generator(train_gen, steps_per_epoch, validation_data = val_gen, validation_steps = val_steps_per_epoch, epochs=epochs ,callbacks=callbacks ) #temporary fix, breaks the start_epoch functionality
+

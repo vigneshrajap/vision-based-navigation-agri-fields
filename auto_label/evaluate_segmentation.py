@@ -1,16 +1,15 @@
 import sys 
-#sys.path.append('../../image-segmentation-keras')
-import keras_segmentation
-sys.path.append('..')
-from lane_detection_segnet_evaluate import evaluate
-from lane_detection_segnet_evaluate import evaluate
+
+from predict import evaluate_and_visualize
+
 import os
 import glob
+import numpy as np
 
 if __name__ == "__main__":
     model_folder = 'models'
-    model_prefix = 'autolabel_L3_S_slalom_2020-20-05-1646'
-    epoch = 5
+    model_prefix = 'autolabel_L1_N_valv2_2020-21-05-1502'
+    epoch = 18
     data_folder = 'output/prepped_data/val'
     data_prefix = ''
     output_folder = 'output/segmentation'
@@ -21,10 +20,14 @@ if __name__ == "__main__":
     output_path = os.path.join(output_folder,model_prefix)
 
     print('Running evaluation on ',len(im_files),'images, and',len(ann_files),'annotations:')
-    evaluate(model=None , #fetched from path and epoch number
+    ious = evaluate_and_visualize(model=None , #fetched from path and epoch number
     inp_images= im_files , 
     annotations= ann_files, 
     checkpoints_path=model_path_and_prefix,
     epoch = epoch, 
     visualize = True, 
     output_folder = output_path)
+
+    ious = np.array( ious )
+    print("Class wise IoU "  ,  np.mean(ious , axis=0 ))
+    print("Total  IoU "  ,  np.mean(ious ))
