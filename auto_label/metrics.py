@@ -44,7 +44,6 @@ def get_iou(gt, pr, n_classes, ignore_zero_class=False):
         fn[cl_i] = np.sum((pr != cl_i) * ((gt == cl_i)))
         n_pixels[cl_i] = np.sum(gt == cl_i)
 
-    print('tp',tp,'fp',fp,'fn',fn,'npx',n_pixels)
     cl_wise_score = tp / (tp + fp + fn + 0.000000000001)
     n_pixels_norm = n_pixels / np.nansum(n_pixels)
     frequency_weighted_IoU = np.nansum(cl_wise_score*n_pixels_norm)

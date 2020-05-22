@@ -21,7 +21,7 @@ if __name__ == "__main__":
     os.makedirs(output_path, exist_ok = True)
 
     print('Running evaluation on ',len(im_files),'images, and',len(ann_files),'annotations:')
-    ious = evaluate_and_visualize(model=None , #fetched from path and epoch number
+    class_wise_iou, mean_iou, frequency_weighted_iou = evaluate_and_visualize(model=None , #fetched from path and epoch number
     inp_images= im_files , 
     annotations= ann_files, 
     checkpoints_path=model_path_and_prefix,
@@ -30,10 +30,11 @@ if __name__ == "__main__":
     ignore_zero_class = True,
     output_folder = output_path)
 
-    ious = np.array( ious )
-    print("Class wise IoU "  ,  np.mean(ious , axis=0 ))
-    print("Total  IoU "  ,  np.mean(ious[1:2] ))
+    print("Class wise IoU "  ,  class_wise_iou)
+    print("Total  IoU "  ,  mean_iou)
+    print("Frequency weighted IoU ", frequency_weighted_iou)
 
     with open(os.path.join(output_path, "iou.txt"), 'w') as print_file:
-        print("Class wise IoU "  ,  np.mean(ious , axis=0 ), file = print_file)
-        print("Total  IoU "  ,  np.mean(ious[1:2] ), file = print_file)
+        print("Class wise IoU "  ,  class_wise_iou, file = print_file)
+        print("Total  IoU "  ,  mean_iou, file = print_file)
+        print("Frequency weighted IoU ", frequency_weighted_iou, file = print_file)

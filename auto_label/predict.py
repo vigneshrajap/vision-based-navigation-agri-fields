@@ -66,6 +66,8 @@ def evaluate_and_visualize( model=None , inp_images=None , annotations=None , ch
         checkpoints_path = ''
 
     ious = []
+    mean_ious = []
+    fw_ious = []
     tp = np.zeros(model.n_classes)
     fp = np.zeros(model.n_classes)
     fn = np.zeros(model.n_classes)
@@ -76,12 +78,14 @@ def evaluate_and_visualize( model=None , inp_images=None , annotations=None , ch
         
         gt = get_segmentation_array( ann , model.n_classes ,  model.output_width , model.output_height, no_reshape=True)
         gt = gt.argmax(-1)
-        iou = metrics.get_iou( gt , pr , model.n_classes, ignore_zero_class = ignore_zero_class)
+        iou, m_iou, fw_iou = metrics.get_iou( gt , pr , model.n_classes, ignore_zero_class = ignore_zero_class)
         ious.append(iou)
+        mean_ious.append(m_iou)
+        fw_ious.append(fw_iou)
         if visualize:
             #fig = vis_pred_overlay(inp,pr)
             fig = vis_pred_vs_gt_overlay_and_separate(inp,pr,gt)
-            plt.suptitle("Prediction. " "IOU (bg, crop, lane):"+str(iou))
+            plt.suptitle("IoU (bg, crop, lane): {:.2f},{:.2f},{:.2f}, Mean IoU: {:.2f}, FW IoU: {:.2f}".format(iou[0],iou[1],iou[2],m_iou,fw_iou))
             if not output_folder:
                 if epoch is None:
                     epoch = ''
@@ -90,5 +94,7 @@ def evaluate_and_visualize( model=None , inp_images=None , annotations=None , ch
                 print('Saving to: ',checkpoints_path+epoch+'_IOU_'+os.path.basename(inp))
             else:
                 fig.savefig(os.path.join(output_folder,os.path.basename(checkpoints_path)+'_IOU_'+os.path.basename(inp)))
-        
-    return ious
+    class_wise_iou = np.mean(ious , axis = 0)
+    mean_iou = np.mean(mean_ious)
+    frequency_weighted_iou = np.mean(fw_ious)
+    return class_wise_iou, mean_iou, frequency_weighted_iou
