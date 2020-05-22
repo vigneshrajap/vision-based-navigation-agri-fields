@@ -1,4 +1,7 @@
 import numpy as np
+import tensorflow as tf
+import tensorflow.keras.backend as K
+
 
 EPS = 1e-12
 
@@ -50,3 +53,17 @@ def get_iou(gt, pr, n_classes, ignore_zero_class=False):
     mean_IoU = np.nanmean(cl_wise_score)
 
     return cl_wise_score, mean_IoU, frequency_weighted_IoU
+
+#Compatible with Keras
+def masked_IoU_3class(gt,pr):
+    #fixme implement keras tensor functions
+    return get_iou(gt,pr,3,ignore_zero_class = True)
+
+## Loss functions
+def dice(y_true, y_pred, smooth=1):
+    print("**********************Using dice loss")
+    #From https://towardsdatascience.com/metrics-to-evaluate-your-semantic-segmentation-model-6bcb99639aa2
+    intersection = K.sum(y_true * y_pred, axis=[1,2])
+    union = K.sum(y_true, axis=[1,2]) + K.sum(y_pred, axis=[1,2])
+    dice = K.mean((2. * intersection + smooth)/(union + smooth), axis=0)
+    return dice

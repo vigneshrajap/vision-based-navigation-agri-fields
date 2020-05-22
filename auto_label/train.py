@@ -2,6 +2,7 @@ import json
 import sys
 from keras_segmentation.models.all_models import model_from_name
 from keras_segmentation.train import find_latest_checkpoint,masked_categorical_crossentropy,CheckpointsCallback
+from tensorflow.keras.metrics import MeanIoU
 import glob
 import os
 import six
@@ -12,6 +13,7 @@ from tqdm import tqdm
 import cv2 
 import numpy as np
 
+from metrics import dice, masked_IoU_3class
 from data_loader import verify_segmentation_dataset, get_pairs_from_paths, image_segmentation_generator
 
 def train(model,
@@ -35,6 +37,7 @@ def train(model,
           gen_use_multiprocessing=False,
           ignore_zero_class=False,
           optimizer_name='adadelta',
+          loss_name = 'categorical_crossentropy',
           logging = False,
           do_augment=False,
           augmentation_name="aug_all"):
@@ -59,16 +62,18 @@ def train(model,
         assert val_images is not None
         assert val_annotations is not None
 
-    if optimizer_name is not None:
 
+    if loss_name == 'categorical_crossentropy':
         if ignore_zero_class:
             loss_k = masked_categorical_crossentropy
         else:
-            loss_k = 'categorical_crossentropy'
+            loss_k = masked_categorical_crossentropy
+    if loss_name == 'dice':
+        loss_k = dice
 
-        model.compile(loss=loss_k,
-                      optimizer=optimizer_name,
-                      metrics=['accuracy'])
+    model.compile(loss=loss_k,
+                optimizer=optimizer_name,
+                metrics=['accuracy', dice])
 
     if checkpoints_path is not None:
         with open(checkpoints_path+"_config.json", "w") as f:

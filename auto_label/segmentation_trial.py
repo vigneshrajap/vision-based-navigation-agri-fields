@@ -13,7 +13,7 @@ from types import MethodType
 main_path = os.path.join('.')
 data_folder = 'output/prepped_data'
 model_folder = 'models'
-model_name = 'autolabel_L1_N_ignorezero'+'_'+strftime("%Y-%d-%m-%H%M") 
+model_name = 'autolabel_L1_N_dice'+'_'+strftime("%Y-%d-%m-%H%M") 
 prefix = '20191010_L1_N' #empty prefix = train on all
 
 model_path = os.path.join(main_path,model_folder,model_name)
@@ -36,6 +36,7 @@ model.train(
     steps_per_epoch = None, #determined inside function
     epochs=20,
     logging = True,
+    loss_name = 'dice',
     ignore_zero_class=True,
 )
 
