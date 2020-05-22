@@ -37,7 +37,7 @@ def vis_pred_overlay(inp,pr, fig = None):
     #Make overlay image
     #mask = np.zeros((gt.shape[0],gt.shape[1],3),dtype='uint8')
     im_resized = np.array(input_image.resize((pr.shape[1],pr.shape[0])))[:,:,:3]
-    overlay_im = blend_color_and_image(im_resized,pr,color_codes = [[None,None,None],[0,0,255],[255,255,0]],alpha=0.85) 
+    overlay_im = blend_color_and_image(im_resized,pr,color_codes = [[None,None,None],[255,255,0],[0,0,255]],alpha=0.8) 
 
     if fig is None: fig = plt.figure(111)
     plt.imshow(overlay_im)
@@ -61,39 +61,8 @@ def vis_pred_vs_gt_overlay_and_separate(inp,pr,gt):
 
     ax4 = fig.add_subplot(2,2,4)
     vis_pred_overlay(inp,pr, fig = ax4)
+    ax4.title.set_text(os.path.basename(inp))
     
-    return fig
-
-def vis_pred_vs_gt_overlay(inp, pr, gt, figure_width_mm=None,alpha = 0.5):
-    #Visualize segmentation prediction and false positives/negatives
-    
-    #NB 3-class problem with background not handled properly
-    input_image = Image.open(inp)
-
-    #Make overlay image
-    #mask = np.zeros((gt.shape[0],gt.shape[1],3),dtype='uint8')
-    im_resized = np.array(input_image.resize((gt.shape[1],gt.shape[0])))
-    
-    error_mask = pr-gt
-    #Make non-overlapping masks
-    fp_mask = np.uint8(error_mask > 0)  
-    fn_mask = np.uint8(error_mask < 0) #False negatives for class 1
-    gt_mask = (gt-1)*np.uint8(error_mask == 0) #class 1 in ground truth encoded green
-    
-    #Blending
-    fp_color_code = np.array([1,0,1])*255 #magenta
-    fn_color_code = np.array([0,0,1])*255 #blue
-    gt_color_code = np.array([0,1,0])*255 #green
-    
-    im_vis = blend_color_and_image(im_resized,fp_mask,fp_color_code,alpha)
-    im_vis= blend_color_and_image(im_vis,fn_mask,fn_color_code,alpha)
-    im_vis= blend_color_and_image(im_vis,gt_mask,gt_color_code,alpha)
-    #vis_img = np.uint8(fp_mask * (1-alpha) * color_code + fp_mask * alpha * im_resized + np.logical_not(fp_mask) * im_resized)
-    #vis_img = np.uint8(fp_mask*(1-alpha)*im_resized + (fp_mask*alpha)*color_code))
-    
-    fig = plt.figure(111)#figsize = (figure_width_mm/25.4,figure_width_mm/25.4))
-    plt.imshow(im_vis)
-    plt.axis('off')    
     return fig
 
 def vis_pred_vs_gt_separate(inp,pr,gt):   
