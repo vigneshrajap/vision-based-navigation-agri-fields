@@ -15,7 +15,9 @@ from keras_segmentation.data_utils.data_loader import get_image_array, get_segme
     DATA_LOADER_SEED, class_colors, get_pairs_from_paths
 from keras_segmentation.models.all_models import model_from_name
 from keras_segmentation.models.config import IMAGE_ORDERING
-from keras_segmentation import metrics
+
+#Our code
+import metrics
 import sys
 sys.path.append('..')
 from visualization_utilities import blend_color_and_image, vis_pred_vs_gt_overlay_and_separate
@@ -55,7 +57,7 @@ def predict_fast( model=None , inp=None, checkpoints_path = None):
     pr_arr = pr.reshape(( model.output_height ,  model.output_width , model.n_classes ) ).argmax( axis=2 )
     return pr_arr
 
-def evaluate_and_visualize( model=None , inp_images=None , annotations=None , checkpoints_path=None, epoch = None, visualize = True, output_folder = ''):
+def evaluate_and_visualize( model=None , inp_images=None , annotations=None , checkpoints_path=None, epoch = None, visualize = True, output_folder = '',ignore_zero_class = False):
     #Finished implementation of the evaluate function in keras_segmentation.predict (v 0.2.0) and added visualization
     #Input: array of paths or nd arrays
     if model is None and ( not checkpoints_path is None ):
@@ -74,9 +76,8 @@ def evaluate_and_visualize( model=None , inp_images=None , annotations=None , ch
         
         gt = get_segmentation_array( ann , model.n_classes ,  model.output_width , model.output_height, no_reshape=True)
         gt = gt.argmax(-1)
-        iou = metrics.get_iou( gt , pr , model.n_classes )
-        ious.append( iou )
-        
+        iou = metrics.get_iou( gt , pr , model.n_classes, ignore_zero_class = ignore_zero_class)
+        ious.append(iou)
         if visualize:
             #fig = vis_pred_overlay(inp,pr)
             fig = vis_pred_vs_gt_overlay_and_separate(inp,pr,gt)

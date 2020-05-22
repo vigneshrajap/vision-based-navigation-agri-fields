@@ -27,6 +27,7 @@ if __name__ == "__main__":
     checkpoints_path=model_path_and_prefix,
     epoch = epoch, 
     visualize = True, 
+    ignore_zero_class = True,
     output_folder = output_path)
 
     ious = np.array( ious )
