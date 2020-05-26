@@ -9,7 +9,7 @@ import numpy as np
 if __name__ == "__main__":
     model_folder = 'models'
     model_prefix = 'autolabel_L1_N_ignorezero_2020-21-05-1613'
-    epoch = 10
+    epoch = 19
     data_folder = 'output/prepped_data/val'
     data_prefix = ''
     output_folder = 'output/segmentation'
