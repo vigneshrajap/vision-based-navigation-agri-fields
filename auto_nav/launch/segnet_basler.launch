@@ -1,22 +1,53 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="input_topic" default="/virtualcam/image_virtualcam"/>
-    <arg name="model_config" default="~/catkin_ws/src/vision-based-navigation-agri-fields/models/resnet_3class_config.json"/>
-    <arg name="model_weights" default="~/catkin_ws/src/vision-based-navigation-agri-fields/models/resnet_3class.25"/>
-    <arg name="virtualcam_output_rpy" default="[0,0,0]"/>
-    <arg name="virtualcam_input_topic" default="/pylon_camera_node/image_raw"/>
+  <!-- Input image topic: Basler camera-->
+  <arg name="input_topic" default="/basler_camera/image_raw "/>
+  <arg name="world_frame" default="map"/>
+  <arg name="robot_frame" default="base_link"/>
+  <arg name="camera_frame" default="camera_color_optical_frame"/>
 
-    <rosparam param="auto_nav/segnet_lane_detection/camera_topic" subst_value="True">$(arg input_topic)</rosparam>
-    <rosparam param="auto_nav/segnet_lane_detection/model_config" subst_value="True">$(arg model_config)</rosparam>
-    <rosparam param="auto_nav/segnet_lane_detection/model_weights" subst_value="True">$(arg model_weights)</rosparam>
-    <rosparam param="auto_nav/virtualcam/camera_topic" subst_value="True">$(arg virtualcam_input_topic)</rosparam>
-    <rosparam param="autonav/virtualcam/RPY" subst_value="True">$(arg virtualcam_output_rpy)</rosparam>
+  <!-- Loading the pre-trained base model weights: resnet50_segnet weights-->
+  <arg name="model_config" default="$(env HOME)/catkin_ws/src/vision-based-navigation-agri-fields/models/resnet50_segnet_config.json"/>
+  <arg name="model_weights" default="$(env HOME)/catkin_ws/src/vision-based-navigation-agri-fields/models/resnet50_segnet.21"/>
+  <arg name="model_prefix" default="$(env HOME)/catkin_ws/src/vision-based-navigation-agri-fields/models/resnet50_segnet"/>
 
-    <node name="segnet_lane_detection.py" pkg="auto_nav" type="segnet_lane_detection.py" output="screen"
-          respawn="false">
-    </node>
-    <node name="virtualcam" pkg="auto_nav" type="virtualcam.py" output="screen"
-          respawn="false">
-    </node>
+ <!-- visualize: None, "all" or one of, "segmentation", "lane_fit"-->
+  <arg name="visualize" default="all"/>
+  <arg name="output_video_file_s" default="$(env HOME)/segmentation_1.avi"/>
+  <arg name="output_video_file_l" default="$(env HOME)/lane_fit_1.avi"/>
+
+  <!-- <arg name="virtualcam_output_rpy" default="[0,0,0]"/>
+  <arg name="virtualcam_input_topic" default="/pylon_camera_node/image_raw"/> -->
+
+  <rosparam param="auto_nav/segnet_lane_detection/camera_topic" subst_value="True">$(arg input_topic)</rosparam>
+  <rosparam param="auto_nav/segnet_lane_detection/model_config" subst_value="True">$(arg model_config)</rosparam>
+  <rosparam param="auto_nav/segnet_lane_detection/model_weights" subst_value="True">$(arg model_weights)</rosparam>
+  <rosparam param="auto_nav/segnet_lane_detection/model_prefix" subst_value="True">$(arg model_prefix)</rosparam>
+  <rosparam param="auto_nav/segnet_lane_detection/visualize" subst_value="True">$(arg visualize)</rosparam>
+  <rosparam param="auto_nav/segnet_lane_detection/output_video_file_s" subst_value="True">$(arg output_video_file_s)</rosparam>
+  <rosparam param="auto_nav/segnet_lane_detection/output_video_file_l" subst_value="True">$(arg output_video_file_l)</rosparam>
+
+  <!-- <rosparam param="auto_nav/virtualcam/camera_topic" subst_value="True">$(arg virtualcam_input_topic)</rosparam>
+  <rosparam param="autonav/virtualcam/RPY" subst_value="True">$(arg virtualcam_output_rpy)</rosparam> -->
+
+  <arg name="path" default="$(env HOME)/Third_Paper/Datasets/Frogn_Fields/Frogn_004_bags/" />
+  <arg name="file_1" default="frogn_004_0" />
+  <arg name="file_2" default="frogn_004_1" />
+  <!--arg name="file_3" default="frogn_004_2" />
+  <arg name="file_4" default="frogn_004_3" />
+  <arg name="file_5" default="frogn_004_4" /-->
+
+  <!--node pkg="rosbag" type="play" name="player" output="screen" args=" clock
+                $(arg path)$(arg file_1).bag $(arg path)$(arg file_2).bag"/--> <!-- $(arg path)$(arg file_3).bag $(arg path)$(arg file_4).bag $(arg path)$(arg file_5).bag"/-->
+
+  <node name="segnet_lane_detection" pkg="auto_nav" type="segnet_lane_detection.py" output="screen" respawn="false">
+  </node>
+
+  <!--node name="lane_control" pkg="auto_nav" type="lane_control" output="screen" respawn="false" >
+    <param name="world_frame" value="$(arg world_frame)"/>
+    <param name="robot_frame" value="$(arg robot_frame)"/>
+    <param name="camera_frame" value="$(arg camera_frame)"/>
+  </node-->
 
 </launch>
+

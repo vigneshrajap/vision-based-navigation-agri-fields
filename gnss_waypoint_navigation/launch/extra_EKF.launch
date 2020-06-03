@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <arg name="publish_tf" default="false"/>
+  <param name="use_sim_time" value="true"/>
+
+  <!-- load parameters for both eKFs (odom and map) -->
+  <rosparam command="load" file="$(find gnss_waypoint_navigation)/config/dual_ekf_navsat.yaml" />
+
+  <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0.425 -0.62 1.05 0 0 0 1 base_link gps 100" />
+  <node pkg="tf" type="static_transform_publisher" name="link2_broadcaster" args="0.31 0.0 0.8 0 0 0 1 base_link xsens 100" />
+
+  <!-- Second instance of robot_localization, GPS integrated localization -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map" clear_params="true" output="screen" respawn="true">
+     <remap from="/odometry/filtered" to="/odometry/global_corr" />
+     <param name="publish_tf" value="$(arg publish_tf)"/>
+  </node>
+
+  <!--UTM frame to Robot Frame conversion-->
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" respawn="true" output="screen">
+    <remap from="/imu/data" to="/imu/data" />
+    <remap from="/gps/fix" to="/gps/fix" />
+    <remap from="/odometry/filtered" to="/odometry/global_corr" />
+  </node>
+
+</launch>

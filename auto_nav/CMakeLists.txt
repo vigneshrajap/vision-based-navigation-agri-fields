@@ -13,7 +13,6 @@ rospy
 sensor_msgs
 std_msgs
 thorvald_twist_mux
-kinect2_description
 cv_bridge
 image_transport
 tf
@@ -123,8 +122,8 @@ generate_dynamic_reconfigure_options(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 INCLUDE_DIRS include
-# LIBRARIES rasberry_agricultural_costmaps
-CATKIN_DEPENDS nav_msgs rospy sensor_msgs std_msgs thorvald_twist_mux kinect2_description cv_bridge image_transport tf tf2_geometry_msgs pcl_conversions
+# LIBRARIES
+CATKIN_DEPENDS nav_msgs rospy sensor_msgs std_msgs thorvald_twist_mux cv_bridge image_transport tf tf2_geometry_msgs pcl_conversions
   pcl_ros costmap_2d dynamic_reconfigure
 #  DEPENDS system_lib
 )
@@ -184,6 +183,7 @@ target_link_libraries(lane_control ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PYTHON_L
 ## in contrast to setup.py, you can choose the destination
 install(PROGRAMS
   scripts/segnet_lane_detection.py
+  scripts/lateral_heading_offset.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 #scripts/lane_detector.py
