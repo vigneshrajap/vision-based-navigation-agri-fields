@@ -141,7 +141,11 @@ include_directories(
 )
 
 ## Declare a C++ library
+<<<<<<< HEAD
 # add_library(agri_costmap_layer_v2 src/agri_costmap_layer_v2.cpp)
+=======
+#add_library(agri_costmap_layer_v2 src/agri_costmap_layer_v2.cpp)
+>>>>>>> 5e28a0f067b3935ef49e2c9da503cc94b1bc7495
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -153,7 +157,11 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(waypoint_saver src/waypoint_saver.cpp)
 #add_executable(waypoints_nav src/waypoints_nav.cpp)
+<<<<<<< HEAD
 # add_executable(lane_control src/lane_control.cpp)
+=======
+#add_executable(lane_control src/lane_control.cpp)
+>>>>>>> 5e28a0f067b3935ef49e2c9da503cc94b1bc7495
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -165,12 +173,20 @@ add_executable(waypoint_saver src/waypoint_saver.cpp)
 ## same as for the library above
 add_dependencies(waypoint_saver ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #add_dependencies(waypoints_nav ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+<<<<<<< HEAD
 # add_dependencies(lane_control ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+=======
+#add_dependencies(lane_control ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+>>>>>>> 5e28a0f067b3935ef49e2c9da503cc94b1bc7495
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(waypoint_saver ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PYTHON_LIBRARIES})
 #target_link_libraries(waypoints_nav ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PYTHON_LIBRARIES} yaml-cpp)
+<<<<<<< HEAD
 # target_link_libraries(lane_control ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PYTHON_LIBRARIES})
+=======
+#target_link_libraries(lane_control ${catkin_LIBRARIES} ${OpenCV_LIBS} ${PYTHON_LIBRARIES})
+>>>>>>> 5e28a0f067b3935ef49e2c9da503cc94b1bc7495
 
 #############
 ## Install ##

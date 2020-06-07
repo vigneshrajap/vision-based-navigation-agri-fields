@@ -30,8 +30,8 @@ init_cmd: |
   export_default CATKIN_WORKSPACE "`echo $HOME/planner_ws`"
   source "$CATKIN_WORKSPACE/devel/setup.bash"
   # set ROS_MASTER to the correct IP
-  #export_default ROS_MASTER $default_ip
-  export_default ROS_MASTER "192.168.0.52"
+  # export_default ROS_MASTER "10.248.0.76" 
+  export_default ROS_MASTER "192.168.0.51"
   # set ROS_IP not to the IP that we will connect to remotely
   export_default ROS_IP `ip route get $ROS_MASTER | grep "src" | sed 's/.*src \([0-9\.]*\).*/\1/' || echo $ROS_MASTER`
   # set ROS_HOSTNAME to the ROS_IP to avoid configuring /etc/hosts for anyone who connects
