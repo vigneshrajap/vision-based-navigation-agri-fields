@@ -11,8 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
-  spinnaker_camera_driver
-  basler_camera
+  #spinnaker_camera_driver
+  #basler_camera
   realsense2_camera
 )
 
