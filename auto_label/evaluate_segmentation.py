@@ -8,15 +8,15 @@ import numpy as np
 
 if __name__ == "__main__":
     model_folder = 'models'
-    model_prefix = 'autolabel_L1_N_ignorezero_2020-21-05-1613'
+    model_prefix = 'manuallabel_all_2020-02-06-1440'
     epoch = 19
     data_folder = 'output/prepped_data/val'
     data_prefix = ''
     output_folder = 'output/segmentation'
 
     model_path_and_prefix = os.path.join(model_folder,model_prefix)
-    im_files = glob.glob(os.path.join(data_folder,'images', data_prefix + '*.png'))
-    ann_files = glob.glob(os.path.join(data_folder,'annotations' , data_prefix + '*.png'))
+    im_files = glob.glob(os.path.join(data_folder,'images_manual', data_prefix + '*.png'))
+    ann_files = glob.glob(os.path.join(data_folder,'annotations_manual' , data_prefix + '*.png'))
     output_path = os.path.join(output_folder,model_prefix + '_' + str(epoch))
     os.makedirs(output_path, exist_ok = True)
 

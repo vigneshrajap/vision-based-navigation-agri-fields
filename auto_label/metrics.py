@@ -61,7 +61,6 @@ def masked_IoU_3class(gt,pr):
 
 ## Loss functions
 def dice(y_true, y_pred, smooth=1):
-    print("**********************Using dice loss")
     #From https://towardsdatascience.com/metrics-to-evaluate-your-semantic-segmentation-model-6bcb99639aa2
     intersection = K.sum(y_true * y_pred, axis=[1,2])
     union = K.sum(y_true, axis=[1,2]) + K.sum(y_pred, axis=[1,2])

@@ -6,10 +6,13 @@ import os
 import cv2
 
 input_dir = '/home/marianne/catkin_ws/src/vision-based-navigation-agri-fields/auto_label/output'
-annotation_dir = os.path.join(input_dir,'automatic_annotations/annotation_arrays') #'straight_annotations'#'automatic_annotations/annotation_arrays'
+annotation_dir = os.path.join(input_dir,'straight_annotations/annotation_arrays') #'straight_annotations'#'automatic_annotations/annotation_arrays'
 image_dir = os.path.join(input_dir,'images_only')
-visualization_dir = os.path.join(input_dir,'automatic_annotations/visualization') #'straight_annotations #'automatic_annotations/visualization'
+visualization_dir = os.path.join(input_dir,'straight_annotations/visualization') #'straight_annotations #'automatic_annotations/visualization'
 output_dir = os.path.join(input_dir,'prepped_data') #'prepped_data'
+image_output_folder = 'images'
+annotations_output_folder = 'annotations_straight'
+visualization_output_folder = 'visualization_straight'
 
 #Input per row
 prefix = '20191010_L1_N'#'20191010_L1_N' #'20191010_L3_N_morning' #'20191010_L3_S_morning_slalom'
@@ -21,6 +24,7 @@ sample_step = 10
 
 #Get files with the right prefix
 all_ann_files = sorted(os.listdir(annotation_dir))
+print(annotation_dir)
 pat = re.compile(prefix + '_\d\d\d\d.npy',re.UNICODE)  
 ann_files = list(filter(pat.match, all_ann_files))
 
@@ -48,8 +52,8 @@ for n in range(start_frame_ind,len(ann_files),sample_step): #start on first vali
         save_dir = os.path.join(output_dir,'train')
         
         print('Saving to ', save_dir)
-        plt.imsave(os.path.join(save_dir,'images',im_name + '.png'),im_cropped)
-        plt.imsave(os.path.join(save_dir,'visualization',im_name + '.png'),vis_cropped)
-        cv2.imwrite(os.path.join(save_dir,'annotations',im_name + '.png'),ann_cropped)
+        plt.imsave(os.path.join(save_dir, image_output_folder, im_name + '.png'),im_cropped)
+        plt.imsave(os.path.join(save_dir, visualization_output_folder, im_name + '.png'),vis_cropped)
+        cv2.imwrite(os.path.join(save_dir, annotations_output_folder, im_name + '.png'),ann_cropped)
         
 

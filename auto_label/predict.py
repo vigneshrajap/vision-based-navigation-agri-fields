@@ -57,6 +57,28 @@ def predict_fast( model=None , inp=None, checkpoints_path = None):
     pr_arr = pr.reshape(( model.output_height ,  model.output_width , model.n_classes ) ).argmax( axis=2 )
     return pr_arr
 
+def predict_verbose( model=None , inp=None, checkpoints_path = None):
+    #Like predict_fast but with full prediction array (before max) as output as well
+    if model is None and ( not checkpoints_path is None ):
+        model = model_from_checkpoint_path(checkpoints_path)
+
+    assert ( not inp is None )
+    assert( (type(inp) is np.ndarray ) or  isinstance( inp , six.string_types)  ) , "Inupt should be the CV image or the input file name"
+    
+    if isinstance( inp , six.string_types)  :
+        inp = cv2.imread(inp )
+
+    assert len(inp.shape) == 3 , "Image should be h,w,3 "
+
+    input_width = model.input_width
+    input_height = model.input_height
+
+    x = get_image_array( inp , input_width  , input_height , ordering=IMAGE_ORDERING )
+    pr = model.predict( np.array([x]) )[0]
+    pr_arr = pr.reshape(( model.output_height ,  model.output_width , model.n_classes ) ).argmax( axis=2 )
+    softmax = pr.reshape(( model.output_height ,  model.output_width , model.n_classes ) ).max( axis=2 )
+    return pr_arr, softmax, pr
+
 def evaluate_and_visualize( model=None , inp_images=None , annotations=None , checkpoints_path=None, epoch = None, visualize = True, output_folder = '',ignore_zero_class = False):
     #Finished implementation of the evaluate function in keras_segmentation.predict (v 0.2.0) and added visualization
     #Input: array of paths or nd arrays
@@ -73,7 +95,7 @@ def evaluate_and_visualize( model=None , inp_images=None , annotations=None , ch
     fn = np.zeros(model.n_classes)
     n_pixels = np.zeros(model.n_classes)
     for inp , ann   in tqdm(zip( inp_images , annotations )):
-        pr = predict_fast(model , inp )
+        pr, pr_softmax, pr_raw = predict_verbose(model , inp )
         t_end = time()
         
         gt = get_segmentation_array( ann , model.n_classes ,  model.output_width , model.output_height, no_reshape=True)
@@ -84,7 +106,7 @@ def evaluate_and_visualize( model=None , inp_images=None , annotations=None , ch
         fw_ious.append(fw_iou)
         if visualize:
             #fig = vis_pred_overlay(inp,pr)
-            fig = vis_pred_vs_gt_overlay_and_separate(inp,pr,gt)
+            fig = vis_pred_vs_gt_overlay_and_separate(inp,pr,gt, softmax = pr_softmax)
             plt.suptitle("IoU (bg, crop, lane): {:.2f},{:.2f},{:.2f}, Mean IoU: {:.2f}, FW IoU: {:.2f}".format(iou[0],iou[1],iou[2],m_iou,fw_iou))
             if not output_folder:
                 if epoch is None:

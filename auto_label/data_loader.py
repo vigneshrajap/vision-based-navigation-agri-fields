@@ -13,7 +13,6 @@ from keras_segmentation.data_utils.augmentation import augment_seg
 def get_pairs_from_paths( images_path , segs_path ):
     images = glob.glob( os.path.join(images_path+"*.jpg")  ) + glob.glob( os.path.join(images_path+"*.png")  ) +  glob.glob( os.path.join(images_path+"*.jpeg")  )
     segmentations  =  glob.glob( os.path.join(segs_path+"*.png")  ) 
-
     segmentations_d = dict( zip(segmentations,segmentations ))
 
     ret = []
@@ -27,7 +26,6 @@ def get_pairs_from_paths( images_path , segs_path ):
     return ret
 
 def verify_segmentation_dataset( images_path , segs_path , n_classes ):
-    
     img_seg_pairs = get_pairs_from_paths( images_path , segs_path )
 
     assert len(img_seg_pairs)>0 , "Dataset looks empty or path is wrong "

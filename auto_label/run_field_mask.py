@@ -117,7 +117,7 @@ def run_field_mask(image_dir = 'images_prepped_train',
                 label_im = Image.fromarray(label_mask,mode='L')
                 label_im = label_im.resize((camera_im.shape[1],camera_im.shape[0]))
                 label_mask = np.array(label_im)
-            
+        
             if debug or visualize:
                 overlay_im = blend_color_and_image(camera_im,label_mask,color_codes = [[None,None,None],[0,0,255],[255,255,0]],alpha=0.85) 
                 #Save visualization and numpy array
@@ -157,23 +157,30 @@ def main():
     )
 
 if __name__ == "__main__":
-    '''
-    #Make image mask for a folder of images and their robot position data
-    #Setup
-    dataset_dir = os.path.join('/media/marianne/Seagate Expansion Drive/data/Frogn_Dataset')
-    #dataset_dir = os.path.join('../Frogn_Dataset')
-    image_dir = os.path.join(dataset_dir,'images_only')
-    output_dir = os.path.join('output/robot_offset_experiments/offsetfix3_widercrop_delay30_smoothing50_meancomp')
-    robot_offset_dir = os.path.join('output/robot_offset_experiments/offsetfix3_widercrop_delay30_smoothing50_meancomp/20191010*')
-    #Camera model
-    calib_file = os.path.join('../camera_data_collection/realsense_model.xml') #realsense model for "images only", cropped model for "prepped" images
-    #Turn robot offset on/off
-    use_robot_offset = True
-    #Turn on subsampling of image mask
-    sampling_step = 8
-    '''
+    #Choose between argparse:
+    #main()
 
-    main()
+    #or scripting:
+    dataset_dir = './output'
+    image_dir = 'images_only'
+    output_dir = 'automatic_annotations'
+    robot_offset_file = 'position_data/20191010_L1_N_offsets.csv'
+    use_robot_offset = True
+    camera_calib_file = '../camera_data_collection/realsense_model.xml'
+    sampling_step = 4
+    debug = False
+    visualize = True
+
+    run_field_mask(image_dir = os.path.join(dataset_dir, image_dir), 
+    output_dir = os.path.join(dataset_dir, output_dir),
+    calib_file = os.path.join(camera_calib_file),
+    robot_offset_file = os.path.join(dataset_dir, robot_offset_file),
+    use_robot_offset = use_robot_offset,
+    row_spec_file = os.path.join(dataset_dir,'row_spec.txt'),
+    sampling_step = np.uint8(sampling_step),
+    debug = debug,
+    visualize = visualize,
+    )
 
 
 

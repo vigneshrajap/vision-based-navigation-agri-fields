@@ -44,7 +44,7 @@ def vis_pred_overlay(inp,pr, fig = None, class_values = [0,1,2]):
     plt.axis('off')    
     return fig
 
-def vis_pred_vs_gt_overlay_and_separate(inp,pr,gt, class_values = [0,1,2]):
+def vis_pred_vs_gt_overlay_and_separate(inp,pr,gt, softmax = None, class_values = [0,1,2]):
     fig = plt.figure()
     ax1 = fig.add_subplot(2,2,1)
     ax1.imshow(gt-pr)
@@ -56,8 +56,12 @@ def vis_pred_vs_gt_overlay_and_separate(inp,pr,gt, class_values = [0,1,2]):
     ax2.title.set_text('GT')
 
     ax3 = fig.add_subplot(2,2,3)
-    ax3.imshow(pr)
-    ax3.title.set_text('pred')
+    if softmax is None:
+        ax3.imshow(pr)
+        ax3.title.set_text('pred')
+    else:
+        ax3.imshow(softmax)
+        ax3.title.set_text('softmax')
 
     ax4 = fig.add_subplot(2,2,4)
     vis_pred_overlay(inp,pr, fig = ax4, class_values = class_values)
