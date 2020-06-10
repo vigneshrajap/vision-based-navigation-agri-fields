@@ -1,0 +1,109 @@
+# For parameter descriptions, please refer to the template parameter files for each node.
+ekf_se_map:
+  frequency: 30
+  sensor_timeout: 0.1
+  two_d_mode: true
+
+  #predict_to_current_time: true #when using navsat transform
+  transform_time_offset: 1.0 #0.0
+  transform_timeout: 0.0 #0.0
+  print_diagnostics: true
+  debug: false
+  publish_tf: false
+
+  map_frame: map
+  odom_frame: odom
+  base_link_frame: base_link
+  world_frame: map
+
+  odom0: odometry/base_raw
+  odom0_config: [false, false, false,  # X,        Y,        Z
+                 false, false, false, # roll,     pitch,    yaw
+                 true, true, false, # vx,       vy,       vz
+                 false, false, true, # gyro_x,   gyro_y,   gyro_z
+                 false, false, false] # accel_x,  accel_y,  accel_z
+  odom0_queue_size: 20 #10
+  odom0_nodelay: true
+  odom0_differential: false
+  odom0_relative: false
+
+  imu0: imu/data
+  imu0_config: [false, false, false,
+                false, false, true,
+                false, false, false,
+                false, false, true,
+                false, false, false]
+  imu0_nodelay: true
+  imu0_differential: false
+  imu0_relative: false
+  imu0_queue_size: 100 #10
+  imu0_remove_gravitational_acceleration: true
+
+  odom1: odometry/gps
+  odom1_config: [true,  true,  false,
+                 false, false, false,
+                 false, false, false,
+                 false, false, false,
+                 false, false, false]
+  odom1_queue_size: 20
+  odom1_nodelay: true
+  odom1_differential: false
+  odom1_relative: false
+
+  use_control: false
+
+navsat_transform:
+  frequency: 30
+  delay: 1.0
+  magnetic_declination_radians: 0.0523599 #Frogn Fields  # For lat/long 55.944831, -3.186998
+  yaw_offset: 0.0  # IMU reads 0 facing magnetic north, not east, then add (pi/2)
+  zero_altitude: true
+  broadcast_utm_transform: false
+  publish_filtered_gps: true
+  use_odometry_yaw: false
+  wait_for_datum: true
+  #datum: [59.6647165018, 10.6839287517, 0.0] #July Frogn Field
+  #datum: [59.6588517903, 10.67237459, 0.0] #October Frogn Field
+  datum: [59.6610614035, 10.67478451, 0.0] #October Frogn Field
+  #datum: [59.6659486065, 10.777677695, 0.0] #Robot Lab
+
+
+# ekf_se_odom:
+#   frequency: 30
+#   sensor_timeout: 0.1
+#   two_d_mode: true
+#   transform_time_offset: 0.0
+#   transform_timeout: 0.0
+#   print_diagnostics: false
+#   publish_tf: false
+#   debug: false
+#
+#   map_frame: map
+#   odom_frame: odom
+#   base_link_frame: base_link
+#   world_frame: odom
+#
+#   odom0: odometry/base_raw
+#   odom0_config: [false, false, false,  # X,        Y,        Z
+#                  false, false, false, # roll,     pitch,    yaw
+#                  true,  true,  true, # vx,       vy,       vz
+#                  false, false, false, # gyro_x,   gyro_y,   gyro_z
+#                  false, false, false] # accel_x,  accel_y,  accel_z
+#   odom0_queue_size: 10
+#   odom0_nodelay: true
+#   odom0_differential: false
+#   odom0_relative: false
+#
+#   imu0: imu/data
+#   imu0_config: [false, false, false,
+#                 true, true, true,
+#                 false, false, false,
+#                 true, true, true,
+#                 false, false, false]
+#   imu0_nodelay: true
+#   imu0_differential: false
+#   imu0_relative: false
+#   imu0_queue_size: 100 #10
+#   imu0_remove_gravitational_acceleration: true
+#
+#   use_control: false
