@@ -255,18 +255,18 @@ if __name__ == '__main__':
         # Function to obtain the ground truth values in Map frame
         auto_label.ground_truth_utm2map()
 
-        myfile = open('20191010_L1_S_offsets.txt', 'a') #_imu
-        myfile.truncate(0)
-        myfile.write("dt(cam)")
-        myfile.write("\t")
-        myfile.write("frame")
-        myfile.write("\t")
-        myfile.write("LO")
-        myfile.write("\t")
-        myfile.write("AO")
-        myfile.write("\n")
+        # myfile = open('20191010_L1_S_offsets.txt', 'a') #_imu
+        # myfile.truncate(0)
+        # myfile.write("dt(cam)")
+        # myfile.write("\t")
+        # myfile.write("frame")
+        # myfile.write("\t")
+        # myfile.write("LO")
+        # myfile.write("\t")
+        # myfile.write("AO")
+        # myfile.write("\n")
 
-        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L1_S/bag_files/")
+        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L4_N_morning/bag_files/")
 
         for bag_file in sorted(glob.glob(osp.join(input_dir, '*.bag'))):
             print(bag_file)
@@ -282,6 +282,7 @@ if __name__ == '__main__':
                  orientation_imu_orginal = [imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w]
                  (roll_r_imu, pitch_r_imu, yaw_r_imu) = euler_from_quaternion(orientation_imu_orginal)
                  yaw_r_imu = yaw_r_imu + auto_label.magnetic_declination # Compensate
+                 print yaw_r_imu
 
                  if(auto_label.oneshot_imu==0):
                      t0_imu = t_imu.to_sec()
@@ -348,14 +349,14 @@ if __name__ == '__main__':
                  # Offset Estimation
                  auto_label.offset_estimation()
 
-                 myfile.write(str( "%.4f" %auto_label.dt_img_[img_ind]))
-                 myfile.write("\t")
-                 myfile.write(str("%04d" %int(auto_label.dt_imgSeq_[img_ind])))
-                 myfile.write("\t")
-                 myfile.write(str("%.4f" %auto_label.lateral_offset))
-                 myfile.write("\t")
-                 myfile.write(str("%.4f" %auto_label.angular_offset))
-                 myfile.write("\n")
+                 # myfile.write(str( "%.4f" %auto_label.dt_img_[img_ind]))
+                 # myfile.write("\t")
+                 # myfile.write(str("%04d" %int(auto_label.dt_imgSeq_[img_ind])))
+                 # myfile.write("\t")
+                 # myfile.write(str("%.4f" %auto_label.lateral_offset))
+                 # myfile.write("\t")
+                 # myfile.write(str("%.4f" %auto_label.angular_offset))
+                 # myfile.write("\n")
 
             bag.close()
 

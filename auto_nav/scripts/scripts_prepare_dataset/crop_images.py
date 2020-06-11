@@ -16,7 +16,7 @@ output_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset_32x_352/images_pre
 # input_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset/") #/frogn_2%04d.jpg"%dannotations
 # output_dir = expanduser("~/Third_Paper/Datasets/Frogn_Dataset/")
 
-for label_file in glob.glob(osp.join(input_dir, '*.png')):
+for label_file in sorted(glob.glob(osp.join(input_dir, '*.png'))):
         print(label_file)
         with open(label_file) as f:
             base = osp.splitext(osp.basename(label_file))[0]

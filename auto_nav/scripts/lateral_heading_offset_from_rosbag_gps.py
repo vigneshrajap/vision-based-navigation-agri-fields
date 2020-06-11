@@ -39,7 +39,7 @@ class automated_labelling():
         rospack = rospkg.RosPack()
         self.book = pe.get_book(file_name=rospack.get_path('auto_nav')+"/config/ground_truth_coordinates.xls", start_row=1)
 
-        self.lane_number = str(4) #rospy.set_param('lane_number', 1)
+        self.lane_number = str(2) #rospy.set_param('lane_number', 1)
         self.gt_utm = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
         self.gt_map = np.empty([self.book["Sheet"+self.lane_number].number_of_rows(), 2])
 
@@ -76,6 +76,8 @@ class automated_labelling():
         self.increment = 5 # Fit Line segments over increment values
         self.line = geom.LineString()
         self.gt_yaw = 0
+        self.yaw_r_imu = 0
+
         self.prev_pose_map_r.pose.position.x = 0
         self.prev_pose_map_r.pose.position.y = 0
         self.robot_yaw = []
@@ -86,7 +88,7 @@ class automated_labelling():
         self.count_ind = 0
         self.first_dir = 2
         self.yaw_imu_t = 0.0
-        self.oneshot_imu_start_pose=0
+        self.oneshot_imu_start_pose = 0
         self.curr_robot_yaw = 0
         self.multilines = []
 
@@ -226,7 +228,8 @@ class automated_labelling():
 
        # Estimate slope and perpendicular slope of the nearest line segement
        gt_slope = (bY-aY)/(bX-aX)
-       gt_yaw = self.normalizeangle(math.atan2(bY-aY,bX-aX))
+       self.gt_yaw = self.normalizeangle(math.atan2(bY-aY,bX-aX))
+       print "gt_yaw:", self.gt_yaw
        # gt_slope_normal = -1/gt_slope
        # # gt_yaw_normal = self.normalizeangle(math.atan(gt_slope_normal))
        # gt_yaw_normal = self.normalizeangle(math.atan2(aX-bX,bY-aY))
@@ -254,7 +257,7 @@ class automated_labelling():
                self.prev_pose_map_r = self.pose_map_r
 
                # Angle between two lines as offset
-               self.angular_offset = self.normalizeangle(self.robot_yaw-gt_yaw)
+               self.angular_offset = self.normalizeangle(self.robot_yaw-self.gt_yaw)
 
                # if self.oneshot_imu_start_pose==0:
                #     self.curr_robot_yaw = self.normalizeangle(math.atan(self.pose_map_r.pose.position.y/self.pose_map_r.pose.position.x))
@@ -299,7 +302,7 @@ if __name__ == '__main__':
         # Function to obtain the ground truth values in Map frame
         auto_label.ground_truth_utm2map()
 
-        myfile = open('20191010_L4_N_slaloam_offsets.txt', 'a') #_imu
+        myfile = open('20191010_L4_N_morning.txt', 'a') #_imu
         myfile.truncate(0)
         myfile.write("dt(cam)")
         myfile.write("\t")
@@ -310,7 +313,7 @@ if __name__ == '__main__':
         myfile.write("AO")
         myfile.write("\n")
 
-        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L4_N_slaloam/bag_files/")
+        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L4_N_morning/bag_files/")
 
         for bag_file in sorted(glob.glob(osp.join(input_dir, '*.bag'))):
             print(bag_file)
@@ -325,7 +328,10 @@ if __name__ == '__main__':
 
                  orientation_imu_orginal = [imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w]
                  (roll_r_imu, pitch_r_imu, yaw_r_imu) = euler_from_quaternion(orientation_imu_orginal)
-                 yaw_r_imu = yaw_r_imu + auto_label.magnetic_declination # Compensate
+
+                 auto_label.yaw_r_imu = -(yaw_r_imu - auto_label.magnetic_declination) # Compensate
+
+                 print "yaw_r:", (auto_label.yaw_r_imu)
 
                  if(auto_label.oneshot_imu==0):
                      t0_imu = t_imu.to_sec()
@@ -398,9 +404,9 @@ if __name__ == '__main__':
                  myfile.write("\t")
                  myfile.write(str("%04d" %int(auto_label.dt_gps)))
                  myfile.write("\t")
-                 myfile.write(str("%.4f" %auto_label.lateral_offset))
+                 myfile.write(str("%.4f" %auto_label.gt_yaw))
                  myfile.write("\t")
-                 myfile.write(str("%.4f" %auto_label.angular_offset)) #_imu
+                 myfile.write(str("%.4f" %auto_label.yaw_r_imu)) #_imu
                  myfile.write("\n")
 
             ##################### Extract Camera Data #####################

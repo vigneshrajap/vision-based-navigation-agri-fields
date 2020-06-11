@@ -76,7 +76,7 @@ class lane_finder_post_predict():
 
        self.modifiedCenters_global = self.modifiedCenters_local[0]
 
-       print self.modifiedCenters_local
+       # print self.modifiedCenters_local
 
        # For crop based
        # self.modifiedCenters_global = [self.modifiedCenters_local[0][np.argmin(abs(self.modifiedCenters_local[0]-int(self.warp_img.shape[0]/2)))]]
@@ -92,7 +92,7 @@ class lane_finder_post_predict():
        #     self.modifiedCenters_global = np.delete(self.modifiedCenters_global,np.argmax(self.modifiedCenters_global-int(self.warp_img.shape[0]/2)))
        #     # self.modifiedCenters_global = np.delete(self.modifiedCenters_global, np.argwhere(np.max(self.modifiedCenters_global-int(self.warp_img.shape[0]/2))))
 
-       print self.modifiedCenters_global
+       # print self.modifiedCenters_global
 
        # print self.modifiedCenters_global,
 
@@ -164,10 +164,11 @@ class lane_finder_post_predict():
        # print 'Prediction time: ', t_end-t_start
        self.total_time = self.total_time + (t_end-t_start)
 
-       # print self.current_Pts
 
        # Visualize the fitted polygonals (One on each lane and on average curve)
        self.roi_img, self.centerLine = DBASW.visualization_polyfit(self.roi_img, self.curves, self.ploty, self.modifiedCenters, self.current_Pts)
+
+       print self.centerLine[4], self.roi_img.shape[1]/2, self.roi_img.shape[0]/2
 
        la = [x for x,y in self.centerLine]
        lb = [y for x,y in self.centerLine]
@@ -265,8 +266,8 @@ class lane_finder_post_predict():
 
        # Combine the result with the original image
        # self.final_img = cv2.cvtColor(self.image, cv2.COLOR_GRAY2RGB)
-       # self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L1_N/"+os.path.splitext(self.base)[0][0:18]+".png")
-       self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L4_N/"+os.path.splitext(self.base)[0][0:18]+".png")
+       self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L1_N/"+os.path.splitext(self.base)[0][0:18]+".png")
+       # self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L4_N/"+os.path.splitext(self.base)[0][0:18]+".png")
        # self.final_img = cv2.imread("/home/vignesh/dummy_folder/test_cases/discussions/"+os.path.splitext(self.base)[0][0:18]+".png")
        # self.final_img = cv2.imread(set_folder+"/rgb/"+self.base_name+".png")#inclined_terrains #larger_plants
        rheight, rwidth = self.final_img.shape[:2]
@@ -324,7 +325,7 @@ class lane_finder_post_predict():
 
             self.run_lane_fit()
 
-            self.visualization()
+            # self.visualization()
             self.modifiedCenters = []
         else:
             self.final_img = None
