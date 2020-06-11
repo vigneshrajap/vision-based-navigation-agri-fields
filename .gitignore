@@ -3,12 +3,17 @@
 /predicted_outputs
 /videos
 /auto_label/output
+/auto_label/data
+/auto_label/models
+/auto_label/visual_code_ws.code-workspace
 /CASE2020_paper/prediction_overlay
 /Frogn_Dataset/calibration_selection/
 /Frogn_Dataset/images_only/
+/Frogn_Dataset/dataset_VOC
 **.pyc
 **.pyc
 **.swp
 **.vscode
 **.zip
 **.npy
+
