@@ -29,6 +29,9 @@ lane_detection_segnet.py - Script for training and prediction. Some improvements
 
         7) In order to visualize the ground truth, use "visualize_dataset.py" that takes in final annotated images and stores the images in same color pattern as training images. Therefore it is useful for better understanding.
 
+Submodlues added:
+thorvald_data_extraction:
+
 Frogn_Dataset - Annotated Images from Frogn Fields
 
 		Similar to training the dataset in https://github.com/divamgupta/image-segmentation-keras. You need to make two folders
