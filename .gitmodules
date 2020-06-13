@@ -1,0 +1,3 @@
+[submodule "thorvald_data_extraction"]
+	path = thorvald_data_extraction
+	url = https://github.com/vigneshrajap/thorvald_data_extraction
