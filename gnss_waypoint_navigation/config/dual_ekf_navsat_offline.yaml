@@ -16,11 +16,11 @@ ekf_se_map:
   base_link_frame: base_link
   world_frame: map
 
-  odom0: odometry/base_raw
-  odom0_config: [false, false, false,  # X,        Y,        Z
+  odom0: odometry/gps
+  odom0_config: [true, true, false,  # X,        Y,        Z
                  false, false, false, # roll,     pitch,    yaw
-                 true, true, false, # vx,       vy,       vz
-                 false, false, true, # gyro_x,   gyro_y,   gyro_z
+                 false, false, false, # vx,       vy,       vz
+                 false, false, false, # gyro_x,   gyro_y,   gyro_z
                  false, false, false] # accel_x,  accel_y,  accel_z
   odom0_queue_size: 20 #10
   odom0_nodelay: true
@@ -38,17 +38,6 @@ ekf_se_map:
   imu0_relative: false
   imu0_queue_size: 100 #10
   imu0_remove_gravitational_acceleration: true
-
-  odom1: odometry/gps
-  odom1_config: [true,  true,  false,
-                 false, false, false,
-                 false, false, false,
-                 false, false, false,
-                 false, false, false]
-  odom1_queue_size: 20
-  odom1_nodelay: true
-  odom1_differential: false
-  odom1_relative: false
 
   use_control: false
 

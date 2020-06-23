@@ -266,7 +266,7 @@ if __name__ == '__main__':
         # myfile.write("AO")
         # myfile.write("\n")
 
-        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L4_N_morning/bag_files/")
+        input_dir = expanduser("~/Third_Paper/Datasets/20191010_L1_N/bag_files/")
 
         for bag_file in sorted(glob.glob(osp.join(input_dir, '*.bag'))):
             print(bag_file)
@@ -282,7 +282,7 @@ if __name__ == '__main__':
                  orientation_imu_orginal = [imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w]
                  (roll_r_imu, pitch_r_imu, yaw_r_imu) = euler_from_quaternion(orientation_imu_orginal)
                  yaw_r_imu = yaw_r_imu + auto_label.magnetic_declination # Compensate
-                 print yaw_r_imu
+                 # print yaw_r_imu
 
                  if(auto_label.oneshot_imu==0):
                      t0_imu = t_imu.to_sec()
@@ -325,6 +325,7 @@ if __name__ == '__main__':
             for topic, img_msg, t_img in bag.read_messages(topics=[auto_label.image_topic_name]):
                  if(auto_label.oneshot_img==0):
                      t0_img = t_img.to_sec()
+
                      auto_label.img_oldSeq = img_msg.header.seq
                      auto_label.oneshot_img = 1
 
@@ -340,9 +341,9 @@ if __name__ == '__main__':
             for img_ind in range(len(auto_label.dt_img_)):
 
                  gps_idx = (np.abs(np.array(auto_label.dt_gps_fix_) - auto_label.dt_img_[img_ind])).argmin()
-                 auto_label.gps_fix.latitude = auto_label.gps_fix_[gps_idx][0] #gps_msg.latitude
-                 auto_label.gps_fix.longitude = auto_label.gps_fix_[gps_idx][1] #gps_msg.longitude
-
+                 auto_label.gps_fix.latitude = auto_label.gps_fix_[gps_idx][0] # gps_msg.latitude
+                 auto_label.gps_fix.longitude = auto_label.gps_fix_[gps_idx][1] # gps_msg.longitude
+                 print auto_label.dt_img_[img_ind]
                  # RTK Fix from UTM Frame to Robot Frame
                  auto_label.GNSS_WorldToRobot()
 
