@@ -28,7 +28,7 @@ class sliding_window():
         self.minpix = 1
         self.whitePixels_thers = 0.50
         self.search_complete = False
-        self.set_AMR = True
+        self.set_AMR = False
 
         # Semicircle
         self.Leftangle = 0
@@ -47,8 +47,8 @@ class sliding_window():
         win_max = 1.0
         win_min = 0.5
         self.win_size = np.arange(win_max, win_min, -((win_max-win_min)/self.nwindows))
-        self.margin_l = 90 # (1,2: 100) (3: 140)# Varies on each crop row
-        self.margin_r = 90
+        self.margin_l = 100 # (1,2: 100) (3: 140)# Varies on each crop row
+        self.margin_r = 100
         self.draw_windows= True
 
         self.prevx_current = 0
@@ -342,17 +342,11 @@ class sliding_window():
 
                     x_current =  int(((x_current-self.prevx_current)*math.cos(heading))-((col_ind-self.prevcol_ind)*math.sin(heading)) + self.prevx_current)
 
-                    # y_current_c =  int(((x_current-self.prevx_current)*math.sin(heading))+((col_ind-self.prevcol_ind)*math.cos(heading)) + col_ind)
-                    # print window, x_current, self.prevx_current, col_ind, heading #, x_current_c
-                    # cv2.circle(out_img, (x_current_c, col_ind),0, (0,255,255), thickness=25, lineType=8, shift=0) #+win_y_high[window])/2
-                    #x_current = x_current_c
-
-                self.prevx_current = x_current
                 self.prevcol_ind = col_ind
+                self.prevx_current = x_current
 
                 win_x_low = int(x_current - self.win_size[window]*self.margin_l)
                 win_x_high = int(x_current + self.win_size[window]*self.margin_r)
-                # print x_current, win_x_low, win_x_high, self.margin_l, self.margin_r
 
                 # Boundary Conditions
                 if win_x_low < 0:
@@ -368,6 +362,7 @@ class sliding_window():
                             (nonzerox >= win_x_low) &  (nonzerox < win_x_high)).nonzero()[0]
 
                 # If you found > minpix pixels, recenter next window on their mean position
+                # if window==0:
                 if len(good_inds) > self.minpix:
                       x_current = np.int(np.mean(nonzerox[good_inds]))
 
@@ -382,33 +377,34 @@ class sliding_window():
 
                     cv2.line(out_img, (int(win_x[0]), self.win_y_low[window]), (int(win_x[1]), self.win_y_low[window]), (0,255,0), self.thickness_ellipse)
                     cv2.line(out_img, (int(win_x[0]), self.win_y_high[window]), (int(win_x[1]), self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
-                    # print self.win_y_high[window] + 108
-                    # print win_x[0]
 
                 else:
                     if len(good_inds): # Append these indices to the lists
                          lane_inds_n.append(good_inds)
                          # out_img[nonzeroy[good_inds], nonzerox[good_inds]] = [255, 0, 0] #[255, 0, 100]
-                         # print x_current
                          self.curr_xpts.append(x_current)
                          self.curr_ypts.append(col_ind)
-                    # Plotting
-                    cv2.rectangle(out_img,(win_x_low,self.win_y_low[window]),(win_x_high,self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
 
                 if self.draw_windows == True:
-                    # print x_current, col_ind
-                    # Plotting the X center of the windows
+
+                    # Plotting
+                    # if window==1:
+                        # cv2.rectangle(out_img,(old_win_x_low,self.win_y_low[window]),(old_win_x_high,self.win_y_high[window]), (255,0,0), self.thickness_ellipse)
+                    # if window<2:
+                    cv2.rectangle(out_img,(win_x_low,self.win_y_low[window]),(win_x_high,self.win_y_high[window]), (0,255,0), self.thickness_ellipse)
+
+                    # if window<1:
+                        # Plotting the X center of the windows
                     cv2.circle(out_img, (int(x_current), int(col_ind)), 0, (0,0,255), thickness=20, lineType=8, shift=0)
-                    # cv2.circle(self.mask_example_r, (int(x_current), int(col_ind)), 0, (0,0,255), thickness=25, lineType=8, shift=0)
+                    #     old_x_current  = int(x_current)
+                    #     old_win_x_low  = win_x_low
+                    #     old_win_x_high  = win_x_high
+                    # if (window>0)and (window<2):
+                    #     cv2.circle(out_img, (old_x_current, int(col_ind)), 0, (0,255,255), thickness=20, lineType=8, shift=0)
+                    #     cv2.circle(out_img, (x_current, int(col_ind)), 0, (0,0,255), thickness=20, lineType=8, shift=0)
+
                     # Plotting the horizontal strips
-                    # cv2.line(out_img, (0, self.win_y_low[window]), (img.shape[1], self.win_y_low[window]), (0,0,255), 2)
-
-                    # cv2.line(self.mask_example_r, (0, self.win_y_low[window]), (img.shape[1], self.win_y_low[window]), (0,0,255), 2)
-                    # for ind in range(len(self.win_y_low)):
-                    #      hori_strip = img[self.win_y_low[ind]:self.win_y_high[ind],0:img.shape[1]]
-                    #      cv2.imwrite("/home/vignesh/dummy_folder/"+str(ind)+".png", hori_strip)
-
-                # self.sw_end.append([p_in, x_current, margin_ll, margin_rr])
+                    cv2.line(out_img, (0, self.win_y_low[window]), (img.shape[1], self.win_y_low[window]), (0,0,255), 2)
 
               if self.set_AMR == True:
                   x_[p_in] = np.concatenate(xpts)
@@ -417,13 +413,14 @@ class sliding_window():
               else:
                   if len(lane_inds_n): # Concatenate the arrays of indices
                     lane_inds_n = np.concatenate(lane_inds_n)
-                    # print p_in, x_[p_in]
+
                     # Extract left and right line pixel positions
                     x_[p_in] = nonzerox[lane_inds_n]
                     y_[p_in] = nonzeroy[lane_inds_n]
-                    out_img[nonzeroy[lane_inds_n], nonzerox[lane_inds_n]] = [255, 0, 0]
-                    for i in range(len(self.curr_xpts)):
-                        cv2.circle(out_img, (int(self.curr_xpts[i]), int(self.curr_ypts[i])), 0, (0,0,255), thickness=25, lineType=8, shift=0)
+                    # if window<1:
+                        # out_img[nonzeroy[lane_inds_n], nonzerox[lane_inds_n]] = [255, 0, 0]
+                        # for i in range(len(self.curr_xpts)):
+                            # cv2.circle(out_img, (int(self.curr_xpts[i]), int(self.curr_ypts[i])), 0, (0,0,255), thickness=25, lineType=8, shift=0)
 
 
               # Fit a first order straight line / second order polynomial
@@ -484,7 +481,6 @@ class sliding_window():
         #midLane = np.array([np.transpose(np.vstack([curves_m, ploty]))])
        elif len(current_Pts)>1:
         curves_m = (current_Pts[0]+current_Pts[1])/2
-
        else:
         curves_m = current_Pts[0]
 
