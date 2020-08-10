@@ -1,0 +1,171 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="sensor_frames">
+
+  <xacro:arg name="robot_name" default=""/>
+  <xacro:arg name="tf_prefix" default=""/>
+
+  <!--GNSS-->
+  <link name="$(arg tf_prefix)/gps">
+  <visual>
+      <geometry>
+        <box size="0.05 0.05 0.02"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+  </link>
+
+  <joint name="center_to_gps" type="fixed">
+    <parent link="$(arg tf_prefix)/base_link"/>
+    <child link="$(arg tf_prefix)/gps"/>
+    <origin xyz="0.425 -0.62 1.05"/>
+  </joint>
+
+  <!--IMU-->
+  <link name="$(arg tf_prefix)/xsens">
+  <visual>
+      <geometry>
+        <box size="0.05 0.05 0.02"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+  </link>
+
+  <joint name="center_to_xsens" type="fixed">
+    <parent link="$(arg tf_prefix)/base_link"/>
+    <child link="$(arg tf_prefix)/xsens"/>
+    <origin xyz="0.385 0.0 0.8" rpy="0 0 0"/>
+  </joint>
+
+  <!--Basler-->
+  <!-- camera body, with origin at bottom screw mount -->
+  <link name="$(arg tf_prefix)/basler_camera"/>
+
+  <joint name="basler_camera_joint" type="fixed">
+    <parent link="$(arg tf_prefix)/base_link"/>
+    <child link="$(arg tf_prefix)/basler_camera" />
+    <origin xyz="0.815 0.0 1.055" rpy="0 0.3926991 0" />
+  </joint>
+
+  <!--FLIR Camera 1-->
+  <!-- camera body, with origin at bottom screw mount -->
+  <!--link name="$(arg tf_prefix)/flir_camera_1"/>
+
+  <joint name="flir_camera_1_joint" type="fixed">
+    <parent link="$(arg tf_prefix)/base_link"/>
+    <child link="$(arg tf_prefix)/flir_camera_1" />
+    <origin xyz="0.735 0.22 1.055" rpy="0 0.3926991 0" />
+  </joint-->
+
+  <!--FLIR Camera 2-->
+  <!-- camera body, with origin at bottom screw mount -->
+  <!--link name="$(arg tf_prefix)/flir_camera_2"/>
+
+  <joint name="flir_camera_2_joint" type="fixed">
+    <parent link="$(arg tf_prefix)/base_link"/>
+    <child link="$(arg tf_prefix)/flir_camera_2" />
+    <origin xyz="0.735 -0.21 1.055" rpy="0 0.3926991 0" />
+  </joint-->
+
+  <!--Camera-->
+    <xacro:property name="M_PI" value="3.1415926535897931" />
+
+    <!-- The following values are approximate, and the camera node
+     publishing TF values with actual calibrated camera extrinsic values -->
+    <xacro:property name="d435_cam_depth_to_left_ir_offset" value="0.0"/>
+    <xacro:property name="d435_cam_depth_to_right_ir_offset" value="-0.050"/>
+    <xacro:property name="d435_cam_depth_to_color_offset" value="0.015"/>
+
+    <!-- The following values model the aluminum peripherial case for the
+  	D435 camera, with the camera joint represented by the actual
+  	peripherial camera tripod mount -->
+    <xacro:property name="d435_cam_width" value="0.090"/>
+    <xacro:property name="d435_cam_height" value="0.025"/>
+    <xacro:property name="d435_cam_depth" value="0.02505"/>
+    <xacro:property name="d435_cam_mount_from_center_offset" value="0.0149"/>
+
+    <!-- The following offset is relative the the physical D435 camera peripherial
+  	camera tripod mount -->
+    <xacro:property name="d435_cam_depth_px" value="${d435_cam_mount_from_center_offset}"/>
+    <xacro:property name="d435_cam_depth_py" value="0.0175"/>
+    <xacro:property name="d435_cam_depth_pz" value="${d435_cam_height/2}"/>
+
+    <material name="aluminum">
+	   <color rgba="0.5 0.5 0.5 1"/>
+    </material>
+
+    <!-- camera body, with origin at bottom screw mount -->
+    <link name="$(arg tf_prefix)/camera_bottom_screw_frame"/>
+
+    <joint name="camera_joint" type="fixed">
+      <parent link="$(arg tf_prefix)/base_link"/>
+      <child link="$(arg tf_prefix)/camera_bottom_screw_frame" />
+      <origin xyz="0.815 0.0 1.115" rpy="0 0.0 0" />
+    </joint>
+
+    <link name="$(arg tf_prefix)/camera_link">
+      <visual>
+      <origin xyz="${d435_cam_mount_from_center_offset} ${-d435_cam_depth_py} 0" rpy="${M_PI/2} 0 ${M_PI/2}"/>
+        <geometry>
+        <box size="0.05 0.05 0.02"/>
+      </geometry>
+          <!-- <box size="${d435_cam_width} ${d435_cam_height} ${d435_cam_depth}"/> -->
+          <!--mesh filename="package://rasberry_agricultural_costmaps/meshes/d435.dae" /-->
+          <!--<mesh filename="package://realsense2_description/meshes/d435/d435.dae" />-->
+        <!--/geometry-->
+        <material name="aluminum"/>
+      </visual>
+      <collision>
+        <origin xyz="0 ${-d435_cam_depth_py} 0" rpy="0 0 0"/>
+        <geometry>
+        <box size="${d435_cam_depth} ${d435_cam_width} ${d435_cam_height}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <!-- The following are not reliable values, and should not be used for modeling -->
+        <mass value="0.564" />
+        <origin xyz="0 0 0" />
+        <inertia ixx="0.003881243" ixy="0.0" ixz="0.0" iyy="0.000498940" iyz="0.0" izz="0.003879257" />
+      </inertial>
+    </link>
+
+    <joint name="camera_link_joint" type="fixed">
+    <origin xyz="0 ${d435_cam_depth_py} ${d435_cam_depth_pz}" rpy="0 0 0"/>
+    <parent link="$(arg tf_prefix)/camera_bottom_screw_frame"/>
+    <child link="$(arg tf_prefix)/camera_link" />
+    </joint>
+
+    <!-- camera depth joints and links -->
+    <link name="$(arg tf_prefix)/camera_depth_frame"/>
+
+    <joint name="camera_depth_joint" type="fixed">
+     <origin xyz="0 0 0" rpy="0 0 0"/>
+     <parent link="$(arg tf_prefix)/camera_link"/>
+     <child link="$(arg tf_prefix)/camera_depth_frame" />
+    </joint>
+
+    <link name="$(arg tf_prefix)/camera_depth_optical_frame"/>
+
+    <joint name="camera_depth_optical_joint" type="fixed">
+     <origin xyz="0 0 0" rpy="${-M_PI/2} 0 ${-M_PI/2}" />
+     <parent link="$(arg tf_prefix)/camera_depth_frame" />
+     <child link="$(arg tf_prefix)/camera_depth_optical_frame" />
+    </joint>
+
+    <!-- camera color joints and links -->
+    <link name="$(arg tf_prefix)/camera_color_frame"/>
+
+    <joint name="camera_color_joint" type="fixed">
+     <origin xyz="0 ${d435_cam_depth_to_color_offset} 0" rpy="0 0 0" />
+     <parent link="$(arg tf_prefix)/camera_depth_frame" />
+     <child link="$(arg tf_prefix)/camera_color_frame" />
+    </joint>
+
+    <link name="$(arg tf_prefix)/camera_color_optical_frame"/>
+
+    <joint name="camera_color_optical_joint" type="fixed">
+     <origin xyz="0.1 0 0" rpy="${-M_PI/2} 0 ${-M_PI/2}" />
+     <parent link="$(arg tf_prefix)/camera_color_frame" />
+     <child link="$(arg tf_prefix)/camera_color_optical_frame" />
+    </joint>
+
+ </robot>
