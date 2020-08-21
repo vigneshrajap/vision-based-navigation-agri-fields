@@ -65,4 +65,5 @@ init_cmd: |
 windows:
 - name: camera_data_collection
   panes:
-  - sleep 1; roslaunch camera_data_collection flir_basler_record.launch
+  #- sleep 1; roslaunch camera_data_collection flir_basler_record.launch
+  - sleep 1; roslaunch auto_nav realsense.launch
