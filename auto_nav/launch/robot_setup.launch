@@ -16,7 +16,7 @@
   <arg name="use_amcl" default="false"/>
   <arg name="robot_name" default="" />
   <arg name="tf_prefix" default="" />
-  <arg name="robot_model" default="$(find auto_nav)/config/robot_frogn.yaml"/>
+  <arg name="robot_model" default="$(find auto_nav)/config/robot_010.yaml"/>
   <arg name="model_extras" default="$(find auto_nav)/urdf/sensors_sim.xacro"/>
   <arg name="enable_odom_tf" default="" />
 

@@ -47,21 +47,20 @@ init_cmd: |
   # figure out the robot number from the hostname, assuming it is like `thorvald-XXX`
   export_default ROBOT_NO `hostname | cut -f2 -d"-"`
   # set the robot type
-  export_default ROBOT_TYPE "thorvald_ii_4wd4ws_slim"
   export ROS_MASTER_URI="http://$ROS_MASTER:11311/"
   #export_default ROSBRIDGE_IP "10.8.0.18"
   #export_default ROSBRIDGE_PORT "9090"
   export_default USE_SIM false
-  export_default GAZEBO_WORLD riseholme
   export_default EKF_PUBLISH_TF true
   export_default USE_CARROT false
+  # put this in your local file only:
+  # export_default SLACK_WEBHOOK https://hooks.slack.com/services/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
   export_default USE_GUI false
   export_default USE_OMNI false
   export_default USE_WAYPOINT_NAV false
-  export_default USE_FEATURE_DETECTOR false
-  export_default LOC_EDGE_RECONF "norway"
   export_default ENVIRONMENT "open_fields"
   export_default MODEL_EXTRAS "$(rospack find auto_nav)/urdf/sensors_frogn.xacro"
+  export_default ROBOT_MODEL "$(rospack find auto_nav)/config/robot_010.yaml"
 windows:
 - name: init
   panes:
@@ -70,9 +69,9 @@ windows:
   #- sleep 1; if [ -r "$BASE_CONFIG_DIR/robots/$ROBOT_NAME.yaml" ]; then rosparam load "$BASE_CONFIG_DIR/robots/$ROBOT_NAME.yaml"; fi
 - name: robot
   panes:
-  - sleep 1; roslaunch auto_nav robot_setup.launch model_extras:=$MODEL_EXTRAS simple_sim:=$USE_SIM with_teleoperation:=true use_gui:=$USE_GUI enable_odom_tf:=false
+  - sleep 1; roslaunch auto_nav robot_setup.launch robot_model:=$ROBOT_MODEL model_extras:=$MODEL_EXTRAS simple_sim:=$USE_SIM with_teleoperation:=true use_gui:=$USE_GUI enable_odom_tf:=false
   - sleep 1; if ! $USE_SIM; then roslaunch gnss_waypoint_navigation xsens_driver.launch; fi
-  - sleep 1; rosrun map_server map_server $MAP
+  #- sleep 1; rosrun map_server map_server $MAP
 - name: localisation
   panes:
   - sleep 2; roslaunch gnss_waypoint_navigation RTK_setup.launch publish_tf:="$EKF_PUBLISH_TF"
