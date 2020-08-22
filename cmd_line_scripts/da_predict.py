@@ -98,9 +98,20 @@ def visualize_segmentation(input_img, seg_arr, n_classes, class_number = 2, disp
     upscaled_img = cv2.resize(dummy_img, (original_w,original_h)).astype('uint8')
     upscaled_img_rgb = cv2.cvtColor(upscaled_img, cv2.COLOR_GRAY2RGB)
 
-    centerline_arr = np.mean(upscaled_img, axis = 1)
-    for c_r in range(len(centerline_arr)):
-        cv2.circle(upscaled_img_rgb, (int(centerline_arr[c_r]), c_r), 5, (0, 0, 255), -1)
+    # centerline_arr = np.mean(upscaled_img, axis = 1)
+    # for c_r in range(len(centerline_arr)):
+    #     cv2.circle(upscaled_img_rgb, (int(centerline_arr[c_r]), c_r), 5, (0, 0, 255), -1)
+
+    # for c_r in range(upscaled_img_rgb.shape[0]):
+    # 	nonzero_xy = upscaled_img_rgb[c_r][1:].nonzero()
+    # 	nonzero_x = np.array(nonzero_xy[0])
+    #
+    # 	centerline_arr = np.mean(nonzero_x)
+    #
+    # 	if np.isnan(centerline_arr)==0:
+    # 		# print centerline_arr #img[c_r][1:].nonzero(),
+    #
+    # 		cv2.circle(upscaled_img_rgb, (int(centerline_arr), c_r), 5, (0, 0, 255), -1)
 
     # Stack input and segmentation in one video
     vis_img = np.vstack((
@@ -111,7 +122,7 @@ def visualize_segmentation(input_img, seg_arr, n_classes, class_number = 2, disp
     ))
 
 
-    return vis_img #upscaled_img
+    return upscaled_img_rgb #upscaled_img
 
 def visualization(input_img, seg_arr=None, lane_fit = None, evaluation = None, n_classes=None, visualize = None, display=False, output_file=None):
     class_number = 1 # 1 for Crops, 2 for Lanes
