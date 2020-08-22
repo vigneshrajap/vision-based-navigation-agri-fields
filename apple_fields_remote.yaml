@@ -27,8 +27,10 @@ init_cmd: |
   # load scenario-specific config file
   if [ -r "$BASE_CONFIG_DIR/scenarios/$SCENARIO_NAME.sh" ]; then echo "*** loading $BASE_CONFIG_DIR/scenarios/$SCENARIO_NAME.sh" ; source "$BASE_CONFIG_DIR/scenarios/$SCENARIO_NAME.sh"; fi  # configure the development workspace (assuming we are in rasberry_bringup/tmule)
   #export_default CATKIN_WORKSPACE "`readlink -f ../../../.. || echo $HOME/rasberry_ws`"
+  export_default CATKIN_WORKSPACE "`echo $HOME/planner_ws`"
+  source "$CATKIN_WORKSPACE/devel/setup.bash"
    set ROS_MASTER to the correct IP
-  # export_default ROS_MASTER "10.248.0.76" 
+  # export_default ROS_MASTER "10.248.0.76"
   export_default ROS_MASTER "192.168.0.51"
   # set ROS_IP not to the IP that we will connect to remotely
   export_default ROS_IP `ip route get $ROS_MASTER | grep "src" | sed 's/.*src \([0-9\.]*\).*/\1/' || echo $ROS_MASTER`
@@ -54,5 +56,5 @@ windows:
   #- sleep 1; if [ -r "$BASE_CONFIG_DIR/robots/$ROBOT_NAME.yaml" ]; then rosparam load "$BASE_CONFIG_DIR/robots/$ROBOT_NAME.yaml"; fi
 - name: agri_costmaps
   panes:
-  - export_default CATKIN_WORKSPACE "`echo $HOME/planner_ws`"; source "$CATKIN_WORKSPACE/devel/setup.bash"; 
-  - sleep 3; roslaunch auto_nav realsense.launch
+  - export_default CATKIN_WORKSPACE "`echo $HOME/planner_ws`"; source "$CATKIN_WORKSPACE/devel/setup.bash";
+  - sleep 3; roslaunch auto_nav realsense_camera.launch
