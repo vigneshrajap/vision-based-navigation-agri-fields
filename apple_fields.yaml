@@ -30,7 +30,7 @@ init_cmd: |
   export_default CATKIN_WORKSPACE "`echo $HOME/planner_ws`"
   source "$CATKIN_WORKSPACE/devel/setup.bash"
   # set ROS_MASTER to the correct IP
-  # export_default ROS_MASTER "10.248.0.76" 
+  # export_default ROS_MASTER "10.248.0.76"
   export_default ROS_MASTER "192.168.0.51"
   # set ROS_IP not to the IP that we will connect to remotely
   export_default ROS_IP `ip route get $ROS_MASTER | grep "src" | sed 's/.*src \([0-9\.]*\).*/\1/' || echo $ROS_MASTER`
@@ -59,7 +59,7 @@ init_cmd: |
   export_default USE_OMNI false
   export_default USE_WAYPOINT_NAV false
   export_default ENVIRONMENT "open_fields"
-  export_default MODEL_EXTRAS "$(rospack find auto_nav)/urdf/sensors_frogn.xacro"
+  export_default MODEL_EXTRAS "$(rospack find auto_nav)/urdf/sensors_orchards.xacro"
   export_default ROBOT_MODEL "$(rospack find auto_nav)/config/robot_010.yaml"
 windows:
 - name: init

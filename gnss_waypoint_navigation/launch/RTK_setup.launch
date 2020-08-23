@@ -7,6 +7,9 @@
   <!-- load parameters for both eKFs (odom and map) -->
   <rosparam command="load" file="$(find gnss_waypoint_navigation)/config/dual_ekf_navsat.yaml" />
 
+  <!--IMU data-->
+  <include file="$(find auto_nav)/launch/xsens_driver.launch"/>
+
   <!-- First instance of robot_localization, GPS integrated localization -->
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_odom" clear_params="true" respawn="true" output="screen">
       <remap from="/odometry/filtered" to="/odometry/local" />
@@ -19,6 +22,7 @@
     <param name="baud" type="string" value="115200"/>
     <remap from="/fix" to="/gps/fix" />
   </node>
+
 
   <!-- Second instance of robot_localization, GPS integrated localization -->
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map" clear_params="true" output="screen" respawn="true">
