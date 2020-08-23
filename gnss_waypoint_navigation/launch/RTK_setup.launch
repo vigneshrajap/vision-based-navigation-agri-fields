@@ -24,23 +24,18 @@
     <remap from="/fix" to="/gps/fix" />
   </node>
 
-  <!--include file="$(find nmea_navsat_driver)/launch/nmea_serial_driver.launch" >
-    <param name="port" type="string" value="/dev/ttyACM0"/>
-    <param name="baud" type="string" value="115200"/>
-    <remap from="/fix" to="/gps/fix" />
-  </include-->
 
   <!-- Second instance of robot_localization, GPS integrated localization -->
-  <!--node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map" clear_params="true" output="screen" respawn="true">
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map" clear_params="true" output="screen" respawn="true">
      <remap from="/odometry/filtered" to="/odometry/global" />
      <param name="publish_tf" value="$(arg publish_tf)"/>
-  </node-->
+  </node>
 
   <!--UTM frame to Robot Frame conversion-->
-  <!--node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" respawn="true" output="screen">
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" respawn="true" output="screen">
     <remap from="/imu/data" to="/imu/data" />
     <remap from="/gps/fix" to="/gps/fix" />
     <remap from="/odometry/filtered" to="/odometry/global" />
-  </node-->
+  </node>
 
 </launch>

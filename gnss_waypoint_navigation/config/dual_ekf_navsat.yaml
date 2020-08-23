@@ -108,4 +108,4 @@ navsat_transform:
   #datum: [59.6610614035, 10.67478451, 0.0] #October Frogn Field
   #datum: [59.6659748092, 10.7776111767, 0.0] #Robot Lab
   #datum: [59.6685998027, 10.76915433, 0.0] #Robot Lab
-  datum: [59.6655989295,10.7788198567, 0.0] #Backkyard Lab
+  datum: [59.6654007893, 10.7789973933, 0.0] #Backkyard Lab

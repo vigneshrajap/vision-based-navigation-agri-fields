@@ -449,105 +449,106 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          odom:
-            base_link:
-              basler_camera:
-                {}
-              bat0:
-                {}
-              bat1:
-                {}
-              camera_bottom_screw_frame:
-                camera_link:
-                  camera_aligned_depth_to_color_frame:
+          {}
+        odom:
+          base_link:
+            basler_camera:
+              {}
+            bat0:
+              {}
+            bat1:
+              {}
+            camera_bottom_screw_frame:
+              camera_link:
+                camera_aligned_depth_to_color_frame:
+                  {}
+                camera_aligned_depth_to_infra1_frame:
+                  camera_infra1_optical_frame:
                     {}
-                  camera_aligned_depth_to_infra1_frame:
-                    camera_infra1_optical_frame:
+                camera_depth_frame:
+                  camera_color_frame:
+                    camera_color_optical_frame:
                       {}
-                  camera_depth_frame:
-                    camera_color_frame:
-                      camera_color_optical_frame:
-                        {}
-                    camera_depth_optical_frame:
-                      {}
-                  camera_infra1_frame:
+                  camera_depth_optical_frame:
                     {}
-              corner0:
-                corner0_1:
+                camera_infra1_frame:
                   {}
-                corner0_2:
-                  {}
-                corner0_3:
-                  {}
-                corner0_4:
-                  {}
-              corner1:
-                corner1_1:
-                  {}
-                corner1_2:
-                  {}
-                corner1_3:
-                  {}
-                corner1_4:
-                  {}
-              corner2:
-                corner2_1:
-                  {}
-                corner2_2:
-                  {}
-                corner2_3:
-                  {}
-                corner2_4:
-                  {}
-              corner3:
-                corner3_1:
-                  {}
-                corner3_2:
-                  {}
-                corner3_3:
-                  {}
-                corner3_4:
-                  {}
-              gps:
+            corner0:
+              corner0_1:
                 {}
-              leg0:
-                wheel0_link:
-                  {}
-              leg1:
-                wheel1_link:
-                  {}
-              leg2:
-                wheel2_link:
-                  {}
-              leg3:
-                wheel3_link:
-                  {}
-              pipe0_1:
+              corner0_2:
                 {}
-              pipe0_2:
+              corner0_3:
                 {}
-              pipe1_1:
+              corner0_4:
                 {}
-              pipe1_2:
+            corner1:
+              corner1_1:
                 {}
-              pipe2_1:
+              corner1_2:
                 {}
-              pipe2_2:
+              corner1_3:
                 {}
-              pipe3_1:
+              corner1_4:
                 {}
-              pipe3_2:
+            corner2:
+              corner2_1:
                 {}
-              top0:
+              corner2_2:
                 {}
-              top1:
+              corner2_3:
                 {}
-              top2:
+              corner2_4:
                 {}
-              top3:
+            corner3:
+              corner3_1:
                 {}
-              xsens:
+              corner3_2:
                 {}
+              corner3_3:
+                {}
+              corner3_4:
+                {}
+            gps:
+              {}
+            leg0:
+              wheel0_link:
+                {}
+            leg1:
+              wheel1_link:
+                {}
+            leg2:
+              wheel2_link:
+                {}
+            leg3:
+              wheel3_link:
+                {}
+            pipe0_1:
+              {}
+            pipe0_2:
+              {}
+            pipe1_1:
+              {}
+            pipe1_2:
+              {}
+            pipe2_1:
+              {}
+            pipe2_2:
+              {}
+            pipe3_1:
+              {}
+            pipe3_2:
+              {}
+            top0:
+              {}
+            top1:
+              {}
+            top2:
+              {}
+            top3:
+              {}
+            xsens:
+              {}
       Update Interval: 0
       Value: true
     - Class: rviz/Image
@@ -589,7 +590,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz/Orbit
+      Class: rviz/XYOrbit
       Distance: 10
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -597,18 +598,18 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.3726843297481537
-        Y: 4.910515308380127
+        X: 0
+        Y: 0
         Z: 0
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7203981280326843
+      Pitch: 0.6153987646102905
       Target Frame: base_link
-      Value: Orbit (rviz)
-      Yaw: 2.965397834777832
+      Value: XYOrbit (rviz)
+      Yaw: 3.090404748916626
     Saved: ~
 Window Geometry:
   Displays:
