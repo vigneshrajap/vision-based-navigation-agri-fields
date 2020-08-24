@@ -45,7 +45,7 @@ ekf_se_map:
   two_d_mode: true
 
   #predict_to_current_time: true #when using navsat transform
-  transform_time_offset: 1.0 #0.0
+  transform_time_offset: 0.0 #0.0
   transform_timeout: 0.0 #0.0
   print_diagnostics: true
   debug: false
