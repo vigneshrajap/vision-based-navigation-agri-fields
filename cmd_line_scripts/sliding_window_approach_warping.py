@@ -507,7 +507,6 @@ class sliding_window():
             # self.mask_example_r = cv2.rectangle(self.mask_example_r, (317, 0),(352, 39), (255,0,0), 3)
             # self.mask_example_r = cv2.rectangle(self.mask_example_r, (413, 0),(449, 39), (0,255,255), 3)
 
-            cv2.imwrite("test.png", test_img )
 
             # cv2.imshow('Bitwise XOR', self.mask_example_r)
             # # cv2.imshow('Bitwise XOR', out_img)

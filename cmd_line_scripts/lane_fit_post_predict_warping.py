@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from sensor_msgs.msg import Image
 from sklearn.cluster import KMeans
 
-import sliding_window_approach_mask
+import sliding_window_approach_warping
 # from geometry_msgs.msg import Pose, PoseArray
 import scipy.signal as signal
 import math
@@ -19,7 +19,7 @@ import time
 
 start_time = time.time()
 
-DBASW = sliding_window_approach_mask.sliding_window()
+DBASW = sliding_window_approach_warping.sliding_window()
 
 class lane_finder_post_predict():
     '''
@@ -126,8 +126,9 @@ class lane_finder_post_predict():
     def peaks_estimation(self):
        coldata = np.sum(self.warp_img, axis=0)/255 # Sum the columns of warped image to determine peaks
 
-       self.modifiedCenters_local = signal.find_peaks(coldata, height=320, distance=self.warp_img.shape[1]/3) #, np.arange(1,100), noise_perc=0.1
-       # print self.modifiedCenters_local
+       self.modifiedCenters_local = signal.find_peaks(coldata, height=320, distance=self.warp_img.shape[1]/2) #, np.arange(1,100), noise_perc=0.1
+
+       print self.modifiedCenters_local
 
        while (len(self.modifiedCenters_local)<2):
           new_warp_ratio = self.warp_ratio-0.1
@@ -139,11 +140,10 @@ class lane_finder_post_predict():
           self.modifiedCenters_local = signal.find_peaks(coldata, height=320, distance=self.warp_img.shape[1]/3) #, np.arange(1,100), noise_perc=0.1
 
        # Visualize the Peaks Estimation
-       # warp_img_c = cv2.cvtColor(self.warp_img, cv2.COLOR_GRAY2RGB)
-       # for p_in in range(len(self.modifiedCenters_local[0])):
-       #      cv2.circle(warp_img_c, (np.int(self.modifiedCenters_local[0][p_in]), 630), 8, (0, 0, 255), 20)
-       #
-       # cv2.imwrite("/home/vignesh/Third_Paper/warped_img.png", warp_img_c)
+       warp_img_c = cv2.cvtColor(self.warp_img, cv2.COLOR_GRAY2RGB)
+       for p_in in range(len(self.modifiedCenters_local[0])):
+            cv2.circle(warp_img_c, (np.int(self.modifiedCenters_local[0][p_in]), 600), 8, (0, 0, 255), 20)
+
 
        #   plt.plot(self.modifiedCenters_local[0][p_in], coldata[self.modifiedCenters_local[0][p_in]], 'ro', markersize=10)
        # plt.legend(['Peaks'])
@@ -158,6 +158,7 @@ class lane_finder_post_predict():
        rheight, rwidth = self.image.shape[:2]
        self.crop_img = self.image[int(self.warp_ratio*rheight):rheight,0:rwidth]
        dst_size = self.crop_img.shape[:2]
+       cv2.imwrite("/home/vignesh/dummy_folder/crop_img_crop.png", self.crop_img)
 
        self.warp_img, self.M_t  = DBASW.perspective_warp(self.crop_img, (dst_size[1], dst_size[1]), self.src, self.dst) # Perspective warp
 
@@ -170,7 +171,7 @@ class lane_finder_post_predict():
        self.invwarp_img, self.M_tinv = DBASW.perspective_warp(self.warp_img, (dst_size[1], dst_size[1]), self.dst, self.src) #self.polyfit_img
 
        #self.M_tinv = cv2.getPerspectiveTransform(self.dst, self.src)
-       #self.roi_img = cv2.cvtColor(self.roi_img, cv2.COLOR_GRAY2RGB)
+       # self.roi_img = cv2.cvtColor(self.roi_img, cv2.COLOR_GRAY2RGB)
 
        if len(self.modifiedCenters_local[0]):
            self.modifiedCenters = np.zeros((len(self.modifiedCenters_local[0]),2))
@@ -180,6 +181,15 @@ class lane_finder_post_predict():
                peakidx_in = np.array([peakidx_i[0]/peakidx_i[2],peakidx_i[1]/peakidx_i[2]]) # divide by Z point
                peakidx_in = peakidx_in.astype(int)
                self.modifiedCenters[mc_in] = peakidx_in
+
+           # for mc_in in range(len(self.modifiedCenters_local[0])):
+           #     # print self.modifiedCenters[mc_in][0], self.modifiedCenters[mc_in][1], self.final_img.shape[0]-100
+           #
+           #     cv2.circle(self.roi_img, (int(self.modifiedCenters[mc_in][0]),int(self.roi_img.shape[0]-40)), #+rheight*self.warp_ratio
+           #                                                                                      0, (255,0,255), thickness=25, lineType=8, shift=0)
+
+
+       # cv2.imwrite("/home/vignesh/dummy_folder/warped_img.png", self.roi_img)
 
     def visualize_lane_fit(self, dst_size):
 
@@ -280,7 +290,7 @@ class lane_finder_post_predict():
 
             self.run_lane_fit()
 
-            self.visualization()
+            # self.visualization()
             self.modifiedCenters = [] # reinitialize to zero
         else:
             self.final_img = None
