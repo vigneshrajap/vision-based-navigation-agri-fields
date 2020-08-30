@@ -1,7 +1,6 @@
 # For parameter descriptions, please refer to the template parameter files for each node.
-
 ekf_se_odom:
-  frequency: 30
+  frequency: 20
   sensor_timeout: 0.1
   two_d_mode: true
   transform_time_offset: 0.0
@@ -19,7 +18,7 @@ ekf_se_odom:
   odom0_config: [false, false, false,  # X,        Y,        Z
                  false, false, false, # roll,     pitch,    yaw
                  true,  true,  false, # vx,       vy,       vz
-                 false, false, true, # gyro_x,   gyro_y,   gyro_z
+                 false, false, false, # gyro_x,   gyro_y,   gyro_z
                  false, false, false] # accel_x,  accel_y,  accel_z
   odom0_queue_size: 10
   odom0_nodelay: true
@@ -28,10 +27,10 @@ ekf_se_odom:
 
   imu0: imu/data
   imu0_config: [false, false, false,
-                false, false, true,
                 false, false, false,
-                false, false, true,
-                true, false, false]
+                false, false, false,
+                true, true, true,
+                true, true, true]
   imu0_nodelay: true
   imu0_differential: false
   imu0_relative: false
@@ -40,13 +39,45 @@ ekf_se_odom:
 
   use_control: false
 
+  process_noise_covariance: [1e-3, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    1e-3, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    1e-3, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0.3,  0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0.3,  0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0.01, 0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0.5,   0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0.5,   0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0.1,  0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0.3,  0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0.3,  0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0.3,  0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0.3,  0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0.3,  0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0.3]
+
+initial_estimate_covariance: [1e-9, 0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    1e-9, 0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    1e-9, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    1e-9,  0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    1e-9,  0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    1e-9, 0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    1e-9,  0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    1e-9,  0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    1.0,  0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0.1,   0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0.1,   0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0.1,   0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     1.0,  0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    1.0,  0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1.0]
+
 ekf_se_map:
-  frequency: 30
+  frequency: 20
   sensor_timeout: 0.1
   two_d_mode: true
 
   #predict_to_current_time: true #when using navsat transform
-  transform_time_offset: 1.0 #0.0
+  transform_time_offset: 0.0 #0.0
   transform_timeout: 0.0 #0.0
   print_diagnostics: true
   debug: false
@@ -61,7 +92,7 @@ ekf_se_map:
   odom0_config: [false, false, false,  # X,        Y,        Z
                  false, false, false, # roll,     pitch,    yaw
                  true, true, false, # vx,       vy,       vz
-                 false, false, true, # gyro_x,   gyro_y,   gyro_z
+                 false, false, false, # gyro_x,   gyro_y,   gyro_z
                  false, false, false] # accel_x,  accel_y,  accel_z
   odom0_queue_size: 20 #10
   odom0_nodelay: true
@@ -70,10 +101,10 @@ ekf_se_map:
 
   imu0: imu/data
   imu0_config: [false, false, false,
-                false, false, true,
                 false, false, false,
-                false, false, true,
-                true, false, false]
+                false, false, false,
+                true, true, true,
+                true, true, true]
   imu0_nodelay: true
   imu0_differential: false
   imu0_relative: false
@@ -93,21 +124,50 @@ ekf_se_map:
 
   use_control: false
 
+  # process_noise_covariance: [1.0,  0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    1.0,  0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    1e-3, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0.3,  0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0.3,  0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0.01, 0,     0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0.5,   0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0.5,   0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0.1,  0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0.3,  0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0.3,  0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0.3,  0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0.3,  0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0.3,  0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0.3]
+
+  initial_estimate_covariance: [1.0,  0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    1.0,  0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    1e-9, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    1e-9,  0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    1e-9,  0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    1e-9, 0,    0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    1e-9,  0,    0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    1e-9,  0,    0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    1.0,  0,     0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    1e-9,   0,     0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     1e-9,   0,     0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     1e-9,   0,    0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     1.0,  0,    0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    1.0,  0,
+                                0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1.0]
 navsat_transform:
-  frequency: 30
-  delay: 1.0
+  frequency: 20
+  delay: 2.0
   magnetic_declination_radians: 0.0523599 #Frogn Fields  # For lat/long 55.944831, -3.186998
-  yaw_offset: 0.0  # IMU reads 0 facing magnetic north, not east, then add (pi/2)
+  yaw_offset: 1.570796327 # IMU reads 0 facing magnetic north, not east, then add (pi/2)
   zero_altitude: true
-  broadcast_utm_transform: false
+  broadcast_utm_transform: true
   publish_filtered_gps: true
   use_odometry_yaw: false
-  wait_for_datum: true
+  wait_for_datum: false
   #datum: [59.6647165018, 10.6839287517, 0.0] #July Frogn Field
   #datum: [59.6588517903, 10.67237459, 0.0] #October Frogn Field
   #datum: [59.6610614035, 10.67478451, 0.0] #October Frogn Field
   #datum: [59.6659748092, 10.7776111767, 0.0] #Robot Lab
-  datum: [59.6685998027, 10.76915433, 0.0] #Robot Lab
-
-
-
+  #datum: [59.6685998027, 10.76915433, 0.0] #Robot Lab
+  datum: [59.6654007893, 10.7789973933, 0.0] #Backkyard Lab

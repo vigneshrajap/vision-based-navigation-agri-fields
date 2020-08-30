@@ -2,10 +2,13 @@
 
 <launch>
 
-  <arg name="publish_tf" default="false"/>
+  <arg name="publish_tf" default="true"/>
 
   <!-- load parameters for both eKFs (odom and map) -->
   <rosparam command="load" file="$(find gnss_waypoint_navigation)/config/dual_ekf_navsat.yaml" />
+
+  <!--IMU data-->
+  <include file="$(find gnss_waypoint_navigation)/launch/xsens_driver.launch"/>
 
   <!-- First instance of robot_localization, GPS integrated localization -->
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_odom" clear_params="true" respawn="true" output="screen">
@@ -17,8 +20,10 @@
   <node pkg="nmea_navsat_driver" type="nmea_serial_driver" name="nmea_serial_driver" respawn="false">
     <param name="port" type="string" value="/dev/ttyACM0"/>
     <param name="baud" type="string" value="115200"/>
+    <param name="frame_id" value="gps"/>
     <remap from="/fix" to="/gps/fix" />
   </node>
+
 
   <!-- Second instance of robot_localization, GPS integrated localization -->
   <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_map" clear_params="true" output="screen" respawn="true">

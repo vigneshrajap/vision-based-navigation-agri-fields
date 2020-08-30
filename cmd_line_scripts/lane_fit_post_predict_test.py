@@ -36,11 +36,12 @@ class lane_finder_post_predict():
        self.crop_img = Image()
 
        self.class_number = 2 # Extract Interesting Class (2 - Lanes in this case) from predictions
-       self.crop_ratio = 0.3 # Ratio to crop the background parts in the image from top
+       self.crop_ratio = 0.375 # Ratio to crop the background parts in the image from top
        self.warp_ratio = 0.7
 
-       self.src = np.float32([(0,0.3), (1,0.3), (-0.4,0.8), (1.4,0.8)])
+       self.src = np.float32([(0,-0.3), (1,-0.3), (-0.4,0.8), (1.4,0.8)])
        # self.src = np.float32([(0,0), (1,0), (-0.2, 0.9), (1.2, 0.9)])
+       # self.src = np.float32([(0,0), (1,0), (0,1), (1,1)])
        self.dst = np.float32([(0,0), (1,0), (0,1), (1,1)])
 
        # self.margin_l = 35
@@ -71,8 +72,7 @@ class lane_finder_post_predict():
     def peaks_estimation(self):
        coldata = np.sum(self.warp_img, axis=0)/255 # Sum the columns of warped image to determine peaks
 
-       self.modifiedCenters_local = signal.find_peaks(coldata, height=220) #, np.arange(1,100), noise_perc=0.1, distance=self.warp_img.shape[1]/2 , distance=self.warp_img.shape[1]/2
-#, distance=self.warp_img.shape[1]/2 , distance=self.warp_img.shape[1]/3
+       self.modifiedCenters_local = signal.find_peaks(coldata, height=220, distance=self.warp_img.shape[1]/6) #, np.arange(1,100), noise_perc=0.1, distance=self.warp_img.shape[1]/2 , distance=self.warp_img.shape[1]/2
 
        self.modifiedCenters_global = self.modifiedCenters_local[0]
 
@@ -82,8 +82,8 @@ class lane_finder_post_predict():
        # self.modifiedCenters_global = [self.modifiedCenters_local[0][np.argmin(abs(self.modifiedCenters_local[0]-int(self.warp_img.shape[0]/2)))]]
 
        # For lane based
-       if (len(self.modifiedCenters_global)>2):
-           self.modifiedCenters_global = np.delete(self.modifiedCenters_global, np.argwhere(np.max(self.modifiedCenters_global-self.warp_img.shape[0])))
+       # if (len(self.modifiedCenters_global)>2):
+       #     self.modifiedCenters_global = np.delete(self.modifiedCenters_global, np.argwhere(np.max(self.modifiedCenters_global-self.warp_img.shape[0])))
 
        # print self.modifiedCenters_global, np.argmax(self.modifiedCenters_global), np.delete(self.modifiedCenters_global,np.argmax(self.modifiedCenters_global-int(self.warp_img.shape[0]/2)))
 
@@ -118,7 +118,7 @@ class lane_finder_post_predict():
        # for p_in in range(len(self.modifiedCenters_local[0])):
        #      cv2.circle(warp_img_c, (np.int(self.modifiedCenters_local[0][p_in]), 630), 8, (0, 0, 255), 20)
        #
-       # cv2.imwrite("/home/vignesh/Third_Paper/warped_img.png", warp_img_c)
+       # cv2.imwrite("/home/vignesh/Third_Paper/warp_img.png", warp_img_c)
 
        # plt.plot(self.modifiedCenters_local[0][0], coldata[self.modifiedCenters_local[0][0]], 'ro', markersize=10)
        # plt.legend(['Peaks'])
@@ -157,18 +157,14 @@ class lane_finder_post_predict():
     def visualize_lane_fit(self, dst_size):
 
        t_start = time.time()
-       # print range(len(self.modifiedCenters)), self.modifiedCenters
 
        self.roi_img, self.current_Pts, self.fitting_score_avg = DBASW.sliding_window(self.roi_img, self.modifiedCenters)
        t_end = time.time()
        # print 'Prediction time: ', t_end-t_start
        self.total_time = self.total_time + (t_end-t_start)
 
-
        # Visualize the fitted polygonals (One on each lane and on average curve)
        self.roi_img, self.centerLine = DBASW.visualization_polyfit(self.roi_img, self.curves, self.ploty, self.modifiedCenters, self.current_Pts)
-
-       print self.centerLine[4], self.roi_img.shape[1]/2, self.roi_img.shape[0]/2
 
        la = [x for x,y in self.centerLine]
        lb = [y for x,y in self.centerLine]
@@ -177,6 +173,22 @@ class lane_finder_post_predict():
        # Fit a first order straight line / second order polynomial
        fit_l = np.polyfit(lb, la, 1, full=True)
        fit_p = np.polyfit(lb, la, 2, full=True)
+
+
+         # /*
+         #     curvature of ax*x + b*x + c, given x
+         # */
+         # curvaturequad(a, b, c, x)
+         # {
+         #    dybydx = 2*a*x + b;  // first derivative
+         #    d2ybydx2 = 2 * a;    // second derivative
+         #
+         #    dybydx2 = dybydx*dybybx;
+         #    numerator = sqrt(dybydx2 + 1)*(dybydx +1);
+         #    return numerator / d2ybydx2;
+         # }
+
+       print ((1 + (2*fit_p[0][0]*x + fit_p[0][1])**2)**1.5) / np.absolute(2*fit_p[0][0])
 
        # Generate x and y values for plotting
        if (np.argmin([fit_l[1], fit_p[1]])==0):
@@ -194,6 +206,22 @@ class lane_finder_post_predict():
        pts_left = pts_left[0].astype(int)
        # print len(pts_left)
        cv2.polylines(self.roi_img, [pts_left], 0, (255,255,0), thickness=5, lineType=8, shift=0)
+
+       ################# Discussions #############################
+       # dummy = self.centerLine
+       # dummy[7][0] = dummy[6][0]
+       # dummy[8][0] = dummy[7][0]
+       # dummy[9][0] = dummy[8][0]
+       # la_d = [x for x,y in dummy]
+       # lb_d = [y for x,y in dummy]
+       # fit_p_d = np.polyfit(lb_d, la_d, 2, full=True)
+       # fitxc_d = fit_p_d[0][0]*plotyc**2 + fit_p_d[0][1]*plotyc + fit_p_d[0][2]
+       # pts_left_d = np.array([np.transpose(np.vstack([fitxc_d, plotyc]))])
+       # pts_left_d = pts_left_d[0].astype(int)
+       # # print len(pts_left)
+       # cv2.polylines(self.roi_img, [pts_left_d], 0, (255,0,255), thickness=5, lineType=8, shift=0)
+       ################# Discussions #############################
+
        # cv2.fillPoly(out_img, np.int_(pts_left), (255,0,255))
        #
        # import csv
@@ -265,15 +293,14 @@ class lane_finder_post_predict():
        # cv2.imwrite('/home/vignesh/dummy_folder/test.png',self.roi_img)
 
        # Combine the result with the original image
-       # self.final_img = cv2.cvtColor(self.image, cv2.COLOR_GRAY2RGB)
-       self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L1_N/"+os.path.splitext(self.base)[0][0:18]+".png")
+       self.final_img = cv2.cvtColor(self.image, cv2.COLOR_GRAY2RGB)
+       # self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L1_N/"+os.path.splitext(self.base)[0][0:18]+".png")
        # self.final_img = cv2.imread("/home/vignesh/Third_Paper/Datasets/20191010_L4_N/"+os.path.splitext(self.base)[0][0:18]+".png")
        # self.final_img = cv2.imread("/home/vignesh/dummy_folder/test_cases/discussions/"+os.path.splitext(self.base)[0][0:18]+".png")
        # self.final_img = cv2.imread(set_folder+"/rgb/"+self.base_name+".png")#inclined_terrains #larger_plants
        rheight, rwidth = self.final_img.shape[:2]
 
-
-       self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted( self.roi_img, 0.6,self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth], 0.8, 0)
+       self.final_img[int(rheight*self.crop_ratio):rheight,0:rwidth] = cv2.addWeighted(self.roi_img, 0.5,self.final_img[int(rheight*self.crop_ratio):int(rheight),0:rwidth], 1, 0)
 
        if len(self.modifiedCenters[0]):
            for mc_in in range(len(self.modifiedCenters_global)):
@@ -313,11 +340,13 @@ class lane_finder_post_predict():
            # Overlay the inverse warped image on input image
        self.visualize_lane_fit(dst_size)
 
+       # print self.centerLine[4], self.roi_img.shape[1]/2, self.roi_img.shape[0]/2
+
     def visualization(self, display=False):
         if display:
             cv2.imshow('Prediction', self.final_img)
         if not self.output_file is None:
-            cv2.imwrite(self.output_file, self.final_img )
+            cv2.imwrite(self.output_file, self.roi_img)
 
     def lane_fit_on_predicted_image(self, lane_fit = False, display=False): #visualize = None
 
@@ -325,7 +354,7 @@ class lane_finder_post_predict():
 
             self.run_lane_fit()
 
-            # self.visualization()
+            self.visualization()
             self.modifiedCenters = []
         else:
             self.final_img = None
@@ -366,7 +395,7 @@ if __name__ == '__main__':
         # t = timeit.Timer("d.lane_fit_on_predicted_image()", "from __main__ import lane_finder_post_predict; d = lane_finder_post_predict()")
         # print t.timeit()
     # print np.sum(lfp.matching_score)/len(lfp.matching_score)
-    print np.mean(lfp.matching_score), np.std(lfp.matching_score)
+    # print np.mean(lfp.matching_score), np.std(lfp.matching_score)
     # print np.sum(lfp.fitting_score_avg)/len(lfp.fitting_score_avg)
     # print("--- %s seconds ---" % (lfp.total_time))
     # print lfp.fit_s_count, lfp.fit_p_count, float(lfp.fit_s_count)/float(lfp.fit_s_count+lfp.fit_p_count), float(lfp.fit_p_count)/float(lfp.fit_s_count+lfp.fit_p_count)

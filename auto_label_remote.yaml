@@ -29,41 +29,32 @@ init_cmd: |
   #export_default CATKIN_WORKSPACE "`readlink -f ../../../.. || echo $HOME/rasberry_ws`"
   export_default CATKIN_WORKSPACE "`echo $HOME/planner_ws`"
   source "$CATKIN_WORKSPACE/devel/setup.bash"
-  # set ROS_MASTER to the correct IP
-  #export_default ROS_MASTER $default_ip
-  export_default ROS_MASTER "10.248.0.76"
+   set ROS_MASTER to the correct IP
+  # export_default ROS_MASTER "10.248.0.76"
+  # export_default ROS_MASTER "192.168.0.51"
+   export_default ROS_MASTER "10.0.0.1"
   # set ROS_IP not to the IP that we will connect to remotely
   export_default ROS_IP `ip route get $ROS_MASTER | grep "src" | sed 's/.*src \([0-9\.]*\).*/\1/' || echo $ROS_MASTER`
   # set ROS_HOSTNAME to the ROS_IP to avoid configuring /etc/hosts for anyone who connects
   export_default ROS_HOSTNAME "$ROS_IP"
-  # path where to expect MONGODB
-  export_default MONGO_PATH "$HOME/mongodb"
   # use IMU?
   export_default USE_IMU true
-  # the topomap to be used
-  export_default TMAP frogn_fields
   # the gridmap to be used (key in mongodb)
   export_default MAP "$(rospack find gnss_waypoint_navigation)/maps/white_image.yaml"
   # figure out the robot number from the hostname, assuming it is like `thorvald-XXX`
   export_default ROBOT_NO `hostname | cut -f2 -d"-"`
   # set the robot type
-  export_default ROBOT_TYPE "thorvald_ii_4wd4ws_slim"
   export ROS_MASTER_URI="http://$ROS_MASTER:11311/"
-  #export_default ROSBRIDGE_IP "10.8.0.18"
-  #export_default ROSBRIDGE_PORT "9090"
-  export_default USE_SIM false
-  export_default GAZEBO_WORLD riseholme
-  export_default EKF_PUBLISH_TF true
-  export_default USE_CARROT false
-  export_default USE_GUI false
-  export_default USE_OMNI false
-  export_default USE_WAYPOINT_NAV false
-  export_default USE_FEATURE_DETECTOR false
-  export_default LOC_EDGE_RECONF "norway"
-  export_default ENVIRONMENT "open_fields"
-  export_default MODEL_EXTRAS "$(rospack find auto_nav)/urdf/sensors_frogn.xacro"
 windows:
-- name: camera_data_collection
+- name: EKF_gnss_imu
   panes:
-  #- sleep 1; roslaunch camera_data_collection flir_basler_record.launch
-  - sleep 1; roslaunch auto_nav realsense.launch
+  - sleep 1; roslaunch gnss_waypoint_navigation RTK_setup.launch
+- name: camera
+  panes:
+  - sleep 2; roslaunch auto_nav realsense_camera.launch
+- name: display
+  panes:
+  - rosrun rviz rviz -d $(rospack find auto_nav)/rviz/auto_label.rviz 
+- name: test
+  panes:
+  - sleep 1;        

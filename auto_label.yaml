@@ -33,6 +33,10 @@ init_cmd: |
   # export_default ROS_MASTER "10.248.0.76" 
   #export_default ROS_MASTER "192.168.0.51"
   export_default ROS_MASTER "10.0.0.1"
+
+  # export_default ROS_MASTER "10.248.0.76"
+  export_default ROS_MASTER "192.168.0.51"
+>>>>>>> 7e9309fb1cc6b70bc94b412b9e9b7307b02a6d30:auto_label.yaml
   # set ROS_IP not to the IP that we will connect to remotely
   export_default ROS_IP `ip route get $ROS_MASTER | grep "src" | sed 's/.*src \([0-9\.]*\).*/\1/' || echo $ROS_MASTER`
   # set ROS_HOSTNAME to the ROS_IP to avoid configuring /etc/hosts for anyone who connects

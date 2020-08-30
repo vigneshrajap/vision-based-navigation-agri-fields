@@ -169,7 +169,7 @@ def main():
     model = predict.model_from_checkpoint_path(args.model_prefix, args.epoch)
 
     print('Output_folder',args.output_folder)
-    im_files = glob.glob(os.path.join(args.input_folder,'*.png'))
+    im_files = glob.glob(os.path.join(args.input_folder,'*.jpg'))
     print(os.path.join(args.input_folder+'*.png'))
     for im in im_files:
         if args.output_folder:

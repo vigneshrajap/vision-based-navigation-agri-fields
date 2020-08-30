@@ -72,7 +72,6 @@
     <arg name="odom_frame_id" value="$(arg odom_frame_id)" />
   </include>
 
-
   <!-- teleop bringup -->
   <!--include file="$(find thorvald_teleop)/launch/teleop_xbox.launch" if="$(arg with_teleoperation)">
     <arg name="joy_dev" value="$(arg joy_dev)" />
