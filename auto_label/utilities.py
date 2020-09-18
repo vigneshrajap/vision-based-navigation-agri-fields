@@ -36,11 +36,11 @@ def read_robot_offset_from_file(filename,row_ind = None):
             print('Frame index ', str(row_ind), ' not in list')
             lateral_offset = None
             angular_offset = None
-    else: 
+    else:
         lateral_offset = a[:,2]
         angular_offset = a[:,3]
         row_ind = a[:,1]
-        
+
     return lateral_offset, angular_offset, row_ind
 
 def read_row_spec_from_file(row_spec_file,row_prefix=None):

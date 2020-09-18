@@ -1,9 +1,8 @@
 # For parameter descriptions, please refer to the template parameter files for each node.
-
-ekf_se_odom:
-  frequency: 30
+ekf_se_odom_offline:
+  frequency: 20
   sensor_timeout: 0.1
-  two_d_mode: true
+  two_d_mode: false
   transform_time_offset: 0.0
   transform_timeout: 0.0
   print_diagnostics: false
@@ -19,7 +18,7 @@ ekf_se_odom:
   odom0_config: [false, false, false,  # X,        Y,        Z
                  false, false, false, # roll,     pitch,    yaw
                  true,  true,  false, # vx,       vy,       vz
-                 false, false, true, # gyro_x,   gyro_y,   gyro_z
+                 false, false, false, # gyro_x,   gyro_y,   gyro_z
                  false, false, false] # accel_x,  accel_y,  accel_z
   odom0_queue_size: 10
   odom0_nodelay: true
@@ -28,7 +27,7 @@ ekf_se_odom:
 
   imu0: imu/data
   imu0_config: [false, false, false,
-                true, true, true,
+                false, false, false,
                 false, false, false,
                 true, true, true,
                 true, true, true]
@@ -40,13 +39,45 @@ ekf_se_odom:
 
   use_control: false
 
-ekf_se_map:
-  frequency: 30
+  process_noise_covariance: [1e-3, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    1e-3, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    1e-3, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0.3,  0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0.3,  0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0.01, 0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0.5,   0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0.5,   0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0.1,  0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0.3,  0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0.3,  0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0.3,  0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0.3,  0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0.3,  0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0.3]
+
+initial_estimate_covariance: [1e-9, 0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    1e-9, 0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    1e-9, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    1e-9,  0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    1e-9,  0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    1e-9, 0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    1e-9,  0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    1e-9,  0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    1.0,  0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0.1,   0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0.1,   0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0.1,   0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     1.0,  0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    1.0,  0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1.0]
+
+ekf_se_map_offline:
+  frequency: 20
   sensor_timeout: 0.1
   two_d_mode: false
 
   #predict_to_current_time: true #when using navsat transform
-  transform_time_offset: 1.0 #0.0
+  transform_time_offset: 0.0 #0.0
   transform_timeout: 0.0 #0.0
   print_diagnostics: true
   debug: false
@@ -67,17 +98,23 @@ ekf_se_map:
   odom0_nodelay: true
   odom0_differential: false
   odom0_relative: false
+  # odom0_pose_rejection_threshold: 5
+  # odom0_twist_rejection_threshold: 1
+
 
   imu0: imu/data
   imu0_config: [false, false, false,
-                true, true, true,
+                true,  true, true,
                 false, false, false,
                 true, true, true,
-                true, false, false]
+                false, false, false]
   imu0_nodelay: true
   imu0_differential: false
   imu0_relative: false
   imu0_queue_size: 100 #10
+  # imu0_pose_rejection_threshold: 0.8                 # Note the difference in parameter names
+  # imu0_twist_rejection_threshold: 0.8                #
+  # imu0_linear_acceleration_rejection_threshold: 0.8  #
   imu0_remove_gravitational_acceleration: true
 
   odom1: odometry/gps
@@ -93,20 +130,66 @@ ekf_se_map:
 
   use_control: false
 
-navsat_transform:
-  frequency: 30
-  delay: 1.0
+process_noise_covariance: [0.05, 0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0.05, 0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0.06, 0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0.03, 0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0.03, 0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0.06, 0,     0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0.025, 0,     0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0.025, 0,    0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0.04, 0,    0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0.01, 0,    0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0.01, 0,    0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0.02, 0,    0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0.01, 0,    0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0.01, 0,
+                           0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0.015]
+
+  # process_noise_covariance: [10,   0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    10,   0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    20,   0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    3,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    3,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0.6,  0,     0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0.025, 0,     0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0.025, 0,    0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0.04, 0,    0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0.01, 0,    0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0.01, 0,    0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0.02, 0,    0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0.01, 0,    0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0.01, 0,
+  #                            0,    0,    0,    0,    0,    0,    0,     0,     0,    0,    0,    0,    0,    0,    0.015]
+
+initial_estimate_covariance: [1e-9, 0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    1e-9, 0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    1e-9, 0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    1e-9, 0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    1e-9, 0,    0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    1e-9, 0,    0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    1e-9, 0,    0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    1e-9, 0,    0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    1e-9, 0,     0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    1e-9,  0,     0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     1e-9,  0,     0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     1e-9,  0,    0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     1e-9, 0,    0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    1e-9, 0,
+                              0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1e-9]
+navsat_transform_offline:
+  frequency: 20
+  delay: 2.0
   magnetic_declination_radians: 0.0523599 #Frogn Fields  # For lat/long 55.944831, -3.186998
-  yaw_offset: 0.0  # IMU reads 0 facing magnetic north, not east, then add (pi/2)
+  yaw_offset: 1.570796327 # IMU reads 0 facing magnetic north, not east, then add (pi/2)
   zero_altitude: false
   broadcast_utm_transform: false
   publish_filtered_gps: true
   use_odometry_yaw: false
-  wait_for_datum: true
+  wait_for_datum: false
   #datum: [59.6647165018, 10.6839287517, 0.0] #July Frogn Field
   #datum: [59.6588517903, 10.67237459, 0.0] #October Frogn Field
   #datum: [59.6610614035, 10.67478451, 0.0] #October Frogn Field
-  datum: [59.6659748092, 10.7776111767, 136.6705] #Robot Lab
-
-
-
+  #datum: [59.6659748092, 10.7776111767, 0.0] #Robot Lab
+  #datum: [59.6685998027, 10.76915433, 0.0] #Robot Lab
+  datum: [59.6654007893, 10.7789973933, 0.0] #Backkyard Lab
