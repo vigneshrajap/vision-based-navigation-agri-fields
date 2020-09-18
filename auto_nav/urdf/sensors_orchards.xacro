@@ -99,7 +99,7 @@
     <joint name="camera_joint" type="fixed">
       <parent link="$(arg tf_prefix)/base_link"/>
       <child link="$(arg tf_prefix)/camera_bottom_screw_frame" />
-      <origin xyz="0.845 0.0 1.09" rpy="0 0.1745 0" />
+      <origin xyz="0.845 0.0 1.09" rpy="0 0.2620 0" />
     </joint>
 
     <link name="$(arg tf_prefix)/camera_link">
