@@ -61,7 +61,7 @@ init_cmd: |
   export_default USE_WAYPOINT_NAV false
   export_default ENVIRONMENT "open_fields"
   export_default MODEL_EXTRAS "$(rospack find auto_nav)/urdf/sensors_orchards.xacro"
-  export_default ROBOT_MODEL "$(rospack find auto_nav)/config/robot_frogn.yaml"
+  export_default ROBOT_MODEL "$(rospack find auto_nav)/config/robot_010.yaml"
 windows:
 - name: init
   panes:

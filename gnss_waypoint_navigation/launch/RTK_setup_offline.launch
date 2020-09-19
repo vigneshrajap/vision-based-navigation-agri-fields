@@ -12,6 +12,7 @@
 
   <!-- load parameters for both eKFs (odom and map) -->
   <rosparam command="load" file="$(find gnss_waypoint_navigation)/config/dual_ekf_navsat_offline.yaml" />
+  <!-- <rosparam command="load" file="$(find gnss_waypoint_navigation)/config/dual_ekf_navsat_3D.yaml" /> -->
 
   <!-- First instance of robot_localization, GPS integrated localization -->
   <!-- <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se_odom_offline" clear_params="true" respawn="true" output="screen">
