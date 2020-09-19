@@ -1,6 +1,6 @@
 # For parameter descriptions, please refer to the template parameter files for each node.
 ekf_se_odom:
-  frequency: 6
+  frequency: 12
   sensor_timeout: 0.1
   two_d_mode: true
   transform_time_offset: 0.0
@@ -72,7 +72,7 @@ initial_estimate_covariance: [1e-9, 0,    0,    0,    0,    0,    0,    0,    0,
                               0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1.0]
 
 ekf_se_map:
-  frequency: 6
+  frequency: 12
   sensor_timeout: 0.1
   two_d_mode: true
 
@@ -156,7 +156,7 @@ ekf_se_map:
                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    1.0,  0,
                                 0,    0,    0,    0,    0,    0,    0,    0,    0,    0,     0,     0,     0,    0,    1.0]
 navsat_transform:
-  frequency: 6
+  frequency: 12
   delay: 2.0
   magnetic_declination_radians: 0.0523599 #Frogn Fields  # For lat/long 55.944831, -3.186998
   yaw_offset: 1.570796327 # IMU reads 0 facing magnetic north, not east, then add (pi/2)

@@ -17,7 +17,7 @@
   <joint name="center_to_gps" type="fixed">
     <parent link="$(arg tf_prefix)/base_link"/>
     <child link="$(arg tf_prefix)/gps"/>
-    <origin xyz="0.425 -0.62 1.05"/>
+    <origin xyz="0.425 -0.625 1.05"/>
   </joint>
 
   <!--IMU-->
@@ -33,7 +33,7 @@
   <joint name="center_to_xsens" type="fixed">
     <parent link="$(arg tf_prefix)/base_link"/>
     <child link="$(arg tf_prefix)/xsens"/>
-    <origin xyz="0.31 0.0 0.8" rpy="0 0 0"/>
+    <origin xyz="0.315 0.0 0.8" rpy="0 0 0"/>
   </joint>
 
   <!--Basler-->
@@ -99,7 +99,7 @@
     <joint name="camera_joint" type="fixed">
       <parent link="$(arg tf_prefix)/base_link"/>
       <child link="$(arg tf_prefix)/camera_bottom_screw_frame" />
-      <origin xyz="0.745 0.0 1.230" rpy="0 0.331613 0" />
+      <origin xyz="0.855 0.0 1.230" rpy="0 0.331613 0" />
     </joint>
 
     <link name="$(arg tf_prefix)/camera_link">
