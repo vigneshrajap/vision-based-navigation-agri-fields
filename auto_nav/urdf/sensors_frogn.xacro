@@ -17,7 +17,7 @@
   <joint name="center_to_gps" type="fixed">
     <parent link="$(arg tf_prefix)/base_link"/>
     <child link="$(arg tf_prefix)/gps"/>
-    <origin xyz="0.425 -0.625 1.05"/>
+    <origin xyz="0.4155 -0.1615 1.0130"/>
   </joint>
 
   <!--IMU-->
@@ -33,7 +33,7 @@
   <joint name="center_to_xsens" type="fixed">
     <parent link="$(arg tf_prefix)/base_link"/>
     <child link="$(arg tf_prefix)/xsens"/>
-    <origin xyz="0.315 0.0 0.8" rpy="0 0 0"/>
+    <origin xyz="0.3500 -0.0183 0.8070" rpy="0 0 0"/>
   </joint>
 
   <!--Basler-->
@@ -43,7 +43,7 @@
   <joint name="basler_camera_joint" type="fixed">
     <parent link="$(arg tf_prefix)/base_link"/>
     <child link="$(arg tf_prefix)/basler_camera" />
-    <origin xyz="0.735 0.0 1.055" rpy="0 0.3926991 0" />
+    <origin xyz="0.8475 0.0005 1.0640" rpy="0 0.3787 0" />
   </joint>
 
   <!--FLIR Camera 1-->
@@ -53,7 +53,7 @@
   <joint name="flir_camera_1_joint" type="fixed">
     <parent link="$(arg tf_prefix)/base_link"/>
     <child link="$(arg tf_prefix)/flir_camera_1" />
-    <origin xyz="0.735 0.22 1.055" rpy="0 0.3926991 0" />
+    <origin xyz="0.735 0.22 1.055" rpy="0 0.367 0" />
   </joint>
 
   <!--FLIR Camera 2-->
@@ -63,7 +63,7 @@
   <joint name="flir_camera_2_joint" type="fixed">
     <parent link="$(arg tf_prefix)/base_link"/>
     <child link="$(arg tf_prefix)/flir_camera_2" />
-    <origin xyz="0.735 -0.21 1.055" rpy="0 0.3926991 0" />
+    <origin xyz="0.735 -0.21 1.055" rpy="0 0.367 0" />
   </joint>
 
   <!--Camera-->
@@ -99,7 +99,7 @@
     <joint name="camera_joint" type="fixed">
       <parent link="$(arg tf_prefix)/base_link"/>
       <child link="$(arg tf_prefix)/camera_bottom_screw_frame" />
-      <origin xyz="0.855 0.0 1.230" rpy="0 0.331613 0" />
+      <origin xyz="0.8045 0.0035 0.9920" rpy="0 0.2942 0" />
     </joint>
 
     <link name="$(arg tf_prefix)/camera_link">
