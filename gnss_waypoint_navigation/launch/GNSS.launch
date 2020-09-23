@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<launch>
+
+<!--GNSS Fix message-->
+<node pkg="nmea_navsat_driver" type="nmea_serial_driver" name="nmea_serial_driver" respawn="false">
+  <param name="port" type="string" value="/dev/ttyACM0"/>
+  <param name="baud" type="string" value="115200"/>
+  <param name="frame_id" value="gps"/>
+  <remap from="/fix" to="/gps/fix" />
+</node>
+
+</launch>
