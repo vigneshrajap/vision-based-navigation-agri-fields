@@ -164,10 +164,10 @@ navsat_transform:
   broadcast_utm_transform: true
   publish_filtered_gps: true
   use_odometry_yaw: false
-  wait_for_datum: false
+  wait_for_datum: true
   #datum: [59.6647165018, 10.6839287517, 0.0] #July Frogn Field
   #datum: [59.6588517903, 10.67237459, 0.0] #October Frogn Field
-  #datum: [59.6610614035, 10.67478451, 0.0] #October Frogn Field
+  datum: [59.6610614035, 10.67478451, 0.0] #October Frogn Field
   #datum: [59.6659748092, 10.7776111767, 0.0] #Robot Lab
   #datum: [59.6685998027, 10.76915433, 0.0] #Robot Lab
-  datum: [59.6654007893, 10.7789973933, 0.0] #Backkyard Lab
+  # datum: [59.6654007893, 10.7789973933, 0.0] #Backkyard Lab
