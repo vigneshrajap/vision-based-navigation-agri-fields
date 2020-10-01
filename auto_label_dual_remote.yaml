@@ -52,9 +52,9 @@ windows:
 - name: camera
   panes:
   - sleep 2; roslaunch gnss_waypoint_navigation xsens_driver.launch
-- name: display
-  panes:
-  - rosrun rviz rviz -d $(rospack find auto_nav)/rviz/auto_label.rviz
+# - name: display
+  # panes:
+  # - rosrun rviz rviz -d $(rospack find auto_nav)/rviz/auto_label.rviz
 - name: test
   panes:
   - sleep 1;
