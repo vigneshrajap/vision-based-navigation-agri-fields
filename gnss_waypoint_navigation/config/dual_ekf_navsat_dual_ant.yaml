@@ -111,7 +111,7 @@ ekf_se_map:
   imu0_queue_size: 100 #10
   imu0_remove_gravitational_acceleration: true
 
-  imu1: yaw
+  imu1: gps/yaw
   imu1_config: [false, false, false,
                 false, false, true,
                 false, false, false,
