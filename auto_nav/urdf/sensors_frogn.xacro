@@ -29,13 +29,13 @@
   <joint name="$(arg tf_prefix)/base_septentrio" type="fixed">
     <parent link="$(arg tf_prefix)/base_link"/>
     <child link="$(arg tf_prefix)/septentrio"/>
-    <origin xyz="0.8045 0.28 1.1" rpy="0 0 0"/>
+    <origin xyz="0.7657 -0.2795 1.0828" rpy="0 0 0"/>
   </joint>
 
   <joint name="$(arg tf_prefix)/base_septentrio_static2" type="fixed">
     <parent link="$(arg tf_prefix)/base_link"/>
     <child link="$(arg tf_prefix)/septentrio_static2"/>
-    <origin xyz="0.8045 -0.28 1.1" rpy="0 0 0"/>
+    <origin xyz="0.7657 0.2795 1.0828" rpy="0 0 0"/>
   </joint>
 
   <!--GNSS-->
@@ -133,7 +133,7 @@
     <joint name="camera_joint" type="fixed">
       <parent link="$(arg tf_prefix)/base_link"/>
       <child link="$(arg tf_prefix)/camera_bottom_screw_frame" />
-      <origin xyz="0.8045 0.0035 0.9920" rpy="0 0.2942 0" />
+      <origin xyz="0.8118 0.0035 1.0729" rpy="0 0.2942 0" />
     </joint>
 
     <link name="$(arg tf_prefix)/camera_link">
