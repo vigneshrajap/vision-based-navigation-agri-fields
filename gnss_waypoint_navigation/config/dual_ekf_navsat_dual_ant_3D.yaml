@@ -2,7 +2,7 @@
 ekf_se_odom:
   frequency: 12
   sensor_timeout: 0.1
-  two_d_mode: true
+  two_d_mode: false
   transform_time_offset: 0.0
   transform_timeout: 0.0
   print_diagnostics: false
@@ -74,7 +74,7 @@ ekf_se_odom:
 ekf_se_map:
   frequency: 12
   sensor_timeout: 0.1
-  two_d_mode: true
+  two_d_mode: false
 
   #predict_to_current_time: true #when using navsat transform
   transform_time_offset: 0.0 #0.0
@@ -99,17 +99,17 @@ ekf_se_map:
   odom0_differential: false
   odom0_relative: false
 
-#  imu0: imu/data
-#  imu0_config: [false, false, false,
-#                false, false, false,
-#                false, false, false,
-#                true, true, true,
-#                false, false, false]
-#  imu0_nodelay: true
-#  imu0_differential: false
-#  imu0_relative: false
-#  imu0_queue_size: 100 #10
-#  imu0_remove_gravitational_acceleration: true
+  imu0: imu/data
+  imu0_config: [false, false, false,
+                false, false, false,
+                false, false, false,
+                true, true, false,
+                false, false, false]
+  imu0_nodelay: true
+  imu0_differential: false
+  imu0_relative: false
+  imu0_queue_size: 100 #10
+  imu0_remove_gravitational_acceleration: true
 
   imu1: gps/yaw
   imu1_config: [false, false, false,
@@ -124,7 +124,7 @@ ekf_se_map:
   imu1_remove_gravitational_acceleration: true
 
   odom1: odometry/gps
-  odom1_config: [true,  true,  false,
+  odom1_config: [true,  true,  true,
                  false, false, false,
                  false, false, false,
                  false, false, false,
@@ -172,7 +172,7 @@ navsat_transform:
   delay: 2.0
   magnetic_declination_radians: 0.0 #0.0523599 #Frogn Fields  # For lat/long 55.944831, -3.186998
   yaw_offset: 1.570796327 # IMU reads 0 facing magnetic north, not east, then add (pi/2)
-  zero_altitude: true
+  zero_altitude: false
   broadcast_utm_transform: true
   publish_filtered_gps: true
   use_odometry_yaw: false
