@@ -1,104 +1,16 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="sensor_frames">
 
+  <link name="/base_camera_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.01" radius="0.01"/>
+      </geometry>
+    </visual>
+  </link>
+
   <xacro:arg name="robot_name" default=""/>
   <xacro:arg name="tf_prefix" default=""/>
-
-  <link name="$(arg tf_prefix)/septentrio" >
-    <visual>
-      <material name="sept_color">
-        <color rgba="1 0.8 0 1" />
-      </material>
-      <geometry>
-        <cylinder length="0.05" radius="0.10" />
-      </geometry>
-    </visual>
-  </link>
-
-  <link name="$(arg tf_prefix)/septentrio_static2" >
-    <visual>
-      <material name="sept_color">
-        <color rgba="1 0.8 0 1" />
-      </material>
-      <geometry>
-        <cylinder length="0.05" radius="0.10" />
-      </geometry>
-    </visual>
-  </link>
-
-  <joint name="$(arg tf_prefix)/base_septentrio" type="fixed">
-    <parent link="$(arg tf_prefix)/base_link"/>
-    <child link="$(arg tf_prefix)/septentrio"/>
-    <origin xyz="0.8045 0.28 1.1" rpy="0 0 0"/>
-  </joint>
-
-  <joint name="$(arg tf_prefix)/base_septentrio_static2" type="fixed">
-    <parent link="$(arg tf_prefix)/base_link"/>
-    <child link="$(arg tf_prefix)/septentrio_static2"/>
-    <origin xyz="0.8045 -0.28 1.1" rpy="0 0 0"/>
-  </joint>
-
-  <!--GNSS-->
-  <!-- <link name="$(arg tf_prefix)/gps">
-  <visual>
-      <geometry>
-        <box size="0.05 0.05 0.02"/>
-      </geometry>
-      <material name="green"/>
-    </visual>
-  </link>
-
-  <joint name="center_to_gps" type="fixed">
-    <parent link="$(arg tf_prefix)/base_link"/>
-    <child link="$(arg tf_prefix)/gps"/>
-    <origin xyz="0.4155 -0.1615 1.0130"/>
-  </joint> -->
-
-  <!--IMU-->
-  <link name="$(arg tf_prefix)/xsens">
-  <visual>
-      <geometry>
-        <box size="0.05 0.05 0.02"/>
-      </geometry>
-      <material name="green"/>
-    </visual>
-  </link>
-
-  <joint name="center_to_xsens" type="fixed">
-    <parent link="$(arg tf_prefix)/base_link"/>
-    <child link="$(arg tf_prefix)/xsens"/>
-    <origin xyz="0.3500 -0.0183 0.8070" rpy="0 0 0"/>
-  </joint>
-
-  <!--Basler-->
-  <!-- camera body, with origin at bottom screw mount -->
-  <link name="$(arg tf_prefix)/basler_camera"/>
-
-  <joint name="basler_camera_joint" type="fixed">
-    <parent link="$(arg tf_prefix)/base_link"/>
-    <child link="$(arg tf_prefix)/basler_camera" />
-    <origin xyz="0.8475 0.0005 1.0640" rpy="0 0.3787 0" />
-  </joint>
-
-  <!--FLIR Camera 1-->
-  <!-- camera body, with origin at bottom screw mount -->
-  <link name="$(arg tf_prefix)/flir_camera_1"/>
-
-  <joint name="flir_camera_1_joint" type="fixed">
-    <parent link="$(arg tf_prefix)/base_link"/>
-    <child link="$(arg tf_prefix)/flir_camera_1" />
-    <origin xyz="0.735 0.22 1.055" rpy="0 0.367 0" />
-  </joint>
-
-  <!--FLIR Camera 2-->
-  <!-- camera body, with origin at bottom screw mount -->
-  <link name="$(arg tf_prefix)/flir_camera_2"/>
-
-  <joint name="flir_camera_2_joint" type="fixed">
-    <parent link="$(arg tf_prefix)/base_link"/>
-    <child link="$(arg tf_prefix)/flir_camera_2" />
-    <origin xyz="0.735 -0.21 1.055" rpy="0 0.367 0" />
-  </joint>
 
   <!--Camera-->
     <xacro:property name="M_PI" value="3.1415926535897931" />
@@ -131,9 +43,10 @@
     <link name="$(arg tf_prefix)/camera_bottom_screw_frame"/>
 
     <joint name="camera_joint" type="fixed">
-      <parent link="$(arg tf_prefix)/base_link"/>
+      <parent link="$(arg tf_prefix)/base_camera_link"/>
       <child link="$(arg tf_prefix)/camera_bottom_screw_frame" />
-      <origin xyz="0.8045 0.0035 0.9920" rpy="0 0.2942 0" />
+      <!-- <origin xyz="0.8045 0.0035 0.9920" rpy="0 0.2942 0" /> -->
+      <origin xyz="0 0 0" rpy="0 0.2942 0" />
     </joint>
 
     <link name="$(arg tf_prefix)/camera_link">
@@ -200,6 +113,79 @@
      <origin xyz="0.1 0 0" rpy="${-M_PI/2} 0 ${-M_PI/2}" />
      <parent link="$(arg tf_prefix)/camera_color_frame" />
      <child link="$(arg tf_prefix)/camera_color_optical_frame" />
+    </joint>
+
+    <!--GNSS-->
+    <!-- <link name="$(arg tf_prefix)/gps">
+    <visual>
+        <geometry>
+          <box size="0.05 0.05 0.02"/>
+        </geometry>
+        <material name="green"/>
+      </visual>
+    </link>
+
+    <joint name="center_to_gps" type="fixed">
+      <parent link="$(arg tf_prefix)/base_camera_link"/>
+      <child link="$(arg tf_prefix)/gps"/>
+      <origin xyz="0.4155 -0.1615 1.0130"/>
+    </joint> -->
+
+    <!--Master Antenna-->
+    <link name="$(arg tf_prefix)/gps_1">
+    <visual>
+        <geometry>
+          <box size="0.05 0.05 0.02"/>
+        </geometry>
+        <material name="white">
+          <color rgba="1.0 1.0 1.0 1.0"/>
+        </material>
+      </visual>
+    </link>
+
+    <joint name="center_to_gps_1" type="fixed">
+      <parent link="$(arg tf_prefix)/base_camera_link"/>
+      <child link="$(arg tf_prefix)/gps_1"/>
+      <!-- <origin xyz="0.8045 0.1615 1.0130"/> -->
+      <origin xyz="0 0.1615 0.1"/>
+    </joint>
+
+    <!--Slave Antenna-->
+    <link name="$(arg tf_prefix)/gps_2">
+    <visual>
+        <geometry>
+          <box size="0.05 0.05 0.02"/>
+        </geometry>
+        <material name="white">
+          <color rgba="1.0 1.0 1.0 1.0"/>
+        </material>
+      </visual>
+    </link>
+
+    <joint name="center_to_gps_2" type="fixed">
+      <parent link="$(arg tf_prefix)/base_camera_link"/>
+      <child link="$(arg tf_prefix)/gps_2"/>
+      <!-- <origin xyz="0.8045 -0.1615 1.0130"/> -->
+      <origin xyz="0 -0.1615 0.1"/>
+    </joint>
+
+    <!--IMU-->
+    <link name="$(arg tf_prefix)/xsens">
+    <visual>
+        <geometry>
+          <box size="0.05 0.05 0.02"/>
+        </geometry>
+        <material name="orange">
+          <color rgba="1.0 0.645 0.0 1.0"/>
+        </material>
+    </visual>
+    </link>
+
+    <joint name="center_to_xsens" type="fixed">
+      <parent link="$(arg tf_prefix)/base_camera_link"/>
+      <child link="$(arg tf_prefix)/xsens"/>
+      <!-- <origin xyz="0.3500 -0.0183 0.8070" rpy="0 0 0"/> -->
+      <origin xyz="-0.4545 -0.0183 -0.1850" rpy="0 0 0"/>
     </joint>
 
  </robot>

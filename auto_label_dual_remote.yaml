@@ -30,9 +30,9 @@ init_cmd: |
   export_default CATKIN_WORKSPACE "`echo $HOME/planner_ws`"
   source "$CATKIN_WORKSPACE/devel/setup.bash"
    set ROS_MASTER to the correct IP
-  # export_default ROS_MASTER "10.248.0.76"
+  export_default ROS_MASTER "10.230.45.253"
   # export_default ROS_MASTER "192.168.0.51"
-   export_default ROS_MASTER "10.0.0.1"
+  # export_default ROS_MASTER "10.0.0.2"
   # set ROS_IP not to the IP that we will connect to remotely
   export_default ROS_IP `ip route get $ROS_MASTER | grep "src" | sed 's/.*src \([0-9\.]*\).*/\1/' || echo $ROS_MASTER`
   # set ROS_HOSTNAME to the ROS_IP to avoid configuring /etc/hosts for anyone who connects
@@ -46,15 +46,21 @@ init_cmd: |
   # set the robot type
   export ROS_MASTER_URI="http://$ROS_MASTER:11311/"
 windows:
-- name: EKF_gnss_imu
+- name: URDF
+  panes:
+  - sleep 1; roslaunch auto_nav view_dual_ant_setup.launch
+- name: Dual_GNSS
   panes:
   - sleep 1; roslaunch nmea_navsat_driver nmea_navsat_bringup.launch
-- name: camera
+- name: IMU
   panes:
   - sleep 2; roslaunch gnss_waypoint_navigation xsens_driver.launch
-# - name: display
-  # panes:
-  # - rosrun rviz rviz -d $(rospack find auto_nav)/rviz/auto_label.rviz
+# - name: IMU
+#   panes:
+#   - sleep 2; roslaunch gnss_waypoint_navigation xsens_driver.launch
+- name: display
+  panes:
+  - rosrun rviz rviz -d $(rospack find auto_nav)/rviz/auto_label_dual.rviz
 - name: test
   panes:
   - sleep 1;
