@@ -33,7 +33,7 @@
 
   <!--UTM frame to Robot Frame conversion-->
   <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" respawn="true" output="screen">
-    <remap from="/imu/data" to="/imu/data" />
+    <remap from="/imu/data" to="/gps/yaw" />
     <remap from="/gps/fix" to="/gps/fix" />
     <remap from="/odometry/filtered" to="/odometry/global" />
   </node>
